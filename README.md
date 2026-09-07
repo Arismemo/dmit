@@ -69,8 +69,9 @@ flowchart TD
 ├── secrets.example.env                # 敏感配置模板（公钥、域名、密码）
 ├── configs/
 │   ├── client/
-│   │   ├── Script.js                  # 客户端 Clash Verge 扩展脚本 (TFO + Mixed)
-│   │   └── config.yaml                # 客户端推荐核心设置
+│   │   ├── Script.js                  # 客户端扩展脚本 (TFO + Mixed + 内网高可用)
+│   │   ├── Merge.yaml                 # 客户端全局覆写配置 (DoH + 金融量化直连)
+│   │   └── config.yaml                # 客户端推荐核心设置 (TUN mixed)
 │   └── server/
 │       ├── docker-compose.yml         # Marzban 容器编排 (host 模式)
 │       ├── marzban.env                # Marzban 环境变量模板

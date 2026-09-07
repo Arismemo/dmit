@@ -1,0 +1,39 @@
+# Clash Verge Rev 全局覆写配置 (Merge.yaml)
+# 存放路径:
+#   macOS: ~/Library/Application Support/io.github.clash-verge-rev.clash-verge-rev/profiles/Merge.yaml
+#   Linux: ~/.config/clash-verge-rev/profiles/Merge.yaml
+#   Windows: %APPDATA%/io.github.clash-verge-rev.clash-verge-rev/profiles/Merge.yaml
+
+dns:
+  respect-rules: true
+  nameserver:
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+  proxy-server-nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+  nameserver-policy:
+    # 国内域名使用国内 DoH 解析，确保 CDN 调度到最近的国内节点
+    "geosite:cn,private":
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
+
+prepend-rules:
+  # === 国内金融行情与公开数据源直连 (如量化/投研数据接口) ===
+  - DOMAIN-SUFFIX,eastmoney.com,DIRECT
+  - DOMAIN-SUFFIX,dfcfw.com,DIRECT
+  - DOMAIN-SUFFIX,eastmoneyapis.com,DIRECT
+  - DOMAIN-SUFFIX,sinajs.cn,DIRECT
+  - DOMAIN-SUFFIX,sina.com.cn,DIRECT
+  - DOMAIN-SUFFIX,gtimg.cn,DIRECT
+  - DOMAIN-SUFFIX,cls.cn,DIRECT
+  - DOMAIN-SUFFIX,legulegu.com,DIRECT
+  - DOMAIN-SUFFIX,10jqka.com.cn,DIRECT
+  - DOMAIN-SUFFIX,sse.com.cn,DIRECT
+  - DOMAIN-SUFFIX,szse.cn,DIRECT
+  - DOMAIN-SUFFIX,csindex.com.cn,DIRECT
+  - DOMAIN-SUFFIX,baostock.com,DIRECT
+
+  # === [可选] 特殊 AI 聚合服务分流节点 ===
+  # - DOMAIN-SUFFIX,bltcy.ai,<SPECIFIC_PROXY_NODE>
+  # - DOMAIN-SUFFIX,closeai.fans,<SPECIFIC_PROXY_NODE>

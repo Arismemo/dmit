@@ -12,16 +12,26 @@
 3. 右键订阅卡片，选择 **设为当前 (Use)**。
 
 ### 1.2 注入全局扩展脚本 (`Script.js`)
-1. 进入 **订阅** -> 右键当前激活的订阅 -> 选择 **编辑扩展脚本 (Script)**；
+1. 进入 **订阅 (Profiles)** -> 顶部或右键选择 **全局扩展脚本 (Script)**；
 2. 将项目根目录下的 `configs/client/Script.js` 内容全量替换粘贴进去；
 3. 保存并触发一次刷新。
 4. **作用**：
    - 自动为所有 VLESS Reality 节点添加 `tfo: true`；
    - 强制 TUN 网络栈启用 `stack: mixed`；
-   - 清除 VS Code 强制直连等干扰规则，恢复域名智能分流。
+   - 注入 Hysteria 2 双协议节点至 Auto/Proxy/AI 策略组；
+   - 清除 VS Code 强制直连等干扰规则，恢复域名智能分流；
+   - [可选] 开启多跳企业内网 SSH-AUTO 故障转移隧道。
 
-### 1.3 校验 TUN 网络栈模式
-在 macOS 终端核查当前 TUN 核心运行栈：
+### 1.3 注入全局覆写配置 (`Merge.yaml`)
+1. 进入 **订阅 (Profiles)** -> 顶部或右键选择 **Merge 覆写配置 (Merge)**；
+2. 将项目根目录下的 `configs/client/Merge.yaml` 内容全量替换粘贴进去；
+3. 保存并触发刷新。
+4. **作用**：
+   - 强制 `respect-rules: true` 与国内 DoH 解析；
+   - 注入国内金融量化与股票数据源（东方财富、新浪、同花顺等）直连白名单，保证投研系统低延迟且不消耗代理流量。
+
+### 1.4 校验 TUN 网络栈模式
+在终端核查当前 TUN 核心运行栈：
 ```bash
 grep "stack:" ~/Library/Application\ Support/io.github.clash-verge-rev.clash-verge-rev/config.yaml
 ```
