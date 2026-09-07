@@ -1,0 +1,267 @@
+# Marzban Clash 订阅自定义模板
+# 存放路径: /var/lib/marzban/templates/clash/custom.yml
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+geodata-mode: true
+
+dns:
+  enable: true
+  ipv6: false
+  default-nameserver: [223.5.5.5, 119.29.29.29]
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  respect-rules: true
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+    - localhost.ptlogin2.qq.com
+    - '+.stun.*.*'
+    - '+.stun.*.*.*'
+    - '+.stun.*.*.*.*'
+  nameserver:
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+  proxy-server-nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+  nameserver-policy:
+    # 国内域名用国内 DNS，确保 CDN 调度到最近节点
+    "geosite:cn,private":
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
+
+# 过滤掉默认的 proxy-groups、rules 等字段，防止 Jinja2 重复渲染导致 YAML 解析报错
+{{ conf | except("proxy-groups", "port", "mode", "dns", "mixed-port", "allow-lan", "log-level", "ipv6", "unified-delay", "tcp-concurrent", "geodata-mode", "rules") | yaml | trim }}
+- name: 'DMIT-HY2'
+  type: hysteria2
+  server: <SERVER_IP>
+  port: 443
+  password: '<HY2_PASSWORD>'
+  sni: <DOMAIN_NAME>
+  skip-cert-verify: false
+
+proxy-groups:
+- name: 'Proxy'
+  type: 'select'
+  proxies:
+  - 'Auto'
+  - 'DMIT-HY2'
+  {{ proxy_remarks | yaml | indent(2) }}
+
+- name: 'Auto'
+  type: 'url-test'
+  url: 'https://www.gstatic.com/generate_204'
+  interval: 300
+  tolerance: 50
+  proxies:
+  - 'DMIT-HY2'
+  {{ proxy_remarks | yaml | indent(2) }}
+
+- name: 'AI'
+  type: 'select'
+  proxies:
+  - 'Proxy'
+  - 'DMIT-HY2'
+  {{ proxy_remarks | yaml | indent(2) }}
+
+rules:
+  # 私有资产白名单走代理
+  - DOMAIN,<PRIVATE_GITLAB_DOMAIN>,Proxy
+
+  # ============ AI 服务（强制代理，最高优先级）============
+  # --- OpenAI / ChatGPT ---
+  - DOMAIN-SUFFIX,openai.com,AI
+  - DOMAIN-SUFFIX,chatgpt.com,AI
+  - DOMAIN-SUFFIX,oaiusercontent.com,AI
+  - DOMAIN-SUFFIX,oaistatic.com,AI
+  - DOMAIN-SUFFIX,openaiapi-site.azureedge.net,AI
+  - DOMAIN-KEYWORD,openai,AI
+  # --- Anthropic / Claude ---
+  - DOMAIN-SUFFIX,anthropic.com,AI
+  - DOMAIN-SUFFIX,claude.ai,AI
+  - DOMAIN-KEYWORD,anthropic,AI
+  # --- Google AI ---
+  - DOMAIN-SUFFIX,gemini.google.com,AI
+  - DOMAIN-SUFFIX,ai.google.dev,AI
+  - DOMAIN-SUFFIX,generativelanguage.googleapis.com,AI
+  - DOMAIN-SUFFIX,aistudio.google.com,AI
+  - DOMAIN-SUFFIX,deepmind.com,AI
+  - DOMAIN-SUFFIX,deepmind.google,AI
+  # --- Perplexity ---
+  - DOMAIN-SUFFIX,perplexity.ai,AI
+  # --- Midjourney ---
+  - DOMAIN-SUFFIX,midjourney.com,AI
+  # --- Hugging Face ---
+  - DOMAIN-SUFFIX,huggingface.co,AI
+  - DOMAIN-SUFFIX,hf.co,AI
+  # --- GitHub Copilot ---
+  - DOMAIN-SUFFIX,copilot.github.com,AI
+  - DOMAIN-SUFFIX,githubcopilot.com,AI
+  # --- Cursor ---
+  - DOMAIN-SUFFIX,cursor.sh,AI
+  - DOMAIN-SUFFIX,cursor.com,AI
+  # --- Suno ---
+  - DOMAIN-SUFFIX,suno.ai,AI
+  - DOMAIN-SUFFIX,suno.com,AI
+  # --- Groq ---
+  - DOMAIN-SUFFIX,groq.com,AI
+  # --- Mistral ---
+  - DOMAIN-SUFFIX,mistral.ai,AI
+  # --- Cohere ---
+  - DOMAIN-SUFFIX,cohere.com,AI
+  - DOMAIN-SUFFIX,cohere.ai,AI
+
+  # ============ 私网 / 本地 ============
+  - DOMAIN-SUFFIX,local,DIRECT
+  - IP-CIDR,127.0.0.0/8,DIRECT
+  - IP-CIDR,10.0.0.0/8,DIRECT
+  - IP-CIDR,172.16.0.0/12,DIRECT
+  - IP-CIDR,192.168.0.0/16,DIRECT
+  - IP-CIDR,100.64.0.0/10,DIRECT
+  - IP-CIDR,224.0.0.0/4,DIRECT
+  - IP-CIDR6,fe80::/10,DIRECT
+
+  # === 办公协同 / Tailscale ===
+  - DOMAIN-SUFFIX,tailscale.com,DIRECT
+  - DOMAIN-SUFFIX,tailscale.io,DIRECT
+  - DOMAIN-SUFFIX,ts.net,DIRECT
+
+  # === Apple 直连 ===
+  - DOMAIN-SUFFIX,mzstatic.com,DIRECT
+  - DOMAIN-SUFFIX,itunes.apple.com,DIRECT
+  - DOMAIN-SUFFIX,icloud.com,DIRECT
+  - DOMAIN-SUFFIX,icloud-content.com,DIRECT
+  - DOMAIN-SUFFIX,me.com,DIRECT
+  - DOMAIN-SUFFIX,aaplimg.com,DIRECT
+  - DOMAIN-SUFFIX,cdn-apple.com,DIRECT
+  - DOMAIN-SUFFIX,apple.com,DIRECT
+  - DOMAIN-SUFFIX,apple-cloudkit.com,DIRECT
+
+  # === Microsoft 直连 ===
+  - DOMAIN-SUFFIX,microsoft.com,DIRECT
+  - DOMAIN-SUFFIX,microsoftonline.com,DIRECT
+  - DOMAIN-SUFFIX,office.com,DIRECT
+  - DOMAIN-SUFFIX,office365.com,DIRECT
+  - DOMAIN-KEYWORD,officecdn,DIRECT
+
+  # === 国内搜索与资讯 ===
+  - DOMAIN-KEYWORD,baidu,DIRECT
+  - DOMAIN-SUFFIX,bdimg.com,DIRECT
+  - DOMAIN-SUFFIX,bdstatic.com,DIRECT
+  - DOMAIN-SUFFIX,sogou.com,DIRECT
+  - DOMAIN-SUFFIX,sogoucdn.com,DIRECT
+  - DOMAIN-SUFFIX,sohu.com,DIRECT
+  - DOMAIN-SUFFIX,163.com,DIRECT
+  - DOMAIN-SUFFIX,126.com,DIRECT
+  - DOMAIN-SUFFIX,126.net,DIRECT
+  - DOMAIN-SUFFIX,127.net,DIRECT
+  - DOMAIN-SUFFIX,netease.com,DIRECT
+  - DOMAIN-SUFFIX,sina.com.cn,DIRECT
+  - DOMAIN-SUFFIX,360.cn,DIRECT
+  - DOMAIN-SUFFIX,36kr.com,DIRECT
+  - DOMAIN-SUFFIX,csdn.net,DIRECT
+
+  # === 国内电商 ===
+  - DOMAIN-KEYWORD,taobao,DIRECT
+  - DOMAIN-KEYWORD,alicdn,DIRECT
+  - DOMAIN-KEYWORD,alipay,DIRECT
+  - DOMAIN-SUFFIX,tmall.com,DIRECT
+  - DOMAIN-SUFFIX,1688.com,DIRECT
+  - DOMAIN-SUFFIX,jd.com,DIRECT
+  - DOMAIN-SUFFIX,360buyimg.com,DIRECT
+  - DOMAIN-SUFFIX,pinduoduo.com,DIRECT
+  - DOMAIN-SUFFIX,suning.com,DIRECT
+  - DOMAIN-SUFFIX,smzdm.com,DIRECT
+
+  # === 微信与腾讯全系 ===
+  - DOMAIN-SUFFIX,wechat.com,DIRECT
+  - DOMAIN-SUFFIX,weixinbridge.com,DIRECT
+  - DOMAIN-SUFFIX,servicewechat.com,DIRECT
+  - DOMAIN-SUFFIX,wechatpay.cn,DIRECT
+  - DOMAIN-SUFFIX,qlogo.cn,DIRECT
+  - DOMAIN-SUFFIX,weixin.com,DIRECT
+  - DOMAIN-KEYWORD,wechat,DIRECT
+  - DOMAIN-KEYWORD,weixin,DIRECT
+  - DOMAIN-SUFFIX,qq.com,DIRECT
+  - DOMAIN-SUFFIX,qqurl.com,DIRECT
+
+  # === 国内主流社交与内容 ===
+  - DOMAIN-SUFFIX,weibo.com,DIRECT
+  - DOMAIN-SUFFIX,zhihu.com,DIRECT
+  - DOMAIN-SUFFIX,zhimg.com,DIRECT
+  - DOMAIN-SUFFIX,douyin.com,DIRECT
+  - DOMAIN-SUFFIX,xiaohongshu.com,DIRECT
+  - DOMAIN-SUFFIX,douban.com,DIRECT
+  - DOMAIN-SUFFIX,doubanio.com,DIRECT
+
+  # === 国内影音娱乐 ===
+  - DOMAIN-SUFFIX,bilibili.com,DIRECT
+  - DOMAIN-SUFFIX,bilivideo.com,DIRECT
+  - DOMAIN-SUFFIX,acgvideo.com,DIRECT
+  - DOMAIN-SUFFIX,b23.tv,DIRECT
+  - DOMAIN-SUFFIX,biliapi.com,DIRECT
+  - DOMAIN-SUFFIX,biliapi.net,DIRECT
+  - DOMAIN-SUFFIX,biligame.com,DIRECT
+  - DOMAIN-SUFFIX,biligame.net,DIRECT
+  - DOMAIN-SUFFIX,hdslb.com,DIRECT
+  - DOMAIN-SUFFIX,im9.com,DIRECT
+  - DOMAIN-SUFFIX,acg.tv,DIRECT
+  - DOMAIN-SUFFIX,iqiyi.com,DIRECT
+  - DOMAIN-SUFFIX,qiyipic.com,DIRECT
+  - DOMAIN-SUFFIX,youku.com,DIRECT
+  - DOMAIN-SUFFIX,ykimg.com,DIRECT
+  - DOMAIN-SUFFIX,acfun.tv,DIRECT
+  - DOMAIN-SUFFIX,ximalaya.com,DIRECT
+  - DOMAIN-SUFFIX,xmcdn.com,DIRECT
+
+  # === 国内头部云服务与 CDN ===
+  - DOMAIN-SUFFIX,tencent.com,DIRECT
+  - DOMAIN-SUFFIX,qcloud.com,DIRECT
+  - DOMAIN-SUFFIX,gtimg.com,DIRECT
+  - DOMAIN-SUFFIX,qpic.cn,DIRECT
+  - DOMAIN-SUFFIX,aliyun.com,DIRECT
+  - DOMAIN-SUFFIX,aliyuncs.com,DIRECT
+  - DOMAIN-SUFFIX,alicdn.com,DIRECT
+  - DOMAIN-SUFFIX,qiniu.com,DIRECT
+  - DOMAIN-SUFFIX,qiniucdn.com,DIRECT
+  - DOMAIN-SUFFIX,upaiyun.com,DIRECT
+  - DOMAIN-SUFFIX,upyun.com,DIRECT
+  - DOMAIN-SUFFIX,chinanetcenter.com,DIRECT
+  - DOMAIN-SUFFIX,wangsu.com,DIRECT
+
+  # === 国内出行/生活/办公 ===
+  - DOMAIN-SUFFIX,meituan.com,DIRECT
+  - DOMAIN-SUFFIX,meituan.net,DIRECT
+  - DOMAIN-SUFFIX,ele.me,DIRECT
+  - DOMAIN-SUFFIX,dianping.com,DIRECT
+  - DOMAIN-SUFFIX,amap.com,DIRECT
+  - DOMAIN-SUFFIX,autonavi.com,DIRECT
+  - DOMAIN-SUFFIX,ctrip.com,DIRECT
+  - DOMAIN-SUFFIX,dingtalk.com,DIRECT
+  - DOMAIN-SUFFIX,alibaba.com,DIRECT
+  - DOMAIN-SUFFIX,feishu.cn,DIRECT
+  - DOMAIN-SUFFIX,feishucdn.com,DIRECT
+  - DOMAIN-SUFFIX,feishupkg.com,DIRECT
+  - DOMAIN-SUFFIX,larksuite.com,DIRECT
+  - DOMAIN-SUFFIX,larkoffice.com,DIRECT
+  - DOMAIN-SUFFIX,lark-cloud.com,DIRECT
+  - DOMAIN-KEYWORD,feishu,DIRECT
+  - DOMAIN-KEYWORD,larksuite,DIRECT
+
+  # === BT/下载直连 ===
+  - DOMAIN-KEYWORD,announce,DIRECT
+  - DOMAIN-KEYWORD,torrent,DIRECT
+  - DOMAIN-KEYWORD,tracker,DIRECT
+
+  # === 中国域名与国家 IP 兜底 ===
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - DOMAIN-KEYWORD,-cn,DIRECT
+  - GEOIP,CN,DIRECT
+
+  # === 其余未命中全走代理 ===
+  - MATCH,Proxy

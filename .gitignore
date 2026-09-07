@@ -1,0 +1,19 @@
+# 凭证与真实私钥文件（严禁上传）
+secrets.txt
+secrets.env
+*.pem
+*.key
+*.crt
+id_rsa*
+id_ed25519*
+
+# 临时与备份文件
+*.bak
+*.bak-*
+*.tmp
+*.swp
+.DS_Store
+
+# 运行期采样数据
+*.tsv
+*.log

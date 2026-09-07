@@ -1,0 +1,26 @@
+# Hysteria 2 服务端生产配置
+# 监听 UDP 443 端口，支持与 TCP 443 (Xray/Reality) 共享同一端口
+listen: :443
+
+tls:
+  cert: /etc/letsencrypt/live/<DOMAIN_NAME>/fullchain.pem
+  key: /etc/letsencrypt/live/<DOMAIN_NAME>/privkey.pem
+  sniGuard: strict
+
+auth:
+  type: password
+  password: <HY2_PASSWORD>
+
+# 测速与带宽优化（根据 VPS 硬件与带宽按需开启）
+# bandwidth:
+#   up: 1 gbps
+#   down: 1 gbps
+
+# 屏蔽 QUIC 探测异常
+quic:
+  initStreamReceiveWindow: 8388608
+  maxStreamReceiveWindow: 8388608
+  initConnReceiveWindow: 20971520
+  maxConnReceiveWindow: 20971520
+  maxIdleTimeout: 30s
+  keepAlivePeriod: 10s
