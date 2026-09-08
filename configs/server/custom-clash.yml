@@ -70,8 +70,8 @@ proxy-groups:
   {{ proxy_remarks | yaml | indent(2) }}
 
 rules:
-  # 私有资产白名单走代理
-  - DOMAIN,<PRIVATE_GITLAB_DOMAIN>,Proxy
+  # 自建私有资产直连（境内服务器直连，杜绝跨洋回环倒流与 SSH 握手断连）
+  - DOMAIN,<PRIVATE_GITLAB_DOMAIN>,DIRECT
 
   # ============ AI 服务（强制代理，最高优先级）============
   # --- OpenAI / ChatGPT ---

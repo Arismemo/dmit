@@ -144,7 +144,9 @@ function main(config, profileName) {
       rule =>
         managedRules.indexOf(rule) === -1 &&
         // 清理 IDE 进程级直连限制，恢复由域名智能分流（内网直连，外部服务代理）
-        !rule.startsWith("PROCESS-NAME,Code")
+        !rule.startsWith("PROCESS-NAME,Code") &&
+        // 清理历史残留的私有 GitLab 走 Proxy 错误规则（避免境内自建服务被强行代理）
+        !rule.includes("gitlab.709970.xyz,Proxy")
     )
   );
 

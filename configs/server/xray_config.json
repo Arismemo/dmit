@@ -30,7 +30,7 @@
             {
                 "type": "field",
                 "domain": [
-                    "<GITLAB_DOMAIN>"
+                    "<PRIVATE_GITLAB_DOMAIN>"
                 ],
                 "outboundTag": "DIRECT"
             },
