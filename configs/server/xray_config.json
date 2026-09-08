@@ -4,7 +4,7 @@
         "access": "/var/lib/marzban/xray-access-observe.log"
     },
     "routing": {
-        "domainStrategy": "IPIfNonMatch",
+        "domainStrategy": "AsIs",
         "rules": [
             {
                 "type": "field",
@@ -26,27 +26,6 @@
                     "geosite:category-ads-all"
                 ],
                 "outboundTag": "BLOCK"
-            },
-            {
-                "type": "field",
-                "domain": [
-                    "<PRIVATE_GITLAB_DOMAIN>"
-                ],
-                "outboundTag": "DIRECT"
-            },
-            {
-                "type": "field",
-                "domain": [
-                    "geosite:cn"
-                ],
-                "outboundTag": "BLOCK"
-            },
-            {
-                "type": "field",
-                "ip": [
-                    "geoip:cn"
-                ],
-                "outboundTag": "BLOCK"
             }
         ]
     },
@@ -64,9 +43,6 @@
                 "network": "tcp",
                 "tcpSettings": {},
                 "security": "reality",
-                "sockopt": {
-                    "tcpFastOpen": true
-                },
                 "realitySettings": {
                     "show": false,
                     "dest": "<REALITY_DEST>",
