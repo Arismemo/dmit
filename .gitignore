@@ -17,5 +17,3 @@ id_ed25519*
 # 运行期采样数据
 *.tsv
 *.log
-hy2_qrcode.*
-browsers/profiles/
