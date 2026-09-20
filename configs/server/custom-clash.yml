@@ -54,7 +54,7 @@ proxies:
   type: vless
   server: <RAK_SERVER_IP>
   port: 3389
-  uuid: {{ user.proxies.vless.id }}
+  uuid: {{ conf.proxies[0].uuid }}
   network: tcp
   tls: true
   udp: true
