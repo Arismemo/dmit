@@ -252,6 +252,9 @@ rules:
   - DOMAIN-SUFFIX,suno.com,AI
   # --- Groq ---
   - DOMAIN-SUFFIX,groq.com,AI
+  # --- xAI / Grok ---
+  - DOMAIN-SUFFIX,grok.com,AI
+  - DOMAIN-SUFFIX,x.ai,AI
   # --- Mistral ---
   - DOMAIN-SUFFIX,mistral.ai,AI
   # --- Cohere ---

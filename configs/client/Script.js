@@ -77,7 +77,9 @@ function main(config, profileName) {
       "IP-CIDR,<TAILSCALE_IP_2>/32,DIRECT,no-resolve",
       "IP-CIDR,<INTERNAL_SUBNET_1>," + groupName + ",no-resolve",
       "IP-CIDR,<INTERNAL_SUBNET_2>," + groupName + ",no-resolve",
-      "DOMAIN-SUFFIX,<INTERNAL_DOMAIN>," + groupName
+      "DOMAIN-SUFFIX,<INTERNAL_DOMAIN>," + groupName,
+      "DOMAIN-SUFFIX,grok.com," + awsProxy.name,
+      "DOMAIN-SUFFIX,x.ai," + awsProxy.name
     ];
   }
 
