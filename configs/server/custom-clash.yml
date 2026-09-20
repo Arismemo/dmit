@@ -37,7 +37,12 @@ dns:
       - https://dns.alidns.com/dns-query
 
 # 过滤掉默认的 proxy-groups、rules 等字段，防止 Jinja2 重复渲染导致 YAML 解析报错
-{{ conf | except("proxy-groups", "port", "mode", "dns", "mixed-port", "allow-lan", "log-level", "ipv6", "unified-delay", "tcp-concurrent", "geodata-mode", "rules") | yaml | trim }}
+{{ conf | except("proxies", "proxy-groups", "port", "mode", "dns", "mixed-port", "allow-lan", "log-level", "ipv6", "unified-delay", "tcp-concurrent", "geodata-mode", "rules") | yaml | trim }}
+
+proxies:
+{%- for proxy in conf.get('proxies', []) %}
+- {{ proxy | yaml | indent(2) | trim }}
+{%- endfor %}
 - name: 'DMIT-HY2'
   type: hysteria2
   server: <SERVER_IP>
@@ -45,6 +50,21 @@ dns:
   password: '<HY2_PASSWORD>'
   sni: <DOMAIN_NAME>
   skip-cert-verify: false
+- name: 'RAK-Bulk-1T'
+  type: vless
+  server: <RAK_SERVER_IP>
+  port: 3389
+  uuid: <RAK_UUID>
+  network: tcp
+  tls: true
+  udp: true
+  flow: xtls-rprx-vision
+  client-fingerprint: chrome
+  servername: www.apple.com
+  reality-opts:
+    public-key: <RAK_PUBLIC_KEY>
+    short-id: <RAK_SHORT_ID>
+  tfo: true
 
 proxy-groups:
 - name: 'Proxy'
