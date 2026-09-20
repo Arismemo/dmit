@@ -229,7 +229,7 @@ function main(config, profileName) {
     "IP-CIDR,91.108.56.0/22," + bulkGroupName + ",no-resolve",
     "IP-CIDR,149.154.160.0/20," + bulkGroupName + ",no-resolve",
 
-    // 2. 视频与高码率流媒体 (YouTube、Spotify、Twitch、Twitter 视频分片)
+    // 2. 视频与高码率流媒体 (YouTube、Netflix、Disney+、Spotify、Twitch、Twitter/Reddit/TikTok 视频)
     "DOMAIN-SUFFIX,googlevideo.com," + bulkGroupName,
     "DOMAIN-SUFFIX,youtube.com," + bulkGroupName,
     "DOMAIN-SUFFIX,ytimg.com," + bulkGroupName,
@@ -239,20 +239,38 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,twitch.tv," + bulkGroupName,
     "DOMAIN-SUFFIX,ttvnw.net," + bulkGroupName,
     "DOMAIN-SUFFIX,video.twimg.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,nflxvideo.net," + bulkGroupName,
+    "DOMAIN-SUFFIX,nflximg.net," + bulkGroupName,
+    "DOMAIN-SUFFIX,nflxext.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,netflix.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,bamgrid.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,disneyplus.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,v.redd.it," + bulkGroupName,
+    "DOMAIN-SUFFIX,tiktokcdn.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,byteoversea.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,ibytedtos.com," + bulkGroupName,
 
     // 3. 网络测速类泄洪 (一次测速消耗 1~3GB，强烈阻断走高价 DMIT)
     "DOMAIN-SUFFIX,speedtest.net," + bulkGroupName,
     "DOMAIN-SUFFIX,fast.com," + bulkGroupName,
     "DOMAIN-KEYWORD,ooklaserver," + bulkGroupName,
 
-    // 4. AI 与开源大模型生态 (HuggingFace 权重、Ollama 库、LM Studio 等，动辄数十GB)
+    // 4. AI 与开源大模型生态 (HuggingFace 权重、Ollama 库、LM Studio、Civitai、Kaggle 等，动辄数十GB)
     "DOMAIN-SUFFIX,huggingface.co," + bulkGroupName,
     "DOMAIN-SUFFIX,hf.space," + bulkGroupName,
+    "DOMAIN-SUFFIX,cdn-lfs.huggingface.co," + bulkGroupName,
+    "DOMAIN-SUFFIX,cdn-lfs.hf.co," + bulkGroupName,
     "DOMAIN-SUFFIX,ollama.com," + bulkGroupName,
     "DOMAIN-SUFFIX,registry.ollama.ai," + bulkGroupName,
     "DOMAIN-SUFFIX,lmstudio.ai," + bulkGroupName,
+    "DOMAIN-SUFFIX,civitai.com," + bulkGroupName,
+    "DOMAIN-KEYWORD,civitai," + bulkGroupName,
+    "DOMAIN-SUFFIX,kaggle.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,kaggleusercontent.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,modelscope.cn," + bulkGroupName,
+    "DOMAIN-SUFFIX,wandb.ai," + bulkGroupName,
 
-    // 5. 开发者大型依赖源、预编译包与 Releases
+    // 5. 开发者大型依赖源、操作系统与底层镜像
     "DOMAIN-SUFFIX,objects.githubusercontent.com," + bulkGroupName,
     "DOMAIN-SUFFIX,codeload.github.com," + bulkGroupName,
     "DOMAIN-SUFFIX,github-releases.githubusercontent.com," + bulkGroupName,
@@ -263,23 +281,48 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,registry.npmjs.org," + bulkGroupName,
     "DOMAIN-SUFFIX,production.cloudflare.docker.com," + bulkGroupName,
     "DOMAIN-SUFFIX,registry-1.docker.io," + bulkGroupName,
+    "DOMAIN-SUFFIX,quay.io," + bulkGroupName,
+    "DOMAIN-SUFFIX,registry.k8s.io," + bulkGroupName,
+    "DOMAIN-SUFFIX,k8s.gcr.io," + bulkGroupName,
+    "DOMAIN-SUFFIX,alpinelinux.org," + bulkGroupName,
+    "DOMAIN-SUFFIX,debian.org," + bulkGroupName,
+    "DOMAIN-SUFFIX,ubuntu.com," + bulkGroupName,
     "DOMAIN-SUFFIX,files.pythonhosted.org," + bulkGroupName,
     "DOMAIN-SUFFIX,static.crates.io," + bulkGroupName,
 
-    // 6. 跨洋网盘大文件传输
+    // 6. 跨洋网盘与大文件传输
     "DOMAIN-SUFFIX,drive.google.com," + bulkGroupName,
     "DOMAIN-SUFFIX,googleusercontent.com," + bulkGroupName,
     "DOMAIN-SUFFIX,dropbox.com," + bulkGroupName,
     "DOMAIN-SUFFIX,dropboxapi.com," + bulkGroupName,
     "DOMAIN-SUFFIX,1drv.ms," + bulkGroupName,
     "DOMAIN-SUFFIX,sharepoint.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,mega.nz," + bulkGroupName,
+    "DOMAIN-SUFFIX,mega.co.nz," + bulkGroupName,
+    "DOMAIN-SUFFIX,mediafire.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,icloud-content.com," + bulkGroupName,
 
-    // 7. 软件全量更新与系统大固件下载
+    // 7. 软件全量更新、系统大固件与日志高频隐患
     "DOMAIN-SUFFIX,download.jetbrains.com," + bulkGroupName,
     "DOMAIN-SUFFIX,vscode.download.prss.microsoft.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,vscode-cdn.net," + bulkGroupName,
+    "DOMAIN-SUFFIX,visualstudio.com," + bulkGroupName,
     "DOMAIN-SUFFIX,updates.cdn-apple.com," + bulkGroupName,
     "DOMAIN-SUFFIX,appldnld.apple.com," + bulkGroupName,
-    "DOMAIN-SUFFIX,swcdn.apple.com," + bulkGroupName
+    "DOMAIN-SUFFIX,swcdn.apple.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,mzstatic.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,itunes.apple.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,orbstack.dev," + bulkGroupName,
+    "DOMAIN-SUFFIX,whatsapp.net," + bulkGroupName,
+    "DOMAIN-SUFFIX,vercel-storage.com," + bulkGroupName,
+
+    // 8. 游戏平台大客户端与大型更新下载
+    "DOMAIN-SUFFIX,steamcontent.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,steamstatic.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,steampowered.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,epicgames.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,unrealengine.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,ea.com," + bulkGroupName
   ];
 
   const existingRules = Array.isArray(config.rules) ? config.rules : [];
