@@ -44,10 +44,70 @@ function main(config, profileName) {
     return proxy;
   }
 
+  // =========================================================================
+  // 模块 2: 注入多节点定义 (HY2加速、AWS纯净容灾、RAKsmart泄洪)
+  // =========================================================================
+  const hy2Proxy = {
+    name: "DMIT-HY2",
+    type: "hysteria2",
+    server: "<SERVER_IP>",
+    port: 443,
+    password: "<HY2_PASSWORD>",
+    sni: "<DOMAIN_NAME>",
+    "skip-cert-verify": false
+  };
+
+  const awsProxy = {
+    name: "AWS-Reality",
+    type: "vless",
+    server: "<AWS_SERVER_IP>",
+    port: 443,
+    uuid: "<CLIENT_UUID>",
+    network: "tcp",
+    tls: true,
+    udp: true,
+    flow: "xtls-rprx-vision",
+    "client-fingerprint": "chrome",
+    servername: "apple.com",
+    "reality-opts": {
+      "public-key": "wAgwdEPwgawxCmpFynh7--GzSEExDnFIDNpPa-T6a14",
+      "short-id": "abcd1234"
+    },
+    tfo: true
+  };
+
+  const rakProxy = {
+    name: "RAK-Bulk-1T",
+    type: "vless",
+    server: "<RAK_SERVER_IP>",
+    port: 3389,
+    uuid: "<CLIENT_UUID>",
+    network: "tcp",
+    tls: true,
+    udp: true,
+    flow: "xtls-rprx-vision",
+    "client-fingerprint": "chrome",
+    servername: "apple.com",
+    "reality-opts": {
+      "public-key": "wAgwdEPwgawxCmpFynh7--GzSEExDnFIDNpPa-T6a14",
+      "short-id": "abcd1234"
+    },
+    tfo: false
+  };
+
   let extraProxies = [];
   let fallbackGroup = null;
-  let managedRules = [];
-  let obsoleteRules = [];
+  let managedRules = [
+    // Tailscale CGNAT 全网段直连
+    "IP-CIDR,100.64.0.0/10,DIRECT,no-resolve",
+    // 节点公网 IP 强制直连，避免路由递归自锁
+    "IP-CIDR,<SERVER_IP>/32,DIRECT,no-resolve",
+    "IP-CIDR,<RAK_SERVER_IP>/32,DIRECT,no-resolve",
+    "IP-CIDR,<AWS_SERVER_IP>/32,DIRECT,no-resolve",
+    // xAI Grok 解锁 (DMIT IP 被 Cloudflare 403 阻断，精准分流至干净的 AWS 纯净节点)
+    "DOMAIN-SUFFIX,grok.com," + awsProxy.name,
+    "DOMAIN-SUFFIX,x.ai," + awsProxy.name
+  ];
 
   if (enableSshTunnel) {
     const primaryProxy = createSshProxy(primaryName, "<PRIMARY_LAN_IP>", "user", hostKey);
@@ -70,21 +130,18 @@ function main(config, profileName) {
       "disable-udp": true
     };
 
-    managedRules = [
-      "IP-CIDR,100.64.0.0/10,DIRECT,no-resolve",
+    managedRules = managedRules.concat([
       "IP-CIDR,<PRIMARY_LAN_IP>/32,DIRECT,no-resolve",
       "IP-CIDR,<TAILSCALE_IP_1>/32,DIRECT,no-resolve",
       "IP-CIDR,<TAILSCALE_IP_2>/32,DIRECT,no-resolve",
       "IP-CIDR,<INTERNAL_SUBNET_1>," + groupName + ",no-resolve",
       "IP-CIDR,<INTERNAL_SUBNET_2>," + groupName + ",no-resolve",
-      "DOMAIN-SUFFIX,<INTERNAL_DOMAIN>," + groupName,
-      "DOMAIN-SUFFIX,grok.com," + awsProxy.name,
-      "DOMAIN-SUFFIX,x.ai," + awsProxy.name
-    ];
+      "DOMAIN-SUFFIX,<INTERNAL_DOMAIN>," + groupName
+    ]);
   }
 
   // =========================================================================
-  // 模块 2: 节点协议底层调优 (TFO)
+  // 模块 3: 节点协议底层调优 (TFO)
   // =========================================================================
   const existingProxies = Array.isArray(config.proxies) ? config.proxies : [];
   existingProxies.forEach(p => {
@@ -94,7 +151,7 @@ function main(config, profileName) {
   });
 
   // =========================================================================
-  // 模块 3: TUN 网络栈调优 (Mixed 混合栈 & 路由旁路)
+  // 模块 4: TUN 网络栈调优 (Mixed 混合栈 & 路由旁路)
   // =========================================================================
   if (config.tun) {
     config.tun.stack = "mixed"; // 切换为 mixed 模式
@@ -115,57 +172,6 @@ function main(config, profileName) {
     }
     config.dns["fake-ip-filter"] = fakeIpFilter;
   }
-
-  // =========================================================================
-  // 模块 4: 注入 Hysteria 2 双协议备用节点
-  // =========================================================================
-  const hy2Proxy = {
-    name: "DMIT-HY2",
-    type: "hysteria2",
-    server: "<SERVER_IP>",
-    port: 443,
-    password: "<HY2_PASSWORD>",
-    sni: "<DOMAIN_NAME>",
-    "skip-cert-verify": false
-  };
-
-  const awsProxy = {
-    name: "AWS-Reality",
-    type: "vless",
-    server: "18.188.243.223",
-    port: 443,
-    uuid: "471ddddf-dca2-4685-8fda-1a6822c4c2c3",
-    network: "tcp",
-    tls: true,
-    udp: true,
-    flow: "xtls-rprx-vision",
-    "client-fingerprint": "chrome",
-    servername: "www.apple.com",
-    "reality-opts": {
-      "public-key": "U_MBhD54oYLcI_CYKtclrvdsKG0v5UrIVGddr3NxRHM",
-      "short-id": "7301c722e60756ab"
-    },
-    tfo: true
-  };
-
-  const rakProxy = {
-    name: "RAK-Bulk-1T",
-    type: "vless",
-    server: "<RAK_SERVER_IP>",
-    port: 3389,
-    uuid: "<RAK_UUID>",
-    network: "tcp",
-    tls: true,
-    udp: true,
-    flow: "xtls-rprx-vision",
-    "client-fingerprint": "chrome",
-    servername: "apple.com",
-    "reality-opts": {
-      "public-key": "wAgwdEPwgawxCmpFynh7--GzSEExDnFIDNpPa-T6a14",
-      "short-id": "abcd1234"
-    },
-    tfo: false
-  };
 
   const filteredExistingProxies = existingProxies.filter(
     proxy => proxy && proxy.name !== hy2Proxy.name && proxy.name !== primaryName && proxy.name !== backupName && proxy.name !== backup2Name && proxy.name !== awsProxy.name && proxy.name !== rakProxy.name

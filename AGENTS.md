@@ -53,6 +53,7 @@ AI 必须按序执行 `playbook/` 下的各阶段剧本：
 | **Step 4** | [`playbook/04-hysteria2.md`](file:///Users/liukun/j/dmit/playbook/04-hysteria2.md) | 部署 Hysteria 2 服务端 (UDP 443) | `systemctl is-active hysteria-server` 为 active |
 | **Step 5** | [`playbook/05-subscription-template.md`](file:///Users/liukun/j/dmit/playbook/05-subscription-template.md) | 写入 Clash 订阅模板，生成管理用户与订阅链接 | 端到端拉取订阅 HTTP 200，且 YAML 解析合法 |
 | **Step 6** | [`playbook/06-client-and-verify.md`](file:///Users/liukun/j/dmit/playbook/06-client-and-verify.md) | 客户端 TUN Mixed 检查、首包延迟压测、黑洞防护验证 | Google/Claude 连通延迟 < 500ms，国内 IP 被黑洞拦截 |
+| **Step 7** | [`playbook/07-multi-node-cluster.md`](file:///Users/liukun/j/dmit/playbook/07-multi-node-cluster.md) | 多节点集群纳管、安全隧道映射与智能泄洪容灾 | 所有 Node 状态 connected，三机同屏流量实时入库 |
 
 ---
 

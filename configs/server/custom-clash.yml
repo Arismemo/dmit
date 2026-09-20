@@ -65,6 +65,21 @@ proxies:
     public-key: wAgwdEPwgawxCmpFynh7--GzSEExDnFIDNpPa-T6a14
     short-id: abcd1234
   tfo: true
+- name: 'AWS-US-Clean'
+  type: vless
+  server: <AWS_SERVER_IP>
+  port: 443
+  uuid: {{ conf.proxies[0].uuid }}
+  network: tcp
+  tls: true
+  udp: true
+  flow: xtls-rprx-vision
+  client-fingerprint: chrome
+  servername: apple.com
+  reality-opts:
+    public-key: wAgwdEPwgawxCmpFynh7--GzSEExDnFIDNpPa-T6a14
+    short-id: abcd1234
+  tfo: true
 
 proxy-groups:
 - name: 'Bulk-Traffic'
@@ -79,6 +94,7 @@ proxy-groups:
   proxies:
   - 'Auto'
   - 'DMIT-HY2'
+  - 'AWS-US-Clean'
   {{ proxy_remarks | yaml | indent(2) }}
 
 - name: 'Auto'
@@ -95,7 +111,14 @@ proxy-groups:
   proxies:
   - 'Proxy'
   - 'DMIT-HY2'
+  - 'AWS-US-Clean'
   {{ proxy_remarks | yaml | indent(2) }}
+
+- name: 'Grok-xAI'
+  type: 'select'
+  proxies:
+  - 'AWS-US-Clean'
+  - 'Proxy'
 
 rules:
   # =========================================================================
@@ -252,9 +275,9 @@ rules:
   - DOMAIN-SUFFIX,suno.com,AI
   # --- Groq ---
   - DOMAIN-SUFFIX,groq.com,AI
-  # --- xAI / Grok ---
-  - DOMAIN-SUFFIX,grok.com,AI
-  - DOMAIN-SUFFIX,x.ai,AI
+  # --- xAI / Grok (专线路由至 AWS 纯净出口，规避 Cloudflare 机房 ASN 403 阻断) ---
+  - DOMAIN-SUFFIX,grok.com,Grok-xAI
+  - DOMAIN-SUFFIX,x.ai,Grok-xAI
   # --- Mistral ---
   - DOMAIN-SUFFIX,mistral.ai,AI
   # --- Cohere ---
