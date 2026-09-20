@@ -71,6 +71,7 @@ function main(config, profileName) {
     };
 
     managedRules = [
+      "IP-CIDR,100.64.0.0/10,DIRECT,no-resolve",
       "IP-CIDR,<PRIMARY_LAN_IP>/32,DIRECT,no-resolve",
       "IP-CIDR,<TAILSCALE_IP_1>/32,DIRECT,no-resolve",
       "IP-CIDR,<TAILSCALE_IP_2>/32,DIRECT,no-resolve",
@@ -91,10 +92,26 @@ function main(config, profileName) {
   });
 
   // =========================================================================
-  // 模块 3: TUN 网络栈调优 (Mixed 混合栈)
+  // 模块 3: TUN 网络栈调优 (Mixed 混合栈 & 路由旁路)
   // =========================================================================
   if (config.tun) {
     config.tun.stack = "mixed"; // 切换为 mixed 模式
+    const exclude = Array.isArray(config.tun["route-exclude-address"])
+      ? config.tun["route-exclude-address"]
+      : [];
+    if (!exclude.includes("100.64.0.0/10")) {
+      exclude.push("100.64.0.0/10");
+    }
+    config.tun["route-exclude-address"] = exclude;
+  }
+  if (config.dns) {
+    const fakeIpFilter = Array.isArray(config.dns["fake-ip-filter"])
+      ? config.dns["fake-ip-filter"]
+      : [];
+    if (!fakeIpFilter.includes("*.ts.net")) {
+      fakeIpFilter.push("*.ts.net");
+    }
+    config.dns["fake-ip-filter"] = fakeIpFilter;
   }
 
   // =========================================================================
@@ -110,39 +127,143 @@ function main(config, profileName) {
     "skip-cert-verify": false
   };
 
+  const awsProxy = {
+    name: "AWS-Reality",
+    type: "vless",
+    server: "18.188.243.223",
+    port: 443,
+    uuid: "471ddddf-dca2-4685-8fda-1a6822c4c2c3",
+    network: "tcp",
+    tls: true,
+    udp: true,
+    flow: "xtls-rprx-vision",
+    "client-fingerprint": "chrome",
+    servername: "www.apple.com",
+    "reality-opts": {
+      "public-key": "U_MBhD54oYLcI_CYKtclrvdsKG0v5UrIVGddr3NxRHM",
+      "short-id": "7301c722e60756ab"
+    },
+    tfo: true
+  };
+
+  const rakProxy = {
+    name: "RAK-Bulk-1T",
+    type: "vless",
+    server: "<RAK_SERVER_IP>",
+    port: 3389,
+    uuid: "<RAK_UUID>",
+    network: "tcp",
+    tls: true,
+    udp: true,
+    flow: "xtls-rprx-vision",
+    "client-fingerprint": "chrome",
+    servername: "www.apple.com",
+    "reality-opts": {
+      "public-key": "<RAK_PUBLIC_KEY>",
+      "short-id": "<RAK_SHORT_ID>"
+    },
+    tfo: false
+  };
+
   const filteredExistingProxies = existingProxies.filter(
-    proxy => proxy && proxy.name !== hy2Proxy.name && proxy.name !== primaryName && proxy.name !== backupName && proxy.name !== backup2Name
+    proxy => proxy && proxy.name !== hy2Proxy.name && proxy.name !== primaryName && proxy.name !== backupName && proxy.name !== backup2Name && proxy.name !== awsProxy.name && proxy.name !== rakProxy.name
   );
-  config.proxies = extraProxies.concat([hy2Proxy], filteredExistingProxies);
+  config.proxies = extraProxies.concat([hy2Proxy, awsProxy, rakProxy], filteredExistingProxies);
 
   // =========================================================================
-  // 模块 5: 将 HY2 节点注入 Auto / Proxy / AI 策略组
+  // 模块 5: 策略组编排 (Bulk-Traffic 白名单泄洪组与通用策略组)
   // =========================================================================
+  const bulkGroupName = "Bulk-Traffic";
+  const bulkGroup = {
+    name: bulkGroupName,
+    type: "select",
+    proxies: ["RAK-Bulk-1T", "Proxy", "DIRECT"]
+  };
+
   const existingGroups = Array.isArray(config["proxy-groups"]) ? config["proxy-groups"] : [];
   existingGroups.forEach(group => {
     if (group && (group.name === "Auto" || group.name === "Proxy" || group.name === "AI")) {
-      if (Array.isArray(group.proxies) && !group.proxies.includes(hy2Proxy.name)) {
-        group.proxies.push(hy2Proxy.name);
+      if (Array.isArray(group.proxies)) {
+        if (!group.proxies.includes(hy2Proxy.name)) group.proxies.push(hy2Proxy.name);
+      }
+    }
+    // AWS-Reality 仅作为独立手动容灾节点，严禁进入 Auto 自动选优
+    if (group && (group.name === "Proxy" || group.name === "AI")) {
+      if (Array.isArray(group.proxies)) {
+        if (!group.proxies.includes(awsProxy.name)) group.proxies.push(awsProxy.name);
+      }
+    }
+    // RAK-Bulk-1T 注入 Proxy 组作为备选用量；【严格禁止进入 AI 策略组，杜绝风控】
+    if (group && group.name === "Proxy") {
+      if (Array.isArray(group.proxies)) {
+        if (!group.proxies.includes(rakProxy.name)) group.proxies.push(rakProxy.name);
       }
     }
   });
 
+  const mergedGroups = [bulkGroup].concat(
+    existingGroups.filter(g => g && g.name !== bulkGroupName)
+  );
+
   if (fallbackGroup) {
     config["proxy-groups"] = [fallbackGroup].concat(
-      existingGroups.filter(g => g && g.name !== groupName)
+      mergedGroups.filter(g => g && g.name !== groupName)
     );
   } else {
-    config["proxy-groups"] = existingGroups;
+    config["proxy-groups"] = mergedGroups;
   }
 
   // =========================================================================
-  // 模块 6: 规则清洗与自定义规则注入
+  // 模块 6: 规则清洗与大流量白名单规则注入
   // =========================================================================
+  const bulkRules = [
+    // 1. Telegram 全网段（群视频、无损大文件、媒体流泄洪）
+    "GEOIP,telegram," + bulkGroupName + ",no-resolve",
+    "DOMAIN-SUFFIX,telegram.org," + bulkGroupName,
+    "DOMAIN-SUFFIX,t.me," + bulkGroupName,
+    "DOMAIN-SUFFIX,tdesktop.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,telegra.ph," + bulkGroupName,
+    "DOMAIN-SUFFIX,telesco.pe," + bulkGroupName,
+    "IP-CIDR,91.108.4.0/22," + bulkGroupName + ",no-resolve",
+    "IP-CIDR,91.108.8.0/22," + bulkGroupName + ",no-resolve",
+    "IP-CIDR,91.108.56.0/22," + bulkGroupName + ",no-resolve",
+    "IP-CIDR,149.154.160.0/20," + bulkGroupName + ",no-resolve",
+
+    // 2. 视频与高码率流媒体
+    "DOMAIN-SUFFIX,googlevideo.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,youtube.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,ytimg.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,youtu.be," + bulkGroupName,
+    "DOMAIN-SUFFIX,spotify.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,scdn.co," + bulkGroupName,
+    "DOMAIN-SUFFIX,twitch.tv," + bulkGroupName,
+    "DOMAIN-SUFFIX,ttvnw.net," + bulkGroupName,
+
+    // 3. 开发者大文件下载与 Releases
+    "DOMAIN-SUFFIX,objects.githubusercontent.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,codeload.github.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,github-releases.githubusercontent.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,cdn-lfs.huggingface.co," + bulkGroupName,
+    "DOMAIN-SUFFIX,cdn-lfs.hf.co," + bulkGroupName,
+
+    // 4. 容器镜像与依赖包下载
+    "DOMAIN-SUFFIX,production.cloudflare.docker.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,registry-1.docker.io," + bulkGroupName,
+    "DOMAIN-SUFFIX,files.pythonhosted.org," + bulkGroupName,
+    "DOMAIN-SUFFIX,static.crates.io," + bulkGroupName,
+
+    // 5. 软件全量更新与大包
+    "DOMAIN-SUFFIX,download.jetbrains.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,vscode.download.prss.microsoft.com," + bulkGroupName
+  ];
+
   const existingRules = Array.isArray(config.rules) ? config.rules : [];
   config.rules = managedRules.concat(
+    bulkRules,
     existingRules.filter(
       rule =>
         managedRules.indexOf(rule) === -1 &&
+        bulkRules.indexOf(rule) === -1 &&
         // 清理 IDE 进程级直连限制，恢复由域名智能分流（内网直连，外部服务代理）
         !rule.startsWith("PROCESS-NAME,Code") &&
         // 清理历史残留的私有 GitLab 走 Proxy 错误规则（避免境内自建服务被强行代理）

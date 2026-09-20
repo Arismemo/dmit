@@ -19,6 +19,7 @@ dns:
   fake-ip-filter:
     - '*.lan'
     - '*.local'
+    - '*.ts.net'
     - localhost.ptlogin2.qq.com
     - '+.stun.*.*'
     - '+.stun.*.*.*'
@@ -70,6 +71,9 @@ proxy-groups:
   {{ proxy_remarks | yaml | indent(2) }}
 
 rules:
+  # Tailscale 内网流量直连（CGNAT 网段杜绝跨洋代理）
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+
   # 自建私有资产直连（境内服务器直连，杜绝跨洋回环倒流与 SSH 握手断连）
   - DOMAIN,<PRIVATE_GITLAB_DOMAIN>,DIRECT
 

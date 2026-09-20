@@ -6,6 +6,8 @@
 
 dns:
   respect-rules: true
+  fake-ip-filter:
+    - '*.ts.net'
   nameserver:
     - https://1.1.1.1/dns-query
     - https://8.8.8.8/dns-query
@@ -19,6 +21,9 @@ dns:
       - https://dns.alidns.com/dns-query
 
 prepend-rules:
+  # === Tailscale 内网流量与 CGNAT 网段直连 ===
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+
   # === 国内金融行情与公开数据源直连 (如量化/投研数据接口) ===
   - DOMAIN-SUFFIX,eastmoney.com,DIRECT
   - DOMAIN-SUFFIX,dfcfw.com,DIRECT

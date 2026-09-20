@@ -21,7 +21,8 @@ tun:
   dns-hijack:
     - any:53
   mtu: 1500
-  route-exclude-address: []
+  route-exclude-address:
+    - 100.64.0.0/10
   stack: mixed
   strict-route: true
 unified-delay: true
