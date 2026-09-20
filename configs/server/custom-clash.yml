@@ -54,19 +54,26 @@ proxies:
   type: vless
   server: <RAK_SERVER_IP>
   port: 3389
-  uuid: <RAK_UUID>
+  uuid: {{ user.proxies.vless.id }}
   network: tcp
   tls: true
   udp: true
   flow: xtls-rprx-vision
   client-fingerprint: chrome
-  servername: www.apple.com
+  servername: apple.com
   reality-opts:
-    public-key: <RAK_PUBLIC_KEY>
-    short-id: <RAK_SHORT_ID>
+    public-key: wAgwdEPwgawxCmpFynh7--GzSEExDnFIDNpPa-T6a14
+    short-id: abcd1234
   tfo: true
 
 proxy-groups:
+- name: 'Bulk-Traffic'
+  type: 'select'
+  proxies:
+  - 'RAK-Bulk-1T'
+  - 'Proxy'
+  - 'DIRECT'
+
 - name: 'Proxy'
   type: 'select'
   proxies:
@@ -91,6 +98,72 @@ proxy-groups:
   {{ proxy_remarks | yaml | indent(2) }}
 
 rules:
+  # =========================================================================
+  # RAKsmart 1000G 大流量专属泄洪白名单 (精准分流，保护 DMIT 高贵流量)
+  # =========================================================================
+  # 1. Telegram 全网段（群视频、无损大文件、图片媒体流）
+  - GEOIP,telegram,Bulk-Traffic,no-resolve
+  - DOMAIN-SUFFIX,telegram.org,Bulk-Traffic
+  - DOMAIN-SUFFIX,t.me,Bulk-Traffic
+  - DOMAIN-SUFFIX,tdesktop.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,telegra.ph,Bulk-Traffic
+  - DOMAIN-SUFFIX,telesco.pe,Bulk-Traffic
+  - IP-CIDR,91.108.4.0/22,Bulk-Traffic,no-resolve
+  - IP-CIDR,91.108.8.0/22,Bulk-Traffic,no-resolve
+  - IP-CIDR,91.108.56.0/22,Bulk-Traffic,no-resolve
+  - IP-CIDR,149.154.160.0/20,Bulk-Traffic,no-resolve
+
+  # 2. 视频与高码率流媒体 (YouTube、Spotify、Twitch、Twitter 视频分片)
+  - DOMAIN-SUFFIX,googlevideo.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,youtube.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,ytimg.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,youtu.be,Bulk-Traffic
+  - DOMAIN-SUFFIX,spotify.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,scdn.co,Bulk-Traffic
+  - DOMAIN-SUFFIX,twitch.tv,Bulk-Traffic
+  - DOMAIN-SUFFIX,ttvnw.net,Bulk-Traffic
+  - DOMAIN-SUFFIX,video.twimg.com,Bulk-Traffic
+
+  # 3. 网络测速类泄洪 (一次测速消耗 1~3GB，强烈阻断走高价 DMIT)
+  - DOMAIN-SUFFIX,speedtest.net,Bulk-Traffic
+  - DOMAIN-SUFFIX,fast.com,Bulk-Traffic
+  - DOMAIN-KEYWORD,ooklaserver,Bulk-Traffic
+
+  # 4. AI 与开源大模型生态 (HuggingFace 权重、Ollama 库等，动辄数十GB)
+  - DOMAIN-SUFFIX,cdn-lfs.huggingface.co,Bulk-Traffic
+  - DOMAIN-SUFFIX,cdn-lfs.hf.co,Bulk-Traffic
+  - DOMAIN-SUFFIX,ollama.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,registry.ollama.ai,Bulk-Traffic
+
+  # 5. 开发者大型依赖源、预编译包与 Releases
+  - DOMAIN-SUFFIX,objects.githubusercontent.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,codeload.github.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,github-releases.githubusercontent.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,ghcr.io,Bulk-Traffic
+  - DOMAIN-SUFFIX,pkg-containers.githubusercontent.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,download.pytorch.org,Bulk-Traffic
+  - DOMAIN-SUFFIX,repo.anaconda.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,registry.npmjs.org,Bulk-Traffic
+  - DOMAIN-SUFFIX,production.cloudflare.docker.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,registry-1.docker.io,Bulk-Traffic
+  - DOMAIN-SUFFIX,files.pythonhosted.org,Bulk-Traffic
+  - DOMAIN-SUFFIX,static.crates.io,Bulk-Traffic
+
+  # 6. 跨洋网盘大文件传输
+  - DOMAIN-SUFFIX,drive.google.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,googleusercontent.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,dropbox.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,dropboxapi.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,1drv.ms,Bulk-Traffic
+  - DOMAIN-SUFFIX,sharepoint.com,Bulk-Traffic
+
+  # 7. 软件全量更新与系统大固件下载
+  - DOMAIN-SUFFIX,download.jetbrains.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,vscode.download.prss.microsoft.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,updates.cdn-apple.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,appldnld.apple.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,swcdn.apple.com,Bulk-Traffic
+
   # Tailscale 内网流量直连（CGNAT 网段杜绝跨洋代理）
   - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
 
