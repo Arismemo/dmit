@@ -238,7 +238,7 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,scdn.co," + bulkGroupName,
     "DOMAIN-SUFFIX,twitch.tv," + bulkGroupName,
     "DOMAIN-SUFFIX,ttvnw.net," + bulkGroupName,
-    "DOMAIN-SUFFIX,video.twimg.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,twimg.com," + bulkGroupName,
     "DOMAIN-SUFFIX,nflxvideo.net," + bulkGroupName,
     "DOMAIN-SUFFIX,nflximg.net," + bulkGroupName,
     "DOMAIN-SUFFIX,nflxext.com," + bulkGroupName,

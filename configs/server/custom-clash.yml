@@ -122,7 +122,7 @@ rules:
   - DOMAIN-SUFFIX,scdn.co,Bulk-Traffic
   - DOMAIN-SUFFIX,twitch.tv,Bulk-Traffic
   - DOMAIN-SUFFIX,ttvnw.net,Bulk-Traffic
-  - DOMAIN-SUFFIX,video.twimg.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,twimg.com,Bulk-Traffic
   - DOMAIN-SUFFIX,nflxvideo.net,Bulk-Traffic
   - DOMAIN-SUFFIX,nflximg.net,Bulk-Traffic
   - DOMAIN-SUFFIX,nflxext.com,Bulk-Traffic
