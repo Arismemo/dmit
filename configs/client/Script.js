@@ -245,11 +245,12 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,fast.com," + bulkGroupName,
     "DOMAIN-KEYWORD,ooklaserver," + bulkGroupName,
 
-    // 4. AI 与开源大模型生态 (HuggingFace 权重、Ollama 库等，动辄数十GB)
+    // 4. AI 与开源大模型生态 (HuggingFace 权重、Ollama 库、LM Studio 等，动辄数十GB)
     "DOMAIN-SUFFIX,huggingface.co," + bulkGroupName,
     "DOMAIN-SUFFIX,hf.space," + bulkGroupName,
     "DOMAIN-SUFFIX,ollama.com," + bulkGroupName,
     "DOMAIN-SUFFIX,registry.ollama.ai," + bulkGroupName,
+    "DOMAIN-SUFFIX,lmstudio.ai," + bulkGroupName,
 
     // 5. 开发者大型依赖源、预编译包与 Releases
     "DOMAIN-SUFFIX,objects.githubusercontent.com," + bulkGroupName,

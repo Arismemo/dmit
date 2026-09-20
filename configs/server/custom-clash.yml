@@ -129,11 +129,14 @@ rules:
   - DOMAIN-SUFFIX,fast.com,Bulk-Traffic
   - DOMAIN-KEYWORD,ooklaserver,Bulk-Traffic
 
-  # 4. AI 与开源大模型生态 (HuggingFace 权重、Ollama 库等，动辄数十GB)
+  # 4. AI 与开源大模型生态 (HuggingFace 权重、Ollama 库、LM Studio 等，动辄数十GB)
+  - DOMAIN-SUFFIX,huggingface.co,Bulk-Traffic
+  - DOMAIN-SUFFIX,hf.space,Bulk-Traffic
   - DOMAIN-SUFFIX,cdn-lfs.huggingface.co,Bulk-Traffic
   - DOMAIN-SUFFIX,cdn-lfs.hf.co,Bulk-Traffic
   - DOMAIN-SUFFIX,ollama.com,Bulk-Traffic
   - DOMAIN-SUFFIX,registry.ollama.ai,Bulk-Traffic
+  - DOMAIN-SUFFIX,lmstudio.ai,Bulk-Traffic
 
   # 5. 开发者大型依赖源、预编译包与 Releases
   - DOMAIN-SUFFIX,objects.githubusercontent.com,Bulk-Traffic
