@@ -330,7 +330,35 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,steampowered.com," + bulkGroupName,
     "DOMAIN-SUFFIX,epicgames.com," + bulkGroupName,
     "DOMAIN-SUFFIX,unrealengine.com," + bulkGroupName,
-    "DOMAIN-SUFFIX,ea.com," + bulkGroupName
+    "DOMAIN-SUFFIX,ea.com," + bulkGroupName,
+
+    // 9. 高频日志、遥测打点、区块链RPC、漏网大文件与中继泄洪 (精准引流 RAKsmart 1000G)
+    // 日志与监控平台
+    "DOMAIN-SUFFIX,datadoghq.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,datadoghq.eu," + bulkGroupName,
+    // 高频产品遥测与框架埋点
+    "DOMAIN,events.gitlab.net," + bulkGroupName,
+    "DOMAIN-SUFFIX,telemetry.vercel.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,exp-tas.com," + bulkGroupName,
+    // AI 权重与代码大文件漏网泄洪
+    "DOMAIN-SUFFIX,cdn.hf.co," + bulkGroupName,
+    "DOMAIN-SUFFIX,us.aws.cdn.hf.co," + bulkGroupName,
+    "DOMAIN-SUFFIX,raw.githubusercontent.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,release-assets.githubusercontent.com," + bulkGroupName,
+    // 应用商店与系统静默大更新
+    "DOMAIN-SUFFIX,play.googleapis.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,update.googleapis.com," + bulkGroupName,
+    "DOMAIN-SUFFIX,android.clients.google.com," + bulkGroupName,
+    // 区块链 RPC 高频长轮询
+    "DOMAIN-SUFFIX,quai.network," + bulkGroupName,
+    // Tailscale DERP 穿透与中继流量泄洪
+    "DOMAIN-KEYWORD,derp," + bulkGroupName,
+    "IP-CIDR,192.73.240.0/20," + bulkGroupName + ",no-resolve",
+    "IP-CIDR,208.111.32.0/19," + bulkGroupName + ",no-resolve",
+    "IP-CIDR,209.177.144.0/20," + bulkGroupName + ",no-resolve",
+    "IP-CIDR,199.38.180.0/22," + bulkGroupName + ",no-resolve",
+    "IP-CIDR,162.248.220.0/22," + bulkGroupName + ",no-resolve",
+    "IP-CIDR,45.159.96.0/22," + bulkGroupName + ",no-resolve"
   ];
 
   const existingRules = Array.isArray(config.rules) ? config.rules : [];

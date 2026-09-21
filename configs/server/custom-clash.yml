@@ -231,6 +231,41 @@ rules:
   - DOMAIN-SUFFIX,unrealengine.com,Bulk-Traffic
   - DOMAIN-SUFFIX,ea.com,Bulk-Traffic
 
+  # =========================================================================
+  # 9. 高频日志、遥测打点、区块链RPC、漏网大文件与中继泄洪 (精准引流 RAKsmart 1000G)
+  # =========================================================================
+  # 日志与监控平台（高并发异步上报，无延迟敏感度）
+  - DOMAIN-SUFFIX,datadoghq.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,datadoghq.eu,Bulk-Traffic
+
+  # 高频产品遥测与框架埋点
+  - DOMAIN,events.gitlab.net,Bulk-Traffic
+  - DOMAIN-SUFFIX,telemetry.vercel.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,exp-tas.com,Bulk-Traffic
+
+  # AI 权重与代码大文件漏网泄洪 (保护 DMIT 优质专线不被突发大流量打爆)
+  - DOMAIN-SUFFIX,cdn.hf.co,Bulk-Traffic
+  - DOMAIN-SUFFIX,us.aws.cdn.hf.co,Bulk-Traffic
+  - DOMAIN-SUFFIX,raw.githubusercontent.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,release-assets.githubusercontent.com,Bulk-Traffic
+
+  # 应用商店与系统静默大更新
+  - DOMAIN-SUFFIX,play.googleapis.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,update.googleapis.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,android.clients.google.com,Bulk-Traffic
+
+  # 区块链 RPC 高频长轮询
+  - DOMAIN-SUFFIX,quai.network,Bulk-Traffic
+
+  # Tailscale DERP 穿透与中继流量泄洪 (防止内网打洞大流量倒灌 DMIT 主控)
+  - DOMAIN-KEYWORD,derp,Bulk-Traffic
+  - IP-CIDR,192.73.240.0/20,Bulk-Traffic,no-resolve
+  - IP-CIDR,208.111.32.0/19,Bulk-Traffic,no-resolve
+  - IP-CIDR,209.177.144.0/20,Bulk-Traffic,no-resolve
+  - IP-CIDR,199.38.180.0/22,Bulk-Traffic,no-resolve
+  - IP-CIDR,162.248.220.0/22,Bulk-Traffic,no-resolve
+  - IP-CIDR,45.159.96.0/22,Bulk-Traffic,no-resolve
+
 
   # Tailscale 内网流量直连（CGNAT 网段杜绝跨洋代理）
   - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
