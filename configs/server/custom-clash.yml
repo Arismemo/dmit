@@ -54,7 +54,7 @@ proxies:
   type: vless
   server: <RAK_SERVER_IP>
   port: 3389
-  uuid: {{ conf.proxies[0].uuid }}
+  uuid: {{ conf.proxies[0].uuid if (conf.proxies and conf.proxies|length > 0) else '<CLIENT_UUID>' }}
   network: tcp
   tls: true
   udp: true
@@ -69,7 +69,7 @@ proxies:
   type: vless
   server: <AWS_SERVER_IP>
   port: 443
-  uuid: {{ conf.proxies[0].uuid }}
+  uuid: {{ conf.proxies[0].uuid if (conf.proxies and conf.proxies|length > 0) else '<CLIENT_UUID>' }}
   network: tcp
   tls: true
   udp: true
@@ -214,6 +214,24 @@ rules:
   - DOMAIN-SUFFIX,vscode.download.prss.microsoft.com,Bulk-Traffic
   - DOMAIN-SUFFIX,vscode-cdn.net,Bulk-Traffic
   - DOMAIN-SUFFIX,visualstudio.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,releases.warp.dev,Bulk-Traffic
+  - DOMAIN-SUFFIX,officecdnmac.microsoft.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,officecdn.microsoft.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,download.cursor.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,download.cursor.sh,Bulk-Traffic
+  - DOMAIN-SUFFIX,dl.google.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,desktop.docker.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,desktop-release.notion-static.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,dl.discordapp.net,Bulk-Traffic
+  - DOMAIN-SUFFIX,dl.discord.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,dl.pstmn.io,Bulk-Traffic
+  - DOMAIN-SUFFIX,download.cdn.mozilla.net,Bulk-Traffic
+  - DOMAIN-SUFFIX,hermes-agent.nousresearch.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,cc-cdn.adobe.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,creativecloud.adobe.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,releases.obsidian.md,Bulk-Traffic
+  - DOMAIN-SUFFIX,download.sublimetext.com,Bulk-Traffic
+  - DOMAIN-SUFFIX,download.typora.io,Bulk-Traffic
   - DOMAIN-SUFFIX,updates.cdn-apple.com,Bulk-Traffic
   - DOMAIN-SUFFIX,appldnld.apple.com,Bulk-Traffic
   - DOMAIN-SUFFIX,swcdn.apple.com,Bulk-Traffic
