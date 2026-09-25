@@ -12,7 +12,7 @@ def main():
     cutoff_utc = "2026-09-20 10:00:00"
 
     nodes_meta = {
-        None: {"name": "Master (DMIT-LA)", "role": "极速专线/核心主控", "ip": "154.26.180.211", "port": "443 (TCP/UDP)"},
+        None: {"name": "Master (DMIT-LA)", "role": "极速专线/核心主控", "ip": "179.255.119.112", "port": "443 (TCP/UDP)"},
         1: {"name": "Node 1 (RAK-Bulk-1T)", "role": "1000G大流量泄洪", "ip": "137.175.65.78", "port": "3389 (TCP)"},
         2: {"name": "Node 2 (AWS-US-Clean)", "role": "纯净出口/容灾解锁", "ip": "18.188.243.223", "port": "443 (TCP)"}
     }

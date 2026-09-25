@@ -109,10 +109,10 @@ proxy-groups:
 - name: 'AI'
   type: 'select'
   proxies:
-  - 'Proxy'
-  - 'DMIT-HY2'
-  - 'AWS-US-Clean'
   {{ proxy_remarks | yaml | indent(2) }}
+  - 'AWS-US-Clean'
+  - 'DMIT-HY2'
+  - 'Proxy'
 
 - name: 'Grok-xAI'
   type: 'select'
@@ -121,6 +121,57 @@ proxy-groups:
   - 'Proxy'
 
 rules:
+  # =========================================================================
+  # 0. 顶级 AI 核心专线与防风控白名单 (最高优先级，杜绝遥测泄洪与 IP 链路分裂)
+  # =========================================================================
+  # --- Anthropic / Claude 全域生态 (防封锁/防封号/防链路分裂深度加固) ---
+  - DOMAIN-SUFFIX,claude.ai,AI
+  - DOMAIN-SUFFIX,claude.com,AI
+  - DOMAIN-SUFFIX,claudeusercontent.com,AI
+  - DOMAIN-SUFFIX,anthropic.com,AI
+  - DOMAIN-KEYWORD,anthropic,AI
+  - DOMAIN-KEYWORD,claude,AI
+  - DOMAIN,usefathom.com,AI
+  - DOMAIN-SUFFIX,browser-intake-us5-datadoghq.com,AI
+  - DOMAIN,challenges.cloudflare.com,AI
+  - DOMAIN-SUFFIX,auth0.com,AI
+  - DOMAIN-SUFFIX,statsig.com,AI
+  - DOMAIN-SUFFIX,statsigapi.net,AI
+
+  # --- OpenAI / ChatGPT ---
+  - DOMAIN-SUFFIX,openai.com,AI
+  - DOMAIN-SUFFIX,chatgpt.com,AI
+  - DOMAIN-SUFFIX,oaistatic.com,AI
+  - DOMAIN-SUFFIX,oaiusercontent.com,AI
+  - DOMAIN-SUFFIX,openaiapi-site.azureedge.net,AI
+  - DOMAIN-KEYWORD,openai,AI
+
+  # --- xAI / Grok (专线路由至 AWS 纯净出口，规避 Cloudflare 机房 ASN 403 阻断) ---
+  - DOMAIN-SUFFIX,grok.com,Grok-xAI
+  - DOMAIN-SUFFIX,x.ai,Grok-xAI
+
+  # --- Google AI ---
+  - DOMAIN-SUFFIX,gemini.google.com,AI
+  - DOMAIN-SUFFIX,ai.google.dev,AI
+  - DOMAIN-SUFFIX,generativelanguage.googleapis.com,AI
+  - DOMAIN-SUFFIX,aistudio.google.com,AI
+  - DOMAIN-SUFFIX,deepmind.com,AI
+  - DOMAIN-SUFFIX,deepmind.google,AI
+
+  # --- 其余顶级 AI 生产力生态 ---
+  - DOMAIN-SUFFIX,perplexity.ai,AI
+  - DOMAIN-SUFFIX,midjourney.com,AI
+  - DOMAIN-SUFFIX,copilot.github.com,AI
+  - DOMAIN-SUFFIX,githubcopilot.com,AI
+  - DOMAIN-SUFFIX,cursor.sh,AI
+  - DOMAIN-SUFFIX,cursor.com,AI
+  - DOMAIN-SUFFIX,suno.ai,AI
+  - DOMAIN-SUFFIX,suno.com,AI
+  - DOMAIN-SUFFIX,groq.com,AI
+  - DOMAIN-SUFFIX,mistral.ai,AI
+  - DOMAIN-SUFFIX,cohere.com,AI
+  - DOMAIN-SUFFIX,cohere.ai,AI
+
   # =========================================================================
   # RAKsmart 1000G 大流量专属泄洪白名单 (精准分流，保护 DMIT 高贵流量)
   # =========================================================================
@@ -290,52 +341,6 @@ rules:
 
   # 自建私有资产直连（境内服务器直连，杜绝跨洋回环倒流与 SSH 握手断连）
   - DOMAIN,<PRIVATE_GITLAB_DOMAIN>,DIRECT
-
-  # ============ AI 服务（强制代理，最高优先级）============
-  # --- OpenAI / ChatGPT ---
-  - DOMAIN-SUFFIX,openai.com,AI
-  - DOMAIN-SUFFIX,chatgpt.com,AI
-  - DOMAIN-SUFFIX,oaiusercontent.com,AI
-  - DOMAIN-SUFFIX,oaistatic.com,AI
-  - DOMAIN-SUFFIX,openaiapi-site.azureedge.net,AI
-  - DOMAIN-KEYWORD,openai,AI
-  # --- Anthropic / Claude ---
-  - DOMAIN-SUFFIX,anthropic.com,AI
-  - DOMAIN-SUFFIX,claude.ai,AI
-  - DOMAIN-KEYWORD,anthropic,AI
-  # --- Google AI ---
-  - DOMAIN-SUFFIX,gemini.google.com,AI
-  - DOMAIN-SUFFIX,ai.google.dev,AI
-  - DOMAIN-SUFFIX,generativelanguage.googleapis.com,AI
-  - DOMAIN-SUFFIX,aistudio.google.com,AI
-  - DOMAIN-SUFFIX,deepmind.com,AI
-  - DOMAIN-SUFFIX,deepmind.google,AI
-  # --- Perplexity ---
-  - DOMAIN-SUFFIX,perplexity.ai,AI
-  # --- Midjourney ---
-  - DOMAIN-SUFFIX,midjourney.com,AI
-  # --- Hugging Face ---
-  - DOMAIN-SUFFIX,huggingface.co,AI
-  - DOMAIN-SUFFIX,hf.co,AI
-  # --- GitHub Copilot ---
-  - DOMAIN-SUFFIX,copilot.github.com,AI
-  - DOMAIN-SUFFIX,githubcopilot.com,AI
-  # --- Cursor ---
-  - DOMAIN-SUFFIX,cursor.sh,AI
-  - DOMAIN-SUFFIX,cursor.com,AI
-  # --- Suno ---
-  - DOMAIN-SUFFIX,suno.ai,AI
-  - DOMAIN-SUFFIX,suno.com,AI
-  # --- Groq ---
-  - DOMAIN-SUFFIX,groq.com,AI
-  # --- xAI / Grok (专线路由至 AWS 纯净出口，规避 Cloudflare 机房 ASN 403 阻断) ---
-  - DOMAIN-SUFFIX,grok.com,Grok-xAI
-  - DOMAIN-SUFFIX,x.ai,Grok-xAI
-  # --- Mistral ---
-  - DOMAIN-SUFFIX,mistral.ai,AI
-  # --- Cohere ---
-  - DOMAIN-SUFFIX,cohere.com,AI
-  - DOMAIN-SUFFIX,cohere.ai,AI
 
   # ============ 私网 / 本地 ============
   - DOMAIN-SUFFIX,local,DIRECT

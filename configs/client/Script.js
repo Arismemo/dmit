@@ -98,6 +98,20 @@ function main(config, profileName) {
   let extraProxies = [];
   let fallbackGroup = null;
   let managedRules = [
+    // Claude / Anthropic 全域生态防风控加固 (最高优先级，锁定 AI 策略组，杜绝 IP 链路分裂)
+    "DOMAIN-SUFFIX,claude.ai,AI",
+    "DOMAIN-SUFFIX,claude.com,AI",
+    "DOMAIN-SUFFIX,claudeusercontent.com,AI",
+    "DOMAIN-SUFFIX,anthropic.com,AI",
+    "DOMAIN-KEYWORD,anthropic,AI",
+    "DOMAIN-KEYWORD,claude,AI",
+    "DOMAIN,usefathom.com,AI",
+    "DOMAIN-SUFFIX,browser-intake-us5-datadoghq.com,AI",
+    "DOMAIN,challenges.cloudflare.com,AI",
+    "DOMAIN-SUFFIX,auth0.com,AI",
+    "DOMAIN-SUFFIX,statsig.com,AI",
+    "DOMAIN-SUFFIX,statsigapi.net,AI",
+
     // Tailscale CGNAT 全网段直连
     "IP-CIDR,100.64.0.0/10,DIRECT,no-resolve",
     // 节点公网 IP 强制直连，避免路由递归自锁
@@ -160,6 +174,9 @@ function main(config, profileName) {
       : [];
     if (!exclude.includes("100.64.0.0/10")) {
       exclude.push("100.64.0.0/10");
+    }
+    if (!exclude.includes("10.0.0.0/8")) {
+      exclude.push("10.0.0.0/8");
     }
     config.tun["route-exclude-address"] = exclude;
   }
