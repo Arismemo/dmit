@@ -80,6 +80,22 @@ proxies:
     public-key: wAgwdEPwgawxCmpFynh7--GzSEExDnFIDNpPa-T6a14
     short-id: abcd1234
   tfo: true
+- name: '🏡 纽约家宽 (DMIT中继)'
+  type: socks5
+  server: 48.46.113.162
+  port: 47940
+  username: 'wDfSaz3J6fwXrom'
+  password: 'v5hGnQRoNUm4t16'
+  udp: true
+  dialer-proxy: 'DMIT-LA'
+- name: '🏡 纽约家宽 (RAK中继)'
+  type: socks5
+  server: 48.46.113.162
+  port: 47940
+  username: 'wDfSaz3J6fwXrom'
+  password: 'v5hGnQRoNUm4t16'
+  udp: true
+  dialer-proxy: 'RAK-Bulk-1T'
 
 proxy-groups:
 - name: 'Bulk-Traffic'
@@ -95,7 +111,17 @@ proxy-groups:
   - 'Auto'
   - 'DMIT-HY2'
   - 'AWS-US-Clean'
+  - '🏡 纽约家宽 (DMIT中继)'
+  - '🏡 纽约家宽 (RAK中继)'
   {{ proxy_remarks | yaml | indent(2) }}
+
+- name: 'Residential'
+  type: 'select'
+  proxies:
+  - '🏡 纽约家宽 (DMIT中继)'
+  - '🏡 纽约家宽 (RAK中继)'
+  - 'Proxy'
+  - 'DIRECT'
 
 - name: 'Auto'
   type: 'url-test'
@@ -109,10 +135,14 @@ proxy-groups:
 - name: 'AI'
   type: 'select'
   proxies:
-  {{ proxy_remarks | yaml | indent(2) }}
+  # Explicit nodes only: aliases such as Proxy can select RAK or DIRECT.
+  {%- for proxy in conf.get('proxies', []) %}
+  {%- if (proxy.name.startswith('DMIT-') or proxy.name.startswith('AWS-')) and proxy.type in ['vless', 'hysteria2'] and not proxy.get('dialer-proxy') %}
+  - {{ proxy.name | tojson }}
+  {%- endif %}
+  {%- endfor %}
   - 'AWS-US-Clean'
   - 'DMIT-HY2'
-  - 'Proxy'
 
 - name: 'Grok-xAI'
   type: 'select'
