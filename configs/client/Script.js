@@ -19,9 +19,9 @@ function main(config, profileName) {
   // =========================================================================
   const enableSshTunnel = false; // 若需启用内网 SSH 穿透代理，将其置为 true
 
-  const primaryName = "SSH-Primary";
-  const backupName = "SSH-Tailscale-Backup";
-  const backup2Name = "SSH-Remote-Backup";
+  const primaryName = "SSH-<PRIMARY_LAN_IP>";
+  const backupName = "SSH-<TAILSCALE_IP_1>";
+  const backup2Name = "SSH-inceptio-<TAILSCALE_IP_2>";
   const groupName = "SSH-AUTO";
 
   // 证书与公钥占位符
@@ -206,9 +206,6 @@ function main(config, profileName) {
       : [];
     if (!exclude.includes("100.64.0.0/10")) {
       exclude.push("100.64.0.0/10");
-    }
-    if (!exclude.includes("10.0.0.0/8")) {
-      exclude.push("10.0.0.0/8");
     }
     config.tun["route-exclude-address"] = exclude;
   }
