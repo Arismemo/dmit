@@ -11,6 +11,8 @@
 // 4. [智能分流] 清除破坏规则分流的 IDE 强直连配置（按域名/IP动态分流）
 // 5. [内网穿透] 支持配置私网/公司内网 SSH 隧道高可用故障转移组 (SSH-AUTO)
 
+// ⚠️ 本文件是【脱敏模板】，禁止直接粘贴/复制进 Clash Verge（占位符会覆盖真实配置）。
+// 请使用 `node scripts/render-client-script.js` 读取 secrets.env 渲染并安装。
 function main(config, profileName) {
   // =========================================================================
   // 模块 1: 内网企业 SSH 隧道与 Tailscale 穿透高可用组 (按需配置)
@@ -23,9 +25,9 @@ function main(config, profileName) {
   const groupName = "SSH-AUTO";
 
   // 证书与公钥占位符
-  const hostKey = "ssh-ed25519 <BASE64_PUBLIC_KEY>";
-  const backup2HostKey = "ssh-ed25519 <BASE64_PUBLIC_KEY>";
-  const privateKey = "<PATH_TO_PRIVATE_KEY>";
+  const hostKey = "<SSH_HOST_KEY_1>";
+  const backup2HostKey = "<SSH_HOST_KEY_2>";
+  const privateKey = "<SSH_PRIVATE_KEY_PATH>";
 
   function createSshProxy(name, server, username, proxyHostKey, interfaceName) {
     const proxy = {
@@ -58,7 +60,7 @@ function main(config, profileName) {
   };
 
   const awsProxy = {
-    name: "AWS-Reality",
+    name: "AWS-US-Clean",
     type: "vless",
     server: "<AWS_SERVER_IP>",
     port: 443,
@@ -114,20 +116,50 @@ function main(config, profileName) {
 
     // Tailscale CGNAT 全网段直连
     "IP-CIDR,100.64.0.0/10,DIRECT,no-resolve",
-    // 节点公网 IP 强制直连，避免路由递归自锁
-    "IP-CIDR,<SERVER_IP>/32,DIRECT,no-resolve",
-    "IP-CIDR,<RAK_SERVER_IP>/32,DIRECT,no-resolve",
-    "IP-CIDR,<AWS_SERVER_IP>/32,DIRECT,no-resolve",
-    // xAI Grok 解锁 (DMIT IP 被 Cloudflare 403 阻断，精准分流至干净的 AWS 纯净节点)
-    "DOMAIN-SUFFIX,grok.com," + awsProxy.name,
-    "DOMAIN-SUFFIX,x.ai," + awsProxy.name
+    // 节点公网 IP 强制直连，避免路由递归自锁 (仅当配置了合规 IP 时注入，避免未替换占位符引发非法 CIDR 致命解析错误)
+    ...(["<SERVER_IP>", "<RAK_SERVER_IP>", "<AWS_SERVER_IP>"]
+      .filter(ip => ip && /^(\d{1,3}\.){3}\d{1,3}$/.test(ip))
+      .map(ip => `IP-CIDR,${ip}/32,DIRECT,no-resolve`)),
+    // xAI Grok 解锁 (DMIT IP 被 Cloudflare 403 阻断，分流至 Grok-xAI 策略组或干净的 AWS 纯净节点)
+    "DOMAIN-SUFFIX,grok.com,Grok-xAI",
+    "DOMAIN-SUFFIX,x.ai,Grok-xAI"
   ];
 
+  // =========================================================================
+  // 模块 1b: 自建 GitLab 按网络自动分流 (按需配置)
+  // 公司网络按 SNI 关键词拦截 443，直连探活失败则切 Proxy；SSH 端口一律直连。
+  // =========================================================================
+  const enableGitlabAuto = false; // 若需启用自建 GitLab 自动分流，将其置为 true
+  const gitlabGroupName = "GitLab-Auto";
+  let gitlabGroup = null;
+
+  if (enableGitlabAuto) {
+    gitlabGroup = {
+      name: gitlabGroupName,
+      type: "fallback",
+      proxies: ["DIRECT", "Proxy"],
+      url: "https://<GITLAB_DOMAIN>/users/sign_in",
+      interval: 60,
+      timeout: 5000,
+      "max-failed-times": 1,
+      lazy: false,
+      "expected-status": "200",
+      "disable-udp": true
+    };
+
+    managedRules = managedRules.concat([
+      "AND,((DOMAIN,<GITLAB_DOMAIN>),(DST-PORT,<GITLAB_SSH_PORT>)),DIRECT",
+      "AND,((IP-CIDR,<GITLAB_IP>/32,no-resolve),(DST-PORT,<GITLAB_SSH_PORT>)),DIRECT",
+      "DOMAIN,<GITLAB_DOMAIN>," + gitlabGroupName,
+      "IP-CIDR,<GITLAB_IP>/32," + gitlabGroupName + ",no-resolve"
+    ]);
+  }
+
   if (enableSshTunnel) {
-    const primaryProxy = createSshProxy(primaryName, "<PRIMARY_LAN_IP>", "user", hostKey);
+    const primaryProxy = createSshProxy(primaryName, "<PRIMARY_LAN_IP>", "<SSH_USER_1>", hostKey);
     // 备用地址绑定 Tailscale 接口 (如 utun4)，避免与 Clash TUN 发生路由环路
-    const backupProxy = createSshProxy(backupName, "<TAILSCALE_IP_1>", "user", hostKey, "utun4");
-    const backup2Proxy = createSshProxy(backup2Name, "<TAILSCALE_IP_2>", "user", backup2HostKey, "utun4");
+    const backupProxy = createSshProxy(backupName, "<TAILSCALE_IP_1>", "<SSH_USER_1>", hostKey, "utun4");
+    const backup2Proxy = createSshProxy(backup2Name, "<TAILSCALE_IP_2>", "<SSH_USER_2>", backup2HostKey, "utun4");
 
     extraProxies = [primaryProxy, backupProxy, backup2Proxy];
 
@@ -226,17 +258,66 @@ function main(config, profileName) {
     }
   });
 
+  // AI groups use explicit DMIT/AWS nodes only; group aliases can reach RAK or DIRECT.
+  const aiNodeNames = new Set(config.proxies.filter(proxy =>
+    proxy && /^(DMIT|AWS)(-|$)/.test(proxy.name) && ["vless", "hysteria2"].includes(proxy.type) && !proxy["dialer-proxy"]
+  ).map(proxy => proxy.name));
+  const groupNames = new Set(existingGroups.filter(Boolean).map(group => group.name));
+  existingGroups.forEach(group => {
+    if (!group || group.name !== "AI") return;
+    group.proxies = (Array.isArray(group.proxies) ? group.proxies : []).filter(name =>
+      aiNodeNames.has(name) && !groupNames.has(name)
+    );
+    // Providers and include-all options would bypass the explicit node allowlist.
+    ["use", "include-all", "include-all-proxies", "include-all-providers"].forEach(key => delete group[key]);
+    if (!group.proxies.length) group.proxies = ["REJECT"];
+  });
+
+  // 泄洪组只引用确定存在的目标（订阅可能没有 Proxy 组，引用不存在策略名会致命校验失败）
+  bulkGroup.proxies = bulkGroup.proxies.filter(name =>
+    name === "DIRECT" || name === "REJECT" ||
+    name === hy2Proxy.name || name === awsProxy.name || name === rakProxy.name ||
+    groupNames.has(name)
+  );
+
   const mergedGroups = [bulkGroup].concat(
     existingGroups.filter(g => g && g.name !== bulkGroupName)
   );
 
-  if (fallbackGroup) {
-    config["proxy-groups"] = [fallbackGroup].concat(
-      mergedGroups.filter(g => g && g.name !== groupName)
+  // GitLab-Auto 只引用确定存在的目标（订阅没有 Proxy 组时仅保留 DIRECT）
+  if (gitlabGroup) {
+    gitlabGroup.proxies = gitlabGroup.proxies.filter(name =>
+      name === "DIRECT" || existingGroups.some(g => g && g.name === name)
     );
-  } else {
-    config["proxy-groups"] = mergedGroups;
   }
+
+  const privateGroups = [fallbackGroup, gitlabGroup].filter(Boolean);
+  const privateGroupNames = new Set(privateGroups.map(g => g.name));
+  config["proxy-groups"] = privateGroups.concat(
+    mergedGroups.filter(g => g && !privateGroupNames.has(g.name))
+  );
+
+  // 订阅未提供 AI 策略组时，将 AI 规则降级指向脚本自注入的 AWS 容灾节点，避免引用不存在的组
+  const finalGroupNames = new Set(
+    (config["proxy-groups"] || []).filter(Boolean).map(group => group.name)
+  );
+  if (!finalGroupNames.has("AI")) {
+    managedRules = managedRules.map(rule =>
+      rule.endsWith(",AI") ? rule.slice(0, -",AI".length) + "," + awsProxy.name : rule
+    );
+  }
+  if (!finalGroupNames.has("Grok-xAI")) {
+    managedRules = managedRules.map(rule =>
+      rule.endsWith(",Grok-xAI") ? rule.slice(0, -",Grok-xAI".length) + "," + awsProxy.name : rule
+    );
+  }
+
+  // 严格对所有策略组去重，避免同一节点重复渲染
+  (config["proxy-groups"] || []).forEach(group => {
+    if (group && Array.isArray(group.proxies)) {
+      group.proxies = Array.from(new Set(group.proxies));
+    }
+  });
 
   // =========================================================================
   // 模块 6: 规则清洗与大流量白名单规则注入

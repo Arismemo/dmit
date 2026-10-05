@@ -12,15 +12,27 @@
 3. 右键订阅卡片，选择 **设为当前 (Use)**。
 
 ### 1.2 注入全局扩展脚本 (`Script.js`)
-1. 进入 **订阅 (Profiles)** -> 顶部或右键选择 **全局扩展脚本 (Script)**；
-2. 将项目根目录下的 `configs/client/Script.js` 内容全量替换粘贴进去；
-3. 保存并触发一次刷新。
-4. **作用**：
+> ⚠️ **严禁直接手动将 `configs/client/Script.js` 复制到客户端**！
+> 仓库中的 `configs/client/Script.js` 包含 `<SERVER_IP>`、`<PRIMARY_LAN_IP>` 等安全脱敏占位符。直接复制会覆盖掉本地内网 SSH 隧道（如 10.10.10.2）和私有分流策略。
+>
+> 必须使用安全的渲染与安装脚本：
+
+```bash
+# 1. 确保 secrets.env 中已填好客户端相关参数（可参考 secrets.example.env）
+# 2. 干跑预检语法与策略测试
+node scripts/render-client-script.js --dry-run
+
+# 3. 执行安装（会自动备份旧脚本并进行三道安全门禁验证）
+node scripts/render-client-script.js
+```
+
+4. 进入 Clash Verge Rev，在 **订阅 (Profiles)** 页面右键或刷新配置使其立即生效。
+5. **核心作用**：
    - 自动为所有 VLESS Reality 节点添加 `tfo: true`；
    - 强制 TUN 网络栈启用 `stack: mixed`；
    - 注入 Hysteria 2 双协议节点至 Auto/Proxy/AI 策略组；
    - 清除 VS Code 强制直连等干扰规则，恢复域名智能分流；
-   - [可选] 开启多跳企业内网 SSH-AUTO 故障转移隧道。
+   - [可选] 开启多跳企业内网 SSH-AUTO 故障转移隧道（如 10.10.10.2）与自建 GitLab 按网络自动分流。
 
 ### 1.3 注入全局覆写配置 (`Merge.yaml`)
 1. 进入 **订阅 (Profiles)** -> 顶部或右键选择 **Merge 覆写配置 (Merge)**；

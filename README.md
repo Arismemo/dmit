@@ -5,6 +5,14 @@
 
 ---
 
+## 当前维护入口（2026-10-04）
+
+现有 RAK 是共享业务节点，维护前先看 [当前交接](HANDOFF.md) 和 [Claude 隔离运行环境](playbook/09-rak-claude-isolated-runtime.md)。Claude/浏览器已采用专用非 root 用户及仅回环的网络命名空间；普通大流量 Xray、SSH 和 Tailscale 保留原有网络路径。住宅代理变量仅在 Claude 环境内设置。
+
+基础设施验收已完成，包括上游故障、绕过代理阻断、桌面隧道、备份恢复和环境重建。用户暂时不登录，真实模型调用与 OAuth 凭据恢复留待登录后验证；没有执行整机重启。本机 AI 分组已修复并热加载，当前仍选 DMIT-LA，与 RAK Claude 的住宅出口是两条独立路径。
+
+当前部署的脚本、服务文件和离线测试见 [运行环境源码说明](configs/server/claude-runtime/README.md)。该目录保存维护源码，不包含凭据，也不是一键重装器。下方的全新 VPS 流程不能直接当作现有共享节点的重装指令。
+
 ## 1. 架构总览 (System Architecture)
 
 ```mermaid
@@ -66,10 +74,12 @@ flowchart TD
 .
 ├── AGENTS.md                          # AI 施工队最高指令、准则与防自断机制
 ├── README.md                          # 面向人类开发者的使用说明与架构全景
+├── HANDOFF.md                         # 当前部署状态、日常命令与验收边界
 ├── secrets.example.env                # 敏感配置模板（公钥、域名、密码）
 ├── configs/
 │   ├── client/
 │   │   ├── Script.js                  # 客户端扩展脚本 (TFO + Mixed + 内网高可用)
+│   │   ├── Script.test.js             # AI 分组旁路与非 AI 行为回归测试
 │   │   ├── Merge.yaml                 # 客户端全局覆写配置 (DoH + 金融量化直连)
 │   │   └── config.yaml                # 客户端推荐核心设置 (TUN mixed)
 │   └── server/
@@ -78,8 +88,13 @@ flowchart TD
 │       ├── xray_config.json           # Xray 黑洞路由 + TFO 生产配置
 │       ├── hysteria2.yaml             # Hysteria 2 UDP 443 服务端配置
 │       ├── custom-clash.yml           # Clash 订阅 Jinja2 自定义模板
+│       ├── claude-runtime/            # RAK Claude 隔离运行环境源码、服务与测试
 │       ├── sysctl.d-99-custom.conf    # BBR/TFO/网络内核调优配置
 │       └── dmit-proxy-sampler.sh      # 服务端健康采样与巡检脚本
+├── scripts/
+│   ├── render-client-script.js        # 客户端 Script.js 安全渲染与安装器（防私有分流被覆盖与凭据泄露）
+│   ├── analyze_24h.py                 # 24小时流量与连接日志分析
+│   └── analyze_latest.py              # 最新连接抽样分析
 └── playbook/                          # 标准化分步施工剧本
     ├── 00-precheck.md                 # Step 0: 环境探测与变量装填
     ├── 01-system-tune.md              # Step 1: 内核层调优 (BBR/TFO)
@@ -87,7 +102,10 @@ flowchart TD
     ├── 03-xray-marzban.md             # Step 3: Marzban 与 Xray 黑洞路由部署
     ├── 04-hysteria2.md                # Step 4: Hysteria 2 部署
     ├── 05-subscription-template.md    # Step 5: 订阅模板注入与用户下发
-    └── 06-client-and-verify.md        # Step 6: 客户端接入与端到端健康验收
+    ├── 06-client-and-verify.md        # Step 6: 客户端接入与端到端健康验收
+    ├── 07-multi-node-cluster.md       # Step 7: 多节点职责与管理隧道
+    ├── 08-rak-claude-residential-proxy.md # Step 8: 住宅网桥与上游切换
+    └── 09-rak-claude-isolated-runtime.md  # Step 9: 当前隔离环境与验收记录
 ```
 
 ---
