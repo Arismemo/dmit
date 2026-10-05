@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""Report proxy bridge and expected egress health without restarting services."""
+import argparse, datetime, http.client, json, os, pathlib, ssl, subprocess, sys, tempfile, urllib.parse
+
+
+def atomic_write(path, contents):
+    path = pathlib.Path(path)
+    fd, tmp = tempfile.mkstemp(prefix='.' + path.name + '-', dir=path.parent)
+    try:
+        with os.fdopen(fd, 'w') as f:
+            f.write(contents)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
+def probe(cfg):
+    proxy = urllib.parse.urlsplit(cfg['http_proxy'])
+    if proxy.scheme != 'http' or proxy.hostname not in ('127.0.0.1', 'localhost') or not proxy.port or proxy.username:
+        raise ValueError('http_proxy must be a credential-free local HTTP proxy')
+    # Explicit CONNECT avoids environment NO_PROXY bypass and local target DNS.
+    connection = http.client.HTTPSConnection(proxy.hostname, proxy.port, timeout=10, context=ssl.create_default_context())
+    connection.set_tunnel('ipinfo.io', 443)
+    try:
+        connection.request('GET', '/json', headers={'Host': 'ipinfo.io', 'Accept': 'application/json', 'User-Agent': 'claude-proxy-health/1'})
+        response = connection.getresponse()
+        if response.status != 200:
+            raise ValueError('egress metadata endpoint returned HTTP ' + str(response.status))
+        data = response.read(65537)
+        if len(data) > 65536:
+            raise ValueError('egress metadata response exceeded size limit')
+        result = json.loads(data)
+        if not isinstance(result, dict) or not isinstance(result.get('ip'), str) or not isinstance(result.get('org'), str):
+            raise ValueError('egress metadata missing ip or org')
+        return result
+    finally:
+        connection.close()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--config', default='/etc/claude-runtime.json')
+    parser.add_argument('--status-json', default='/var/run/claude-proxy-status.json')
+    parser.add_argument('--status-text', default='/var/run/claude-proxy-status')
+    args = parser.parse_args()
+    status = {'checked_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'healthy': False,
+              'bridge_active': False, 'egress_verified': False,
+              'note': 'Observation only; this check does not enforce isolation or restart services.'}
+    try:
+        with open(args.config) as f:
+            cfg = json.load(f)
+        for field in ('expected_ip', 'expected_org', 'http_proxy'):
+            if not isinstance(cfg.get(field), str) or not cfg[field].strip():
+                raise ValueError('missing or invalid configuration field: ' + field)
+        bridge = cfg.get('bridge_service', 'claude-bridge.service')
+        result = subprocess.run(['systemctl', 'is-active', '--quiet', bridge], timeout=5, capture_output=True)
+        status['bridge_active'] = result.returncode == 0
+        if not status['bridge_active']:
+            raise ValueError('proxy bridge service is not active')
+        result = probe(cfg)
+        status['observed_ip'] = result['ip']
+        status['observed_org'] = result['org']
+        status['egress_verified'] = result['ip'] == cfg['expected_ip'] and cfg['expected_org'].casefold() in result['org'].casefold()
+        if not status['egress_verified']:
+            raise ValueError('observed egress does not match expected_ip and expected_org')
+        status['healthy'] = True
+        status['detail'] = 'Proxy bridge is active and egress matches the configured IP and organization.'
+    except (Exception,) as e:
+        # Avoid reflecting arbitrary remote response bodies or configuration secrets.
+        status['detail'] = str(e) if isinstance(e, ValueError) else type(e).__name__ + ': health check failed'
+    summary = ('HEALTHY' if status['healthy'] else 'UNHEALTHY') + ' ' + status['checked_at'] + '\n' + status['detail'] + '\n' + status['note'] + '\n'
+    atomic_write(args.status_json, json.dumps(status, indent=2) + '\n')
+    atomic_write(args.status_text, summary)
+    print(summary, end='')
+    return 0 if status['healthy'] else 1
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except Exception as e:
+        print('Health status write failed: ' + type(e).__name__, file=sys.stderr)
+        sys.exit(1)

@@ -26,6 +26,13 @@
                     "geosite:category-ads-all"
                 ],
                 "outboundTag": "BLOCK"
+            },
+            {
+                "type": "field",
+                "ip": [
+                    "geoip:cn"
+                ],
+                "outboundTag": "BLOCK"
             }
         ]
     },

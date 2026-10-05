@@ -1,0 +1,20 @@
+#!/usr/bin/python3
+import json
+import os
+import sys
+import urllib.parse
+import urllib.request
+
+if os.geteuid() == 0:
+    os.execv('/usr/local/sbin/claude-exec', ['claude-exec', __file__, *sys.argv[1:]])
+if len(sys.argv) != 2 or urllib.parse.urlsplit(sys.argv[1]).scheme not in ('https', 'http', 'about'):
+    sys.exit('Usage: chrome-open <http(s) URL>')
+opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+request = urllib.request.Request('http://127.0.0.1:9222/json/new?' +
+    urllib.parse.quote(sys.argv[1], safe=''), method='PUT')
+try:
+    with opener.open(request, timeout=5) as response:
+        json.load(response)
+except Exception:
+    sys.exit('Browser is unavailable; start claude-desktop.service.')
+print('Opened a tab in the isolated browser.')

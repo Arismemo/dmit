@@ -1,0 +1,6 @@
+[Unit]
+Description=SSH-only Claude novnc entrypoint
+[Socket]
+ListenStream=127.0.0.1:6080
+[Install]
+WantedBy=sockets.target

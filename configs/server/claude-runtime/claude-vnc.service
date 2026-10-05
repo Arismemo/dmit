@@ -1,0 +1,13 @@
+[Unit]
+Description=Forward loopback vnc to isolated desktop
+Requires=claude-desktop.service
+After=claude-desktop.service
+[Service]
+User=claude
+Group=claude
+NetworkNamespacePath=/run/netns/claude
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd 127.0.0.1:5900
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+CapabilityBoundingSet=

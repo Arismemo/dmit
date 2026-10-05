@@ -1,0 +1,31 @@
+#!/usr/bin/python3
+"""Expose only the host's explicit proxy sockets inside an isolated namespace."""
+import asyncio
+
+async def relay(reader, writer, upstream):
+    other = None
+    try:
+        remote, other = await asyncio.open_unix_connection(upstream)
+        async def copy(source, destination):
+            while data := await source.read(65536):
+                destination.write(data)
+                await destination.drain()
+            if destination.can_write_eof():
+                destination.write_eof()
+        await asyncio.gather(copy(reader, other), copy(remote, writer))
+    except (OSError, ConnectionError):
+        pass
+    finally:
+        writer.close()
+        if other:
+            other.close()
+
+async def main():
+    servers = []
+    for port, name in [(7890, 'http'), (7891, 'socks')]:
+        path = f'/run/claude-egress/{name}.sock'
+        servers.append(await asyncio.start_server(
+            lambda r, w, p=path: relay(r, w, p), '127.0.0.1', port))
+    await asyncio.gather(*(server.serve_forever() for server in servers))
+
+asyncio.run(main())

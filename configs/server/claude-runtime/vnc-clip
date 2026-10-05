@@ -1,0 +1,11 @@
+#!/usr/bin/python3
+import os
+import subprocess
+import sys
+
+if os.geteuid() == 0:
+    os.execv('/usr/local/sbin/claude-exec', ['claude-exec', __file__, *sys.argv[1:]])
+data = sys.argv[1].encode() if len(sys.argv) > 1 else sys.stdin.buffer.read()
+for selection in ('clipboard', 'primary'):
+    subprocess.run(['xclip', '-selection', selection], input=data, check=True)
+print('Clipboard updated.')

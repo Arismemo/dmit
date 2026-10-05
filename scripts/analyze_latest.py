@@ -10,10 +10,11 @@ def main():
     c48h = (now_utc - timedelta(hours=48)).strftime('%Y-%m-%d %H:%M:%S')
     c7d = (now_utc - timedelta(days=7)).strftime('%Y-%m-%d %H:%M:%S')
 
+    import os
     nodes_meta = {
-        None: {"name": "Master (DMIT-LA)", "role": "极速专线/核心主控", "ip": "179.255.119.112"},
-        1: {"name": "Node 1 (RAK-Bulk-1T)", "role": "1000G大流量泄洪", "ip": "137.175.65.78"},
-        2: {"name": "Node 2 (AWS-US-Clean)", "role": "纯净出口/容灾解锁", "ip": "18.188.243.223"}
+        None: {"name": "Master (DMIT-LA)", "role": "极速专线/核心主控", "ip": os.getenv("SERVER_IP", "198.51.100.1")},
+        1: {"name": "Node 1 (RAK-Bulk-1T)", "role": "1000G大流量泄洪", "ip": os.getenv("RAK_SERVER_IP", "198.51.100.2")},
+        2: {"name": "Node 2 (AWS-US-Clean)", "role": "纯净出口/容灾解锁", "ip": os.getenv("AWS_SERVER_IP", "198.51.100.3")}
     }
 
     def fmt_bytes(b):

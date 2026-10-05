@@ -9,8 +9,8 @@
 | 节点标识 | 节点角色 | 服务器规格与位置 | 核心协议与端口 | 职责定位与分流策略 |
 | :--- | :--- | :--- | :--- | :--- |
 | **Master (DMIT-LA)** | 主控 & 极速专线 | 美国洛杉矶 CN2 GIA/CMIN2 | TCP 443 (VLESS Reality)<br>UDP 443 (Hysteria 2) | 核心业务通道，承载 Cursor、Claude、ChatGPT、日常浏览（超低延迟） |
-| **Node 1 (RAK-Bulk-1T)** | 1000G 大流量泄洪 | 美国加州普通机房 (137.175.65.78) | TCP 3389 (VLESS Reality) | 承载 Telegram、YouTube、Docker、HF 模型、OS 镜像等 91 条高吞吐白名单 |
-| **Node 2 (AWS-US-Clean)** | 纯净出口 & 应急容灾 | AWS 俄亥俄 (18.188.243.223) | TCP 443 (VLESS Reality) | 原生纯净住宅/云端出口，专用于 Grok/xAI 解锁（规避 Cloudflare 403 阻断）与容灾 |
+| **Node 1 (RAK-Bulk-1T)** | 1000G 大流量泄洪 | 美国加州普通机房 (<RAK_SERVER_IP>) | TCP 3389 (VLESS Reality) | 承载 Telegram、YouTube、Docker、HF 模型、OS 镜像等 91 条高吞吐白名单 |
+| **Node 2 (AWS-US-Clean)** | 纯净出口 & 应急容灾 | AWS 俄亥俄 (<AWS_SERVER_IP>) | TCP 443 (VLESS Reality) | 原生纯净住宅/云端出口，专用于 Grok/xAI 解锁（规避 Cloudflare 403 阻断）与容灾 |
 
 ---
 
@@ -58,7 +58,7 @@ After=network.target
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/bin/ssh -NT -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -L 127.0.0.1:62060:127.0.0.1:62050 -L 127.0.0.1:62061:127.0.0.1:62051 -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@18.188.243.223
+ExecStart=/usr/bin/ssh -NT -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -L 127.0.0.1:62060:127.0.0.1:62050 -L 127.0.0.1:62061:127.0.0.1:62051 -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@<AWS_SERVER_IP>
 Restart=always
 RestartSec=5
 

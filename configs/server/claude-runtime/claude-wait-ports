@@ -1,0 +1,18 @@
+#!/usr/bin/python3
+import socket
+import sys
+import time
+
+deadline = time.monotonic() + 15
+pending = {int(port) for port in sys.argv[1:]}
+while pending and time.monotonic() < deadline:
+    for port in list(pending):
+        try:
+            with socket.create_connection(('127.0.0.1', port), timeout=0.2):
+                pending.remove(port)
+        except OSError:
+            pass
+    if pending:
+        time.sleep(0.1)
+if pending:
+    sys.exit('Required local service ports did not become ready: ' + str(sorted(pending)))

@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""Validate and restore Claude CLI session archives, with rollback on failure."""
+import argparse, fcntl, json, os, pathlib, pwd, shutil, subprocess, sys, tarfile, tempfile
+
+ROOTS = {'.claude', '.claude.json'}
+
+
+def validated_members(tf):
+    seen = {}
+    total = 0
+    for m in tf.getmembers():
+        path = pathlib.PurePosixPath(m.name)
+        if not m.name or path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0] not in ROOTS:
+            raise ValueError('unsafe archive path')
+        canonical = str(path)
+        if canonical in seen or not (m.isdir() or m.isfile()):
+            raise ValueError('duplicate path, symlink, hardlink, or special file in archive; restore refused')
+        if path.parts[0] == '.claude.json' and (len(path.parts) != 1 or not m.isfile()):
+            raise ValueError('.claude.json must be a regular file')
+        total += m.size
+        if total > 20 * 1024 ** 3 or len(seen) > 200000:
+            raise ValueError('archive exceeds restore safety limit')
+        seen[canonical] = m
+    if '.claude' not in seen or not seen['.claude'].isdir() or '.claude.json' not in seen:
+        raise ValueError('archive must contain .claude directory and .claude.json file')
+    for name in seen:
+        for parent in pathlib.PurePosixPath(name).parents:
+            if str(parent) != '.' and str(parent) in seen and not seen[str(parent)].isdir():
+                raise ValueError('archive contains a file used as a directory')
+    return seen
+
+
+def check_running(username):
+    uid = pwd.getpwnam(username).pw_uid
+    result = subprocess.run(['ps', '-eo', 'uid=,comm=,args='], check=True, text=True, capture_output=True)
+    for line in result.stdout.splitlines():
+        parts = line.strip().split(None, 2)
+        if len(parts) < 2 or parts[0] != str(uid):
+            continue
+        comm = pathlib.Path(parts[1]).name
+        args = parts[2].split() if len(parts) > 2 else []
+        first = args[0] if args else ''
+        if comm == 'claude' or pathlib.Path(first).name == 'claude' or '/.local/share/claude/versions/' in first:
+            raise ValueError('Claude is running under runtime_user; stop the session before restoring')
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('archive', nargs='?', default='/var/backups/claude-session/latest.tar.gz')
+    p.add_argument('--config', default='/etc/claude-runtime.json')
+    p.add_argument('--backup-dir', default='/var/backups/claude-session')
+    p.add_argument('--check-only', action='store_true')
+    p.add_argument('--destination', help='Restore to a new empty sandbox directory; does not touch the live session')
+    a = p.parse_args()
+    os.umask(0o077)
+    with open(a.config) as f:
+        cfg = json.load(f)
+    if a.destination:
+        home = pathlib.Path(a.destination).absolute()
+        if home == pathlib.Path(cfg['runtime_home']).absolute():
+            raise ValueError('sandbox destination cannot be the runtime home')
+        if home.exists() and (home.is_symlink() or any(home.iterdir())):
+            raise ValueError('sandbox destination must be a new or empty directory')
+    else:
+        home = pathlib.Path(cfg['runtime_home'])
+    with tarfile.open(a.archive, 'r:gz') as tf:
+        members = validated_members(tf)
+        if a.check_only:
+            for m in members.values():
+                if m.isfile():
+                    with tf.extractfile(m) as reader:
+                        while reader.read(1024 * 1024):
+                            pass
+            print('Archive validated: ' + str(len(members)) + ' members')
+            return
+        if not a.destination:
+            if os.geteuid() != 0:
+                raise ValueError('live restore requires root')
+            check_running(cfg['runtime_user'])
+        if home.is_symlink():
+            raise ValueError('destination home cannot be a symlink')
+        home.mkdir(mode=0o700, parents=True, exist_ok=True)
+        with open(home / '.session-restore.lock', 'a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            staging = pathlib.Path(tempfile.mkdtemp(prefix='.session-restore-', dir=home))
+            rollback = pathlib.Path(tempfile.mkdtemp(prefix='.session-rollback-', dir=home))
+            moved_old, installed = [], []
+            try:
+                for name, m in sorted(members.items(), key=lambda kv: (len(pathlib.PurePosixPath(kv[0]).parts), kv[0])):
+                    dest = staging / name
+                    if m.isdir():
+                        dest.mkdir(mode=0o700, parents=True, exist_ok=True)
+                    else:
+                        dest.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                        with tf.extractfile(m) as reader, open(dest, 'xb') as writer:
+                            shutil.copyfileobj(reader, writer)
+                            writer.flush()
+                            os.fsync(writer.fileno())
+                        os.chmod(dest, 0o600 | (m.mode & 0o100))
+                if not a.destination:
+                    check_running(cfg['runtime_user'])
+                    backup = pathlib.Path(__file__).with_name('claude-session-backup')
+                    subprocess.run([sys.executable, str(backup), '--config', a.config, '--backup-dir', a.backup_dir], check=True)
+                    account = pwd.getpwnam(cfg['runtime_user'])
+                    for path in [staging] + list(staging.rglob('*')):
+                        os.chown(path, account.pw_uid, account.pw_gid)
+                for name in sorted(ROOTS):
+                    old = home / name
+                    if old.is_symlink():
+                        raise ValueError('live target is a symlink; restore refused')
+                    if old.exists():
+                        os.replace(old, rollback / name)
+                        moved_old.append(name)
+                    os.replace(staging / name, old)
+                    installed.append(name)
+                print('Session restored and verified: ' + str(home))
+            except Exception:
+                for name in reversed(installed):
+                    dest = home / name
+                    if dest.is_dir():
+                        shutil.rmtree(dest)
+                    else:
+                        dest.unlink()
+                for name in moved_old:
+                    os.replace(rollback / name, home / name)
+                raise
+            finally:
+                shutil.rmtree(staging)
+                shutil.rmtree(rollback)
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as e:
+        print('Restore failed: ' + str(e), file=sys.stderr)
+        sys.exit(1)

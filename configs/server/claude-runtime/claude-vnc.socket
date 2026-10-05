@@ -1,0 +1,6 @@
+[Unit]
+Description=SSH-only Claude vnc entrypoint
+[Socket]
+ListenStream=127.0.0.1:5900
+[Install]
+WantedBy=sockets.target

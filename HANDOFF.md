@@ -1,139 +1,86 @@
-# 工程交接文档 (Engineering Handoff Document)
+# 工程交接：RAK 多业务节点与 Claude 隔离运行环境
 
-> **任务主题**：RAK 节点 Claude Code 美国家宽代理与五重防封安全防护体系  
-> **交接日期**：2026-10-04  
-> **目标服务器**：RAK-Bulk-1T (`ssh -p 28827 root@137.175.65.78`)  
-> **核心出口**：美国纽约 Comcast 住宅家庭宽带 (`48.46.113.162:47940`)  
+更新日期：2026-10-04。当前基础设施已部署并通过验收。用户选择暂时不登录，真实模型请求与 OAuth Token 恢复留待登录后验证；没有执行整机重启。
 
----
+## 1. 从这里开始
 
-## 1. 业务背景与交付目标
+- [当前架构、命令、测试记录与恢复边界](playbook/09-rak-claude-isolated-runtime.md)：维护 RAK Claude 的主要依据。
+- [住宅代理网桥](playbook/08-rak-claude-residential-proxy.md)：维护上游接入、集中出口配置和健康探针。
+- [多节点集群](playbook/07-multi-node-cluster.md)：DMIT、RAK、AWS 的职责与管理隧道背景。
+- [运行环境源码及安装位置](configs/server/claude-runtime/README.md)：已部署脚本、systemd 单元与离线测试。
 
-为在海外 VPS 上直接使用 Claude Code（CLI 与自动化浏览器）并保障订阅账号资产安全，必须彻底解决机房托管 IP（Hosting/DataCenter ASN）带来的风控封禁风险（如 `Organization disabled` 或 403 阻断）。
+旧方案中的 root 全局代理、全部网卡桌面监听、root 浏览器及 `--no-sandbox` 已替换。当前隔离由网络命名空间实现，不能把出口 IP、时区或 HTTP 404 当作账号不会被封的保证。
 
-本次交付在 RAK 节点上完整搭建了**本地安全网桥 + Kill-Switch 硬件级防裸连熔断 + 前置守卫 + 五重防封安全防护体系**，实现：
-1. **全链路伪装**：终端命令、Claude Code CLI、VNC Chromium 浏览器对外表现为纯正美国纽约 Comcast 住宅家宽。
-2. **零泄漏保障**：一旦家宽代理断线，网络直接报错熔断，**坚决不回退到机房直连**，杜绝机房 IP 裸连泄露。
-3. **流量边界隔离**：DMIT 专线、RAK 1000G 大流量泄洪与家宽专线严格解耦，互不干扰，不浪费家宽额度。
+## 2. 业务边界
 
----
+| 对象 | 当前职责与路径 |
+|---|---|
+| DMIT | 主控与本机日常/AI 出口；本机 AI 分组验收时选择 DMIT-LA |
+| RAK 普通 Xray | 大流量公网出口；客户端 TCP3389 经 NAT 转入 TCP443，保留机房直接出站 |
+| RAK Claude 与浏览器 | `claude` 用户、独立 `claude` 网络命名空间，仅经住宅代理访问公网 |
+| AWS | 本机 Grok 与备用节点；本次保持其分组策略 |
+| 管理链路 | 现有 SSH28827、SSH 本地转发、Marzban62050/62051 与 Tailscale |
 
-## 2. 完整系统拓扑与数据流向
+RAK 是共享业务节点。不要为 Claude 修改全机默认 DROP、限制整个 root 用户出站、移除普通 Xray 的正常出站或全局禁用 UDP。
 
-```mermaid
-flowchart TD
-    subgraph RAK_Server ["RAK 节点 (137.175.65.78 - 时区: America/New_York)"]
-        subgraph Terminal_Env ["终端开发环境"]
-            Shell["交互式 Shell 终端<br>/etc/environment & ~/.bashrc<br>(HTTP_PROXY=127.0.0.1:7890)"]
-            ClaudeCmd["用户执行 claude 命令"] --> Guard{"前置安全守卫<br>/usr/bin/claude"}
-            Guard -- "出口异常 (非 48.46.113.162)" --> Abort["🛑 红色熔断拦截 (终止执行)"]
-            Guard -- "出口校验通过 (Comcast)" --> ExecCore["Claude Code 核心 (Node 20 LTS)<br>/usr/bin/claude-bin"]
-        end
+## 3. 使用与数据位置
 
-        subgraph Desktop_Env ["远程图形桌面 (noVNC)"]
-            Chrome["Chromium 浏览器 (:99)<br>挂载 --proxy-server=127.0.0.1:7890"]
-            VNC["x11vnc (:5900) + websockify (:6080)<br>+ autocutsel 剪贴板双向同步"]
-        end
+仍通过原 SSH 登录：
 
-        subgraph Bridge_Layer ["本地安全网桥层 (Systemd)"]
-            LocalBridge["claude-bridge.service (Xray 25.3.6)<br>监听 127.0.0.1:7890 (HTTP) & 7891 (SOCKS5)<br>【Kill-Switch 启用：无 freedom 直连出口】"]
-            HealthCheck["proxy-health-check.timer (每 15 分钟)"] --> LocalBridge
-            AutoBackup["claude-backup.timer (每日定时)"] -.-> ExecCore
-        end
-
-        Shell --> LocalBridge
-        ExecCore --> LocalBridge
-        Chrome --> LocalBridge
-    end
-
-    LocalBridge --> ExtProxy["纽约 Comcast 住宅家宽代理<br>48.46.113.162:47940 (带鉴权 SOCKS5)"]
-    ExtProxy --> Anthropic["Anthropic 官方端点 (api.anthropic.com & claude.ai)<br>【CF 节点: EWR (纽瓦克) / 识别为美国家宽用户】"]
-```
-
----
-
-## 3. 五重防封安全防护体系详解
-
-| 防护层级 | 核心机制 | 落地文件 / 守护进程 | 达成的安全指标 |
-| :--- | :--- | :--- | :--- |
-| **第一重：终端环境全局家宽化** | 全局固化代理变量，Git 与 npm 默认直通网桥 | `/etc/environment`<br>`/root/.bashrc` | 终端执行任何 `curl`、`git`、`npm` 命令，**默认 100% 走家宽**，消除裸连疑虑 |
-| **第二重：系统指纹与时区对齐** | 系统时区全面对齐美东纽约时区 | `America/New_York`<br>(EDT, UTC-4) | 系统时钟、Node.js 时间戳与纽约宽带物理环境一致，消除“时空错位”风控 |
-| **第三重：网桥远端 DNS 强制解析** | 域名解析策略设置为 `AsIs`，交由 SOCKS5 远端执行 | `/etc/claude-bridge/config.json` | 本地机房无任何 Anthropic 域名解析痕迹，**杜绝 DNS 泄漏** |
-| **第四重：OAuth 闭环与 Token 冷备份** | 免复制打开授权链接，每日增量备份会话凭据 | `chrome-open`<br>`claude-backup.timer` | 授权与调用从始至终同 IP；遇故障可一键 `claude-session-restore` 免登录恢复 |
-| **第五重：可用性探针与硬核 Kill-Switch** | 每 15 分钟自动化探活，网桥彻底剔除 freedom 出口 | `proxy-health-check.timer`<br>`claude-bridge.service` | 上游家宽一旦故障，连接立即拒连报错，**绝不回退到机房直连，杜绝意外漏网** |
-
----
-
-## 4. 关键服务与资产清单
-
-### 4.1 核心服务（Systemd）
-* **`claude-bridge.service`**：本地安全网桥服务，监听 `127.0.0.1:7890`（HTTP）与 `127.0.0.1:7891`（SOCKS5）。
-* **`claude-backup.timer`**：每日触发，自动归档 `~/.claude*` 至 `/root/.claude-backups/`。
-* **`proxy-health-check.timer`**：每 15 分钟触发一次家宽可用性探针。
-
-### 4.2 运维助手工具
-| 工具路径 | 使用方式 | 作用与场景 |
-| :--- | :--- | :--- |
-| `/usr/bin/claude` | `claude` | 前置守卫启动脚本，毫秒级校验出口，通过后方启动真实 CLI |
-| `/usr/bin/claude-bin` | - | 真正的 Claude Code 二进制（Node 20 LTS 驱动） |
-| `/usr/local/bin/chrome-open` | `chrome-open "<URL>"` | 在 VNC Chrome 浏览器中免复制直接新建标签页打开（OAuth 授权专用） |
-| `/usr/local/bin/vnc-clip` | `vnc-clip "<文本>"` | 将字符串或管道内容推送至远程 X11 与 Chrome 剪贴板 |
-| `/usr/local/bin/claude-session-backup` | 手动执行备份 | 生成时间戳增量备份包并更新 latest 软链接 |
-| `/usr/local/bin/claude-session-restore` | 手动执行恢复 | 从 latest 冷备份快速还原 Claude 凭据 |
-| `/usr/local/bin/proxy-health-check` | 手动执行探针 | 输出当前家宽代理的连通性、出口 IP 与运营商状态 |
-| `/root/claude-signup/launch.sh` | 一键自愈桌面 | 一站式拉起 Xvfb、autocutsel、x11vnc、websockify 与挂载家宽的 Chrome |
-
----
-
-## 5. 快速上手与日常运维指令
-
-### 5.1 登录服务器
 ```bash
 ssh -p 28827 root@137.175.65.78
-```
-
-### 5.2 启动 Claude Code
-```bash
 claude
+# 首次授权时使用
+claude auth login
+# 需要在同一隔离环境运行工具时使用
+claude-shell
 ```
 
-### 5.3 首次 OAuth 授权登录最佳实践
-1. 在本地电脑开启隧道映射：
-   ```bash
-   ssh -p 28827 -L 6080:127.0.0.1:6080 root@137.175.65.78
-   ```
-2. 本地浏览器打开 `http://localhost:6080/vnc.html`，点击 **Connect** 按钮（已配置免密）。
-3. 在 RAK 终端执行 `claude login`，将生成的链接通过助手工具一键送入 Chrome：
-   ```bash
-   chrome-open "https://accounts.anthropic.com/oauth/authorize?..."
-   ```
-4. 在 VNC Chrome 界面中点击确认授权，登录流程全链路在同一个家宽 IP 下闭环完成。
+首选入口是 `/usr/local/bin/claude`，兼容入口 `/usr/bin/claude` 也已更新。启动器进入网络命名空间、切换为 `claude` 用户、校验出口，再运行原生 CLI。当前目录不能由该用户进入时，自动切换到 `/home/claude/workspace`。
 
-### 5.4 状态检查指令
+| 数据 | 当前路径 |
+|---|---|
+| 用户主目录/默认工作目录 | `/home/claude` / `/home/claude/workspace` |
+| CLI 配置及未来登录凭据 | `/home/claude/.claude`、`/home/claude/.claude.json` |
+| 浏览器资料 | `/home/claude/browser-profile` |
+| 非秘密运行配置 | `/etc/claude-runtime.json` |
+| 上游网桥配置 | `/etc/claude-bridge/config.json`，凭据仅在受限服务器文件中维护 |
+| 日常会话归档 | `/var/backups/claude-session`，目录0700、归档0600，保留10份 |
+| 迁移回滚副本 | `/var/backups/claude-hardening/20261004T043008Z`，包含旧配置及旧root会话 |
+
+桌面依赖 SSH 隧道访问：
+
 ```bash
-# 1. 验证终端默认出口 IP (应直接输出 Comcast 48.46.113.162)
-curl -s https://ipinfo.io/json
-
-# 2. 检查系统时区 (应为 America/New_York)
-timedatectl status
-
-# 3. 检查 Anthropic 连通性 (应返回 HTTP/2 404，无 Cloudflare 403)
-curl -s -I https://api.anthropic.com
-
-# 4. 查看家宽健康探针状态
-cat /var/run/claude-proxy-status
-
-# 5. 查看本地网桥实时流量
-journalctl -u claude-bridge -f
+# 在本机执行，保持 SSH 连接
+ssh -p 28827 -L 6080:127.0.0.1:6080 root@137.175.65.78
+# 本机浏览器访问 http://localhost:6080/vnc.html
 ```
 
----
+在 RAK 终端使用 `chrome-open '<URL>'`、`vnc-clip '<文本>'`。工具会自动进入隔离环境。主机5900/6080只监听回环；DevTools9222仅在隔离环境内监听。
 
-## 6. 后续 Agent 接手注意事项 (Strict Guidelines)
+## 4. 日常检查
 
-1. **绝对禁止在网桥中添加直连出站 (`freedom`)**：
-   `/etc/claude-bridge/config.json` 中的 `outbounds` 只能包含家宽代理出站与黑洞出站（Kill-Switch 规则），严禁因调试目的添加直连，防止在代理网络抖动时导致真实机房 IP 泄漏给 Anthropic。
-2. **关于 SSH 与主控反向隧道的自愈保护**：
-   SSH（端口 `28827`）和 Marzban 主控反向隧道（端口 `62050/62051`）监听在独立的公网/回环网卡上，不受 HTTP 代理环境变量影响。维护网络时切勿修改全局 iptables 默认 DROP 规则，以防自断通信。
-3. **家宽代理账号更换流水线**：
-   若未来更换家宽代理凭据，只需更新 `/etc/claude-bridge/config.json` 中的 `servers` 字段（IP、端口、账号、密码），随后执行 `systemctl restart claude-bridge` 即可，上层所有服务和脚本无感继承。
+以下命令在 RAK 管理 SSH 会话执行：
+
+```bash
+systemctl is-active claude-netns claude-proxy-relay claude-desktop claude-bridge
+proxy-health-check
+/usr/local/sbin/claude-exec curl -fsS --max-time 15 https://ipinfo.io/ip
+claude-session-backup
+claude-session-restore --check-only
+systemctl list-timers claude-backup.timer proxy-health-check.timer
+```
+
+健康探针读取集中配置、检查桥及出口并写状态，失败不重启桥。住宅出口检查应在隔离环境或显式代理下执行；普通 root shell 的 curl 现在使用机房出口，这是预期行为。部署前已打开的 shell 可能保留旧代理变量，重新连接后生效。
+
+更换上游时同时维护网桥的接入地址/凭据与 `/etc/claude-runtime.json` 的预期出口。接入地址和实际出口地址可能不同。具体步骤见 [Step 8](playbook/08-rak-claude-residential-proxy.md)。
+
+## 5. 已验证与待验证
+
+已验证：HTTP/SOCKS/浏览器住宅出口；删除代理变量后的IPv4/IPv6/UDP直连阻断；子进程无法访问主机管理端口；上游故障时拒绝运行及故障恢复；浏览器sandbox；SSH/noVNC；备份归档、独立目录恢复和内容比对；冷启动就绪及网络环境重建；3389重定向幂等恢复。普通Xray未重启，管理连接仍在。
+
+本机AI组已移除通向普通Proxy组的间接路径，并完成热加载。验收时AI已成功挂载纽约家宽（Comcast 48.46.113.162），其他分组选择保持。DMIT远程订阅模板与本机持久扩展脚本已全部发布，并放行受信任家宽节点进入AI策略组。
+
+已完成 cleanip.io/claude 端到端全维度检测验证：环境评分从 53 分（机房IP+出口漂移）提升至 90 分（低风险安全绿灯）；出口网络确认为 Comcast Cable 住宅宽带，WebRTC 与 Claude 核心端点出口完全统一（真实 IP 未暴露）。
+
+待验证：登录后的真实模型请求、真实OAuth凭据恢复、整机重启后的端到端恢复。住宅供应商仍使用原有SOCKS5协议，供应商加密接入与主机整体升级不是本次已完成的项目。

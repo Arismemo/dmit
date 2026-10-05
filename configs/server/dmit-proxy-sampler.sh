@@ -37,7 +37,9 @@ fi
 echo ""
 
 echo "--- 5. Xray 访问日志与黑洞命中抽样 (最近 15 条) ---"
-if [ -f /var/log/xray/access.log ]; then
+if [ -f /var/lib/marzban/xray-access-observe.log ]; then
+  tail -n 15 /var/lib/marzban/xray-access-observe.log | sed 's/\([0-9]\{1,3\}\.\)\{2\}[0-9]\{1,3\}\./*.*.*./g'
+elif [ -f /var/log/xray/access.log ]; then
   tail -n 15 /var/log/xray/access.log | sed 's/\([0-9]\{1,3\}\.\)\{2\}[0-9]\{1,3\}\./*.*.*./g'
 elif docker logs --tail 15 marzban-marzban-1 2>&1 | grep -q "xray"; then
   docker logs --tail 15 marzban-marzban-1 2>&1

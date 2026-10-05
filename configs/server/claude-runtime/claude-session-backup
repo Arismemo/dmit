@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""Create a validated, private archive of the Claude CLI session."""
+import argparse, datetime, fcntl, json, os, pathlib, stat, sys, tarfile, tempfile
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--config', default='/etc/claude-runtime.json')
+    p.add_argument('--backup-dir', default='/var/backups/claude-session')
+    a = p.parse_args()
+    os.umask(0o077)
+    with open(a.config) as f:
+        cfg = json.load(f)
+    home = pathlib.Path(cfg['runtime_home'])
+    target = pathlib.Path(a.backup_dir)
+    if target.is_symlink():
+        raise ValueError('backup directory must not be a symlink')
+    target.mkdir(mode=0o700, parents=True, exist_ok=True)
+    os.chmod(target, 0o700)
+    sources = [home / '.claude', home / '.claude.json']
+    if not sources[0].is_dir() or not sources[1].is_file():
+        raise ValueError('both .claude directory and .claude.json file are required')
+    expected = {}
+    for source in sources:
+        for path in [source] + (list(source.rglob('*')) if source.is_dir() else []):
+            relative = path.relative_to(home)
+            if relative.parts[:2] == ('.claude', 'debug'):
+                continue
+            mode = path.lstat().st_mode
+            if not (stat.S_ISDIR(mode) or stat.S_ISREG(mode)):
+                raise ValueError('session contains a symlink or special file; archive refused: ' + str(path.relative_to(home)))
+            expected[str(path.relative_to(home))] = 'dir' if stat.S_ISDIR(mode) else 'file'
+    with open(target / '.backup.lock', 'a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
+        final = target / ('session-' + stamp + '.tar.gz')
+        fd, tmp = tempfile.mkstemp(prefix='.pending-', dir=target)
+        try:
+            os.close(fd)
+            def archive_filter(member):
+                if pathlib.PurePosixPath(member.name).parts[:2] == ('.claude', 'debug'):
+                    return None
+                return member
+            with tarfile.open(tmp, 'w:gz', dereference=False) as tf:
+                for source in sources:
+                    tf.add(source, arcname=source.name, recursive=True, filter=archive_filter)
+            with tarfile.open(tmp, 'r:gz') as tf:
+                found = {}
+                for item in tf:
+                    if item.name in found or not (item.isdir() or item.isfile()):
+                        raise ValueError('unsafe or duplicate archive member')
+                    found[item.name] = 'dir' if item.isdir() else 'file'
+                    if item.isfile():
+                        with tf.extractfile(item) as reader:
+                            while reader.read(1024 * 1024):
+                                pass
+                if found != expected:
+                    raise ValueError('archive structure differs from source; source may have changed during backup')
+            with open(tmp, 'rb') as f:
+                os.fsync(f.fileno())
+            os.replace(tmp, final)
+            link = target / ('.latest-' + stamp)
+            os.symlink(final.name, link)
+            os.replace(link, target / 'latest.tar.gz')
+            archives = sorted(p for p in target.glob('session-*.tar.gz') if p.is_file() and not p.is_symlink())
+            for old in archives[:-10]:
+                old.unlink()
+            dfd = os.open(target, os.O_RDONLY)
+            try:
+                os.fsync(dfd)
+            finally:
+                os.close(dfd)
+            print('Backup verified: ' + str(final))
+        finally:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as e:
+        print('Backup failed: ' + str(e), file=sys.stderr)
+        sys.exit(1)

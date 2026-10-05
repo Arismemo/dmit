@@ -11,10 +11,11 @@ def main():
     # 24小时前: UTC 2026-09-20 10:00:00
     cutoff_utc = "2026-09-20 10:00:00"
 
+    import os
     nodes_meta = {
-        None: {"name": "Master (DMIT-LA)", "role": "极速专线/核心主控", "ip": "179.255.119.112", "port": "443 (TCP/UDP)"},
-        1: {"name": "Node 1 (RAK-Bulk-1T)", "role": "1000G大流量泄洪", "ip": "137.175.65.78", "port": "3389 (TCP)"},
-        2: {"name": "Node 2 (AWS-US-Clean)", "role": "纯净出口/容灾解锁", "ip": "18.188.243.223", "port": "443 (TCP)"}
+        None: {"name": "Master (DMIT-LA)", "role": "极速专线/核心主控", "ip": os.getenv("SERVER_IP", "198.51.100.1"), "port": "443 (TCP/UDP)"},
+        1: {"name": "Node 1 (RAK-Bulk-1T)", "role": "1000G大流量泄洪", "ip": os.getenv("RAK_SERVER_IP", "198.51.100.2"), "port": "3389 (TCP)"},
+        2: {"name": "Node 2 (AWS-US-Clean)", "role": "纯净出口/容灾解锁", "ip": os.getenv("AWS_SERVER_IP", "198.51.100.3"), "port": "443 (TCP)"}
     }
 
     print("=" * 80)

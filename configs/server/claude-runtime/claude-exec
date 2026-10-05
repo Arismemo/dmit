@@ -1,0 +1,48 @@
+#!/usr/bin/python3
+"""Enter the Claude network boundary before dropping all host privileges."""
+import json
+import os
+import pathlib
+import pwd
+import subprocess
+import sys
+
+cfg = json.loads(pathlib.Path('/etc/claude-runtime.json').read_text())
+account = pwd.getpwnam(cfg['runtime_user'])
+if len(sys.argv) < 2:
+    sys.exit('Usage: claude-exec COMMAND [ARG ...]')
+if os.geteuid() == 0:
+    subprocess.run(['systemctl', 'start', 'claude-proxy-relay.service'], check=True)
+elif os.geteuid() != account.pw_uid:
+    sys.exit('Use the administrator launcher or the dedicated claude account.')
+elif os.stat('/proc/self/ns/net').st_ino != os.stat('/run/netns/claude').st_ino:
+    sys.exit('Claude must run inside its isolated network namespace.')
+
+env = {
+    'HOME': account.pw_dir, 'USER': account.pw_name, 'LOGNAME': account.pw_name,
+    'PATH': '/usr/local/bin:/usr/bin:/bin', 'SHELL': '/bin/bash',
+    'LANG': 'C.UTF-8', 'TZ': 'America/New_York',
+    'DISPLAY': ':99', 'XAUTHORITY': account.pw_dir + '/.Xauthority',
+    'BROWSER': '/usr/local/bin/chrome-open',
+    'HTTP_PROXY': cfg['http_proxy'], 'HTTPS_PROXY': cfg['http_proxy'],
+    'http_proxy': cfg['http_proxy'], 'https_proxy': cfg['http_proxy'],
+    'ALL_PROXY': cfg['socks_proxy'], 'all_proxy': cfg['socks_proxy'],
+    'NO_PROXY': 'localhost,127.0.0.1,::1', 'no_proxy': 'localhost,127.0.0.1,::1',
+}
+for key, value in os.environ.items():
+    if key in ('TERM', 'COLORTERM') or key.startswith(('ANTHROPIC_', 'CLAUDE_CODE_')):
+        env[key] = value
+cwd = os.getcwd()
+if os.geteuid() == 0:
+    accessible = subprocess.run(['/usr/sbin/runuser', '-u', account.pw_name,
+                                 '--', 'test', '-x', cwd]).returncode == 0
+    if not accessible:
+        os.chdir(account.pw_dir + '/workspace')
+    command = ['/usr/sbin/ip', 'netns', 'exec', 'claude', '/usr/bin/setpriv',
+               '--reuid=' + account.pw_name, '--regid=' + account.pw_name,
+               '--init-groups', '--no-new-privs', '--bounding-set=-all',
+               '/usr/bin/env', '-i'] + [f'{k}={v}' for k, v in env.items()] + sys.argv[1:]
+    os.execv(command[0], command)
+os.environ.clear()
+os.environ.update(env)
+os.execvp(sys.argv[1], sys.argv[1:])

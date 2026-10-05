@@ -54,7 +54,10 @@ AI 必须按序执行 `playbook/` 下的各阶段剧本：
 | **Step 5** | [`playbook/05-subscription-template.md`](file:///Users/liukun/j/dmit/playbook/05-subscription-template.md) | 写入 Clash 订阅模板，生成管理用户与订阅链接 | 端到端拉取订阅 HTTP 200，且 YAML 解析合法 |
 | **Step 6** | [`playbook/06-client-and-verify.md`](file:///Users/liukun/j/dmit/playbook/06-client-and-verify.md) | 客户端 TUN Mixed 检查、首包延迟压测、黑洞防护验证 | Google/Claude 连通延迟 < 500ms，国内 IP 被黑洞拦截 |
 | **Step 7** | [`playbook/07-multi-node-cluster.md`](file:///Users/liukun/j/dmit/playbook/07-multi-node-cluster.md) | 多节点集群纳管、安全隧道映射与智能泄洪容灾 | 所有 Node 状态 connected，三机同屏流量实时入库 |
-| **Step 8** | [`playbook/08-rak-claude-residential-proxy.md`](file:///Users/liukun/j/dmit/playbook/08-rak-claude-residential-proxy.md) | RAK 节点 Claude Code 家宽代理网桥与零泄漏防封防护体系 | 本地网桥 active，出口锁定 Comcast 纽约家宽，Anthropic 握手 200/404 |
+| **Step 8** | [住宅代理网桥](playbook/08-rak-claude-residential-proxy.md) | RAK 住宅上游、集中出口配置与探针 | 网桥 active，出口与配置一致；HTTP404仅证明对应请求可达 |
+| **Step 9** | [Claude 隔离运行环境](playbook/09-rak-claude-isolated-runtime.md) | 专用用户、仅回环网络命名空间、桌面与恢复 | 代理成功；绕过代理失败；共享业务正常；冷启动与恢复通过；账号验收另记 |
+
+维护现有 RAK 时，以 [HANDOFF.md](HANDOFF.md) 和 Step 9 的部署状态为准，不自动重跑新机施工流程。Claude 网络限制仅作用于其专用环境；保留普通 Xray、SSH、Marzban 管理和 Tailscale 的既有路径。不得恢复 root 全局住宅代理、全部网卡免密桌面或 root/no-sandbox 浏览器。配置只读检查与脚本测试不能替代登录后的真实模型请求；区分环境重建测试和整机重启验收。
 
 ---
 

@@ -1,0 +1,30 @@
+[Unit]
+Description=Isolated Claude browser and SSH-only remote desktop
+Requires=claude-proxy-relay.service
+After=claude-proxy-relay.service
+[Service]
+Type=simple
+User=claude
+Group=claude
+NetworkNamespacePath=/run/netns/claude
+ExecStart=/usr/local/libexec/claude-desktop
+ExecStartPost=/usr/local/libexec/claude-wait-ports 5900 6080 9222
+WorkingDirectory=/home/claude
+Environment=HOME=/home/claude
+Environment=LANG=C.UTF-8
+Environment=TZ=America/New_York
+Environment=XDG_RUNTIME_DIR=/run/claude-desktop
+RuntimeDirectory=claude-desktop
+RuntimeDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=25
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/claude
+CapabilityBoundingSet=
+[Install]
+WantedBy=multi-user.target

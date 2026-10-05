@@ -1,0 +1,10 @@
+[Unit]
+Description=Preserve RAK bulk TCP 3389 to 443 redirect
+After=network-pre.target docker.service
+Wants=network-pre.target
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/rak-bulk-port-ensure
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target

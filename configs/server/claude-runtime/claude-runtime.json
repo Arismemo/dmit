@@ -1,0 +1,9 @@
+{
+  "expected_ip": "48.46.113.162",
+  "expected_org": "Comcast",
+  "http_proxy": "http://127.0.0.1:7890",
+  "socks_proxy": "socks5h://127.0.0.1:7891",
+  "runtime_user": "claude",
+  "runtime_home": "/home/claude",
+  "bridge_service": "claude-bridge.service"
+}

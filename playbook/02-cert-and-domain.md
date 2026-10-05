@@ -44,9 +44,11 @@ certbot certonly --standalone \
   -d "${DOMAIN_NAME}" \
   --non-interactive
 
-# 4. 确保证书与私钥目录权限正确
-chmod -R 755 /etc/letsencrypt/archive
-chmod -R 755 /etc/letsencrypt/live
+# 4. 确保证书与私钥权限安全合规 (私钥严禁全局可读)
+chmod 755 /etc/letsencrypt
+chmod -R 750 /etc/letsencrypt/live /etc/letsencrypt/archive
+find /etc/letsencrypt/live /etc/letsencrypt/archive -type f -name "fullchain*.pem" -exec chmod 644 {} +
+find /etc/letsencrypt/live /etc/letsencrypt/archive -type f -name "privkey*.pem" -exec chmod 600 {} +
 EOF
 ```
 

@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+/usr/sbin/iptables -w -t nat -C PREROUTING -p tcp --dport 3389 -j REDIRECT --to-ports 443 2>/dev/null ||
+    /usr/sbin/iptables -w -t nat -A PREROUTING -p tcp --dport 3389 -j REDIRECT --to-ports 443

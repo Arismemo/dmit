@@ -37,6 +37,9 @@ scp configs/server/docker-compose.yml root@<SERVER_IP>:/opt/marzban/docker-compo
 # 根据 secrets.env 生成并上传 .env
 cat configs/server/marzban.env | \
   sed "s/<DOMAIN_NAME>/${DOMAIN_NAME}/g" | \
+  sed "s/<MARZBAN_PORT>/${MARZBAN_PORT:-8000}/g" | \
+  sed "s/<MARZBAN_ADMIN_USER>/${MARZBAN_USER:-admin}/g" | \
+  sed "s/<MARZBAN_ADMIN_PASS>/${MARZBAN_PASS:-ChangeMeImmediately123}/g" | \
   ssh root@<SERVER_IP> "cat > /opt/marzban/.env"
 
 # 启动 Marzban 容器
@@ -81,11 +84,14 @@ cat configs/server/xray_config.json | \
 
 # 平滑重启生效（Marzban 支持通过 CLI 或重启容器载入配置）
 ssh root@<SERVER_IP> "cd /opt/marzban && docker compose restart"
+
+# 部署日志自动轮转策略（防止长期运行打满磁盘）
+scp configs/server/xray-logrotate.conf root@<SERVER_IP>:/etc/logrotate.d/xray-marzban
 ```
 
 ### 2.5 创建管理员账号
 ```bash
-ssh root@<SERVER_IP> "docker exec -it marzban-marzban-1 marzban-cli admin create --username ${MARZBAN_USER} --password ${MARZBAN_PASS} --sudo || true"
+ssh root@<SERVER_IP> "docker exec marzban-marzban-1 marzban-cli admin create --username ${MARZBAN_USER} --password ${MARZBAN_PASS} --sudo || true"
 ```
 
 ---

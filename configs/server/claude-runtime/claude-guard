@@ -1,0 +1,19 @@
+#!/usr/bin/python3
+import json
+import os
+import pathlib
+import subprocess
+import sys
+
+cfg = json.loads(pathlib.Path('/etc/claude-runtime.json').read_text())
+try:
+    result = subprocess.run(['curl', '--fail', '--silent', '--show-error',
+        '--noproxy', '', '--proxy', cfg['http_proxy'], '--connect-timeout', '5',
+        '--max-time', '12', 'https://ipinfo.io/json'],
+        check=True, capture_output=True, text=True, timeout=15)
+    observed = json.loads(result.stdout)
+    if observed.get('ip') != cfg['expected_ip'] or cfg['expected_org'].casefold() not in observed.get('org', '').casefold():
+        sys.exit('Claude refused to start: proxy egress does not match the configured IP/organization.')
+except (subprocess.SubprocessError, ValueError, OSError):
+    sys.exit('Claude refused to start: the residential proxy could not be verified.')
+os.execv('/usr/bin/claude-bin', ['/usr/bin/claude-bin', *sys.argv[1:]])

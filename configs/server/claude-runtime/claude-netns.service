@@ -1,0 +1,9 @@
+[Unit]
+Description=Loopback-only network namespace for Claude
+Before=claude-proxy-relay.service claude-desktop.service
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/claude-netns-setup
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target

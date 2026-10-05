@@ -21,6 +21,8 @@ cat configs/server/custom-clash.yml | \
   sed "s/<SERVER_IP>/${SERVER_IP}/g" | \
   sed "s/<HY2_PASSWORD>/${HY2_PASSWORD}/g" | \
   sed "s/<DOMAIN_NAME>/${DOMAIN_NAME}/g" | \
+  sed "s/<RAK_SERVER_IP>/${RAK_SERVER_IP:-198.51.100.2}/g" | \
+  sed "s/<AWS_SERVER_IP>/${AWS_SERVER_IP:-198.51.100.3}/g" | \
   sed "s/<PRIVATE_GITLAB_DOMAIN>/${PRIVATE_GITLAB_DOMAIN:-gitlab.example.com}/g" | \
   ssh root@<SERVER_IP> "mkdir -p /var/lib/marzban/templates/clash && cat > /var/lib/marzban/templates/clash/custom.yml"
 ```
