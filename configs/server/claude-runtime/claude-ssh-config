@@ -1,0 +1,6 @@
+# The isolated namespace has no DNS or direct route; every SSH connection goes through the
+# residential SOCKS5 bridge, which also resolves the hostname remotely.
+Host *
+    ProxyCommand /usr/bin/nc -X 5 -x 127.0.0.1:7891 %h %p
+    StrictHostKeyChecking accept-new
+    ServerAliveInterval 30

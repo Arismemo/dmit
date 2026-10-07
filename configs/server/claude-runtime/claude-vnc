@@ -1,0 +1,46 @@
+#!/bin/bash
+# Start the isolated Claude desktop and print the noVNC link.
+# Run from the Mac in one step (tunnel + desktop):
+#   ssh -t -p 28827 -L 6080:127.0.0.1:6080 root@137.175.65.78 claude-vnc
+# Optional argument: the Mac-side local port used in -L (default 6080).
+set -euo pipefail
+
+LOCAL_PORT="${1:-6080}"
+case "$LOCAL_PORT" in (*[!0-9]*|'') echo "Usage: claude-vnc [LOCAL_PORT]" >&2; exit 2;; esac
+[ "$(id -u)" -eq 0 ] || { echo "Run as root (the SSH login user)." >&2; exit 1; }
+
+systemctl start claude-proxy-relay.service claude-desktop.service claude-novnc.socket claude-vnc.socket
+for unit in claude-desktop.service claude-novnc.socket; do
+  systemctl is-active --quiet "$unit" || { echo "$unit failed to start; see: journalctl -u $unit" >&2; exit 1; }
+done
+# Desktop readiness: noVNC page served through the host loopback socket.
+for _ in $(seq 1 20); do
+  curl -fs --noproxy '*' -o /dev/null --max-time 2 http://127.0.0.1:6080/vnc.html && break
+  sleep 0.5
+done || true
+curl -fs --noproxy '*' -o /dev/null --max-time 2 http://127.0.0.1:6080/vnc.html \
+  || { echo "noVNC is not answering on 127.0.0.1:6080." >&2; exit 1; }
+
+status="$(head -1 /var/run/claude-proxy-status 2>/dev/null || echo 'UNKNOWN')"
+url="http://localhost:${LOCAL_PORT}/vnc.html?autoconnect=1&resize=scale"
+
+cat <<EOF
+
+Claude desktop is running. Residential egress: ${status%% *}
+
+Open on the Mac:
+  ${url}
+
+If this SSH session was started without the tunnel, run this on the Mac instead:
+  ssh -t -p 28827 -L ${LOCAL_PORT}:127.0.0.1:6080 root@137.175.65.78 claude-vnc
+
+Open pages in the isolated browser from this shell:  chrome-open 'https://claude.ai'
+EOF
+
+# Keep the session (and its tunnel) open when launched as the ssh remote command.
+if [ -n "${SSH_CONNECTION:-}" ] && [ -t 0 ] && [ "${CLAUDE_VNC_NO_WAIT:-}" != 1 ]; then
+  echo
+  echo "Tunnel stays open while this runs. Press Ctrl-C to close it (the desktop keeps running)."
+  trap 'echo; echo "Tunnel closed."; exit 0' INT TERM
+  while sleep 3600; do :; done
+fi

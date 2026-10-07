@@ -13,11 +13,16 @@
 | `claude-session-backup`、`claude-session-restore`、`proxy-health-check` | `/usr/local/bin/`；备份/恢复须安装在同一目录 |
 | `*.service`、`*.socket` | `/etc/systemd/system/` |
 | `claude-runtime.json` | `/etc/claude-runtime.json`，集中非秘密配置 |
+| `claude-vnc` | `/usr/local/bin/claude-vnc`，root 执行：启动隔离桌面并输出 noVNC 链接 |
+| `claude-host-block.nft`、`claude-host-block.service` | `/etc/claude-host-block.nft`、`/etc/systemd/system/`；拒绝 user.slice（SSH 会话）直连 Anthropic 160.79.104.0/21、2607:6bc0::/48 |
+| `proxy-health-check.timer.interval.conf` | `/etc/systemd/system/proxy-health-check.timer.d/interval.conf`，探针间隔 5 分钟 |
+| `claude-ssh-config` | `/home/claude/.ssh/config`（claude 所有，0600）：SSH/Git 经住宅 SOCKS5 连接，密钥为 claude 用户独立的 `~/.ssh/id_ed25519` |
+| `claude-fonts.conf` | `/home/claude/.config/fontconfig/fonts.conf`，屏蔽 CJK 字体（claude 所有，0644） |
 | `claude-browser.apparmor` | `/etc/apparmor.d/claude-browser` |
 | `launch.sh` | `/root/claude-signup/launch.sh`，兼容原桌面启动命令 |
 | `test_ops.py` | 本地临时 fixture 测试，不安装为线上服务 |
 
-可执行脚本安装为 root 所有、0755；配置和 units 为 root 所有、0644。运行用户为 `claude`，主机代理转发用户为独立的 `claude-relay`。浏览器程序在 `/opt/claude-browser/`，由 root 维护；用户资料在 `/home/claude/browser-profile`。现有 `/usr/bin/claude-bin`、主机 `claude-bridge.service`、备份/健康 timer 及系统依赖不包含在本目录中。
+可执行脚本安装为 root 所有、0755；配置和 units 为 root 所有、0644。运行用户为 `claude`，主机代理转发用户为独立的 `claude-relay`。浏览器程序在 `/opt/claude-browser/`，由 root 维护；用户资料在 `/home/claude/browser-profile`。原生 CLI 由 `claude` 用户安装在 `~/.local/bin/claude`（`/etc/claude-runtime.json` 的 `claude_binary`），经住宅代理自动更新；主机 `claude-bridge.service`、备份/健康 timer 及系统依赖不包含在本目录中。
 
 本目录不是一键重装器。安装前须核对用户、浏览器程序、AppArmor、原网桥、socket 权限、定时器和会话数据；不要直接覆盖线上凭据或重新创建正在使用的命名空间。
 

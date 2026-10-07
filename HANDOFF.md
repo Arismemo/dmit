@@ -65,13 +65,13 @@ ssh -p 28827 -L 6080:127.0.0.1:6080 root@137.175.65.78
 ```bash
 systemctl is-active claude-netns claude-proxy-relay claude-desktop claude-bridge
 proxy-health-check
-/usr/local/sbin/claude-exec curl -fsS --max-time 15 https://ipinfo.io/ip
+/usr/local/sbin/claude-exec curl -fsS --max-time 15 https://claude.ai/cdn-cgi/trace
 claude-session-backup
 claude-session-restore --check-only
 systemctl list-timers claude-backup.timer proxy-health-check.timer
 ```
 
-健康探针读取集中配置、检查桥及出口并写状态，失败不重启桥。住宅出口检查应在隔离环境或显式代理下执行；普通 root shell 的 curl 现在使用机房出口，这是预期行为。部署前已打开的 shell 可能保留旧代理变量，重新连接后生效。
+健康探针每 5 分钟读取集中配置、检查桥及出口并写状态，失败不重启桥；确认出口不符时结束运行中的 Claude 与桌面。主机 SSH 会话直连 Anthropic 会被 `claude-host-block` 拒绝，必须通过 `claude`/`claude-shell` 使用。住宅出口检查应在隔离环境或显式代理下执行；普通 root shell 的 curl 现在使用机房出口，这是预期行为。部署前已打开的 shell 可能保留旧代理变量，重新连接后生效。
 
 更换上游时同时维护网桥的接入地址/凭据与 `/etc/claude-runtime.json` 的预期出口。接入地址和实际出口地址可能不同。具体步骤见 [Step 8](playbook/08-rak-claude-residential-proxy.md)。
 

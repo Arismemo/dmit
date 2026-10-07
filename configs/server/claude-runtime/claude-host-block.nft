@@ -1,0 +1,21 @@
+# Fail fast if anything in an SSH/user session (root shell, VS Code Remote server, npx, curl)
+# talks to Anthropic directly from the datacenter IP. Services in system.slice (Xray, Marzban,
+# claude-bridge) and the isolated namespace are unaffected. Owns only this table.
+table inet claude_host_block
+delete table inet claude_host_block
+table inet claude_host_block {
+	set anthropic4 {
+		type ipv4_addr; flags interval
+		elements = { 160.79.104.0/21 }
+	}
+	set anthropic6 {
+		type ipv6_addr; flags interval
+		elements = { 2607:6bc0::/48 }
+	}
+	chain output {
+		type filter hook output priority filter; policy accept;
+		socket cgroupv2 level 1 "user.slice" ip daddr @anthropic4 counter reject with tcp reset
+		socket cgroupv2 level 1 "user.slice" ip6 daddr @anthropic6 counter reject
+		socket cgroupv2 level 1 "user.slice" ip daddr @anthropic4 counter reject
+	}
+}

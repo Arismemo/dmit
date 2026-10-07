@@ -11,7 +11,8 @@ ExecStart=/usr/local/libexec/claude-desktop
 ExecStartPost=/usr/local/libexec/claude-wait-ports 5900 6080 9222
 WorkingDirectory=/home/claude
 Environment=HOME=/home/claude
-Environment=LANG=C.UTF-8
+Environment=LANG=en_US.UTF-8
+Environment=LANGUAGE=en_US:en
 Environment=TZ=America/New_York
 Environment=XDG_RUNTIME_DIR=/run/claude-desktop
 RuntimeDirectory=claude-desktop

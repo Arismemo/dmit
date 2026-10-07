@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+"""Verify the residential egress as Anthropic's edge sees it, then exec the native CLI."""
 import json
 import os
 import pathlib
@@ -6,14 +7,25 @@ import subprocess
 import sys
 
 cfg = json.loads(pathlib.Path('/etc/claude-runtime.json').read_text())
-try:
+binary = cfg.get('claude_binary', os.path.expanduser('~/.local/bin/claude'))
+
+
+def trace():
+    # Cloudflare trace on claude.ai reports the client IP/country Anthropic observes;
+    # it has no third-party rate limit, unlike IP metadata services.
     result = subprocess.run(['curl', '--fail', '--silent', '--show-error',
         '--noproxy', '', '--proxy', cfg['http_proxy'], '--connect-timeout', '5',
-        '--max-time', '12', 'https://ipinfo.io/json'],
+        '--max-time', '12', 'https://claude.ai/cdn-cgi/trace'],
         check=True, capture_output=True, text=True, timeout=15)
-    observed = json.loads(result.stdout)
-    if observed.get('ip') != cfg['expected_ip'] or cfg['expected_org'].casefold() not in observed.get('org', '').casefold():
-        sys.exit('Claude refused to start: proxy egress does not match the configured IP/organization.')
+    return dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
+
+
+try:
+    observed = trace()
 except (subprocess.SubprocessError, ValueError, OSError):
     sys.exit('Claude refused to start: the residential proxy could not be verified.')
-os.execv('/usr/bin/claude-bin', ['/usr/bin/claude-bin', *sys.argv[1:]])
+if observed.get('ip') != cfg['expected_ip'] or observed.get('loc') != cfg.get('expected_country', 'US'):
+    sys.exit('Claude refused to start: proxy egress does not match the configured IP/country.')
+if not os.access(binary, os.X_OK):
+    sys.exit('Claude refused to start: native CLI not found at ' + binary)
+os.execv(binary, [binary, *sys.argv[1:]])

@@ -48,7 +48,7 @@ try:
     launch(['/opt/claude-browser/chrome', '--remote-debugging-port=9222',
             '--user-data-dir=' + home + '/browser-profile', '--no-first-run',
             '--no-default-browser-check', '--window-size=1366,768',
-            '--disable-features=Translate', '--disable-dev-shm-usage',
+            '--disable-features=Translate', '--lang=en-US', '--disable-dev-shm-usage',
             '--proxy-server=' + cfg['http_proxy'], '--restore-last-session'])
     while all(process.poll() is None for process in children):
         time.sleep(1)

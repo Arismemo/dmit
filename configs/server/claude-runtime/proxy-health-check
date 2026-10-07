@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Report proxy bridge and expected egress health without restarting services."""
-import argparse, datetime, http.client, json, os, pathlib, ssl, subprocess, sys, tempfile, urllib.parse
+"""Check residential egress; on a confirmed IP/country mismatch, stop running Claude sessions."""
+import argparse, datetime, http.client, json, os, pathlib, pwd, signal, ssl, subprocess, sys, tempfile, urllib.parse
+
+ORG_RECHECK_SECONDS = 3600
 
 
 def atomic_write(path, contents):
@@ -18,27 +20,88 @@ def atomic_write(path, contents):
             os.unlink(tmp)
 
 
-def probe(cfg):
+def fetch_json(cfg, host, path):
     proxy = urllib.parse.urlsplit(cfg['http_proxy'])
     if proxy.scheme != 'http' or proxy.hostname not in ('127.0.0.1', 'localhost') or not proxy.port or proxy.username:
         raise ValueError('http_proxy must be a credential-free local HTTP proxy')
     # Explicit CONNECT avoids environment NO_PROXY bypass and local target DNS.
     connection = http.client.HTTPSConnection(proxy.hostname, proxy.port, timeout=10, context=ssl.create_default_context())
-    connection.set_tunnel('ipinfo.io', 443)
+    connection.set_tunnel(host, 443)
     try:
-        connection.request('GET', '/json', headers={'Host': 'ipinfo.io', 'Accept': 'application/json', 'User-Agent': 'claude-proxy-health/1'})
+        connection.request('GET', path, headers={'Host': host, 'Accept': '*/*', 'User-Agent': 'claude-proxy-health/2'})
         response = connection.getresponse()
         if response.status != 200:
-            raise ValueError('egress metadata endpoint returned HTTP ' + str(response.status))
+            raise ValueError(host + ' returned HTTP ' + str(response.status))
         data = response.read(65537)
         if len(data) > 65536:
-            raise ValueError('egress metadata response exceeded size limit')
-        result = json.loads(data)
-        if not isinstance(result, dict) or not isinstance(result.get('ip'), str) or not isinstance(result.get('org'), str):
-            raise ValueError('egress metadata missing ip or org')
-        return result
+            raise ValueError(host + ' response exceeded size limit')
+        return data.decode('utf-8', 'replace')
     finally:
         connection.close()
+
+
+def probe(cfg, cached_org=None):
+    """Return the egress IP/country seen by Anthropic's edge, plus best-effort ISP metadata."""
+    text = fetch_json(cfg, 'claude.ai', '/cdn-cgi/trace')
+    trace = dict(line.split('=', 1) for line in text.splitlines() if '=' in line)
+    if not isinstance(trace.get('ip'), str) or not isinstance(trace.get('loc'), str):
+        raise ValueError('edge trace missing ip or loc')
+    result = {'ip': trace['ip'], 'loc': trace['loc'], 'org': None, 'org_source': None}
+    if cached_org and cached_org.get('ip') == trace['ip']:
+        # Metadata services rate-limit shared residential IPs; reuse a recent lookup for the same IP.
+        result.update(org=cached_org['org'], org_source=cached_org['org_source'])
+        return result
+    # IP metadata services rate-limit residential IPs; any one source is enough.
+    for host, path, keys in (('ipinfo.io', '/json', ('org',)), ('ipwho.is', '/', ('connection.isp', 'connection.org'))):
+        try:
+            meta = json.loads(fetch_json(cfg, host, path))
+        except (ValueError, OSError, http.client.HTTPException):
+            continue
+        if not isinstance(meta, dict) or meta.get('ip') != trace['ip']:
+            continue
+        values = []
+        for key in keys:
+            value = meta
+            for part in key.split('.'):
+                value = value.get(part) if isinstance(value, dict) else None
+            if isinstance(value, str):
+                values.append(value)
+        if values:
+            result['org'], result['org_source'] = ' / '.join(values), host
+            break
+    return result
+
+
+def stop_claude(cfg):
+    """Kill native CLI processes and stop the isolated desktop so no session keeps using a wrong egress."""
+    versions = os.path.join(cfg.get('runtime_home', '/home/claude'), '.local/share/claude/versions') + '/'
+    uid = pwd.getpwnam(cfg.get('runtime_user', 'claude')).pw_uid
+    killed = 0
+    for proc in pathlib.Path('/proc').iterdir():
+        if not proc.name.isdigit():
+            continue
+        try:
+            if proc.stat().st_uid != uid or not os.readlink(proc / 'exe').startswith(versions):
+                continue
+            os.kill(int(proc.name), signal.SIGKILL)
+            killed += 1
+        except OSError:
+            continue
+    subprocess.run(['systemctl', 'stop', cfg.get('desktop_service', 'claude-desktop.service')],
+                   timeout=40, capture_output=True)
+    return killed
+
+
+def recent_org(path, now):
+    try:
+        prev = json.loads(pathlib.Path(path).read_text())
+        checked = datetime.datetime.fromisoformat(prev['org_checked_at'])
+        if prev.get('observed_org') and 0 <= (now - checked).total_seconds() < ORG_RECHECK_SECONDS:
+            return {'ip': prev['observed_ip'], 'org': prev['observed_org'], 'org_source': prev['org_source'],
+                    'checked_at': prev['org_checked_at']}
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return None
 
 
 def main():
@@ -47,9 +110,10 @@ def main():
     parser.add_argument('--status-json', default='/var/run/claude-proxy-status.json')
     parser.add_argument('--status-text', default='/var/run/claude-proxy-status')
     args = parser.parse_args()
-    status = {'checked_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'healthy': False,
-              'bridge_active': False, 'egress_verified': False,
-              'note': 'Observation only; this check does not enforce isolation or restart services.'}
+    now = datetime.datetime.now(datetime.timezone.utc)
+    status = {'checked_at': now.isoformat(), 'healthy': False,
+              'bridge_active': False, 'egress_verified': False, 'enforced': False,
+              'note': 'Isolation is enforced by the network namespace; this check never restarts the bridge.'}
     try:
         with open(args.config) as f:
             cfg = json.load(f)
@@ -61,14 +125,25 @@ def main():
         status['bridge_active'] = result.returncode == 0
         if not status['bridge_active']:
             raise ValueError('proxy bridge service is not active')
-        result = probe(cfg)
-        status['observed_ip'] = result['ip']
-        status['observed_org'] = result['org']
-        status['egress_verified'] = result['ip'] == cfg['expected_ip'] and cfg['expected_org'].casefold() in result['org'].casefold()
+        cached = recent_org(args.status_json, now)
+        result = probe(cfg, cached)
+        status.update(observed_ip=result['ip'], observed_country=result['loc'],
+                      observed_org=result['org'], org_source=result['org_source'])
+        if result['org']:
+            status['org_checked_at'] = cached['checked_at'] if cached and cached['org'] == result['org'] else now.isoformat()
+        expected_country = cfg.get('expected_country', 'US')
+        status['egress_verified'] = result['ip'] == cfg['expected_ip'] and result['loc'] == expected_country
         if not status['egress_verified']:
-            raise ValueError('observed egress does not match expected_ip and expected_org')
+            # A positive mismatch means live sessions would talk to Anthropic from the wrong egress.
+            status['enforced'] = True
+            status['stopped_processes'] = stop_claude(cfg)
+            raise ValueError('observed egress does not match expected_ip and expected_country; Claude sessions and desktop stopped')
+        if result['org'] is not None and cfg['expected_org'].casefold() not in result['org'].casefold():
+            status['egress_verified'] = False
+            raise ValueError('observed ISP does not match expected_org')
         status['healthy'] = True
-        status['detail'] = 'Proxy bridge is active and egress matches the configured IP and organization.'
+        status['detail'] = 'Proxy bridge is active; edge-observed IP and country match' + (
+            ' and ISP matches.' if result['org'] else '; ISP metadata unavailable (rate limited), IP pin still enforced.')
     except (Exception,) as e:
         # Avoid reflecting arbitrary remote response bodies or configuration secrets.
         status['detail'] = str(e) if isinstance(e, ValueError) else type(e).__name__ + ': health check failed'

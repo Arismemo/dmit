@@ -155,10 +155,13 @@ class OpsTests(unittest.TestCase):
         out_json = self.base / 'status.json'
         out_text = self.base / 'status'
         args = ['proxy-health-check', '--config', str(self.config), '--status-json', str(out_json), '--status-text', str(out_text)]
-        cases = [(0, {'ip': '48.46.113.162', 'org': 'AS7922 Comcast Cable'}, 0), (0, {'ip': '137.175.65.78', 'org': 'Other'}, 1), (0, TimeoutError(), 1), (1, None, 1)]
+        ok = {'ip': '48.46.113.162', 'loc': 'US', 'org_source': 'ipinfo.io'}
+        cases = [(0, dict(ok, org='AS7922 Comcast Cable'), 0), (0, dict(ok, org=None, org_source=None), 0),
+                 (0, dict(ok, org='AS0 Hosting'), 1), (0, dict(ok, loc='HK', org='Comcast'), 1),
+                 (0, {'ip': '137.175.65.78', 'loc': 'US', 'org': 'Other', 'org_source': 'ipinfo.io'}, 1), (0, TimeoutError(), 1), (1, None, 1)]
         for bridge_rc, probe_result, expected in cases:
             with self.subTest(probe_result=str(probe_result)):
-                with mock.patch.object(sys, 'argv', args), mock.patch.object(mod.subprocess, 'run', return_value=types.SimpleNamespace(returncode=bridge_rc)) as run, mock.patch.object(mod, 'probe') as probe, contextlib.redirect_stdout(io.StringIO()):
+                with mock.patch.object(sys, 'argv', args), mock.patch.object(mod.subprocess, 'run', return_value=types.SimpleNamespace(returncode=bridge_rc)) as run, mock.patch.object(mod, 'probe') as probe, mock.patch.object(mod, 'stop_claude', return_value=1) as stop, contextlib.redirect_stdout(io.StringIO()):
                     if isinstance(probe_result, Exception):
                         probe.side_effect = probe_result
                     else:
@@ -168,19 +171,49 @@ class OpsTests(unittest.TestCase):
                     self.assertNotIn('restart', run.call_args.args[0])
                     if bridge_rc:
                         probe.assert_not_called()
+                    mismatch = isinstance(probe_result, dict) and (probe_result['ip'] != '48.46.113.162' or probe_result['loc'] != 'US')
+                    self.assertEqual(stop.called, mismatch)
+                    self.assertEqual(json.loads(out_json.read_text())['enforced'], mismatch)
 
-    def test_health_connect_is_explicit_and_checks_response_schema(self):
+    def test_health_reuses_recent_org_for_same_ip_only(self):
+        mod = module('proxy-health-check')
+        now = mod.datetime.datetime.now(mod.datetime.timezone.utc)
+        path = self.base / 'status.json'
+        prev = {'observed_ip': '48.46.113.162', 'observed_org': 'Comcast', 'org_source': 'ipwho.is', 'org_checked_at': now.isoformat()}
+        path.write_text(json.dumps(prev))
+        self.assertEqual(mod.recent_org(path, now)['org'], 'Comcast')
+        self.assertIsNone(mod.recent_org(path, now + mod.datetime.timedelta(seconds=mod.ORG_RECHECK_SECONDS + 1)))
+        config = json.loads(self.config.read_text())
+        with mock.patch.object(mod, 'fetch_json', return_value='ip=48.46.113.162\nloc=US\n') as fetch:
+            result = mod.probe(config, mod.recent_org(path, now))
+        self.assertEqual((result['org'], fetch.call_count), ('Comcast', 1))
+        with mock.patch.object(mod, 'fetch_json', side_effect=['ip=1.2.3.4\nloc=US\n', ValueError('429'), ValueError('429')]):
+            self.assertIsNone(mod.probe(config, mod.recent_org(path, now))['org'])
+
+    def test_health_connect_is_explicit_and_falls_back_on_rate_limit(self):
         mod = module('proxy-health-check')
         config = json.loads(self.config.read_text())
-        with mock.patch.object(mod.http.client, 'HTTPSConnection') as connection:
-            response = connection.return_value.getresponse.return_value
-            response.status = 200
-            response.read.return_value = b'{"ip":"48.46.113.162","org":"Comcast"}'
-            self.assertEqual(mod.probe(config)['ip'], '48.46.113.162')
-            connection.return_value.set_tunnel.assert_called_once_with('ipinfo.io', 443)
-            response.read.return_value = b'[]'
-            with self.assertRaises(ValueError):
-                mod.probe(config)
+        bodies = {'claude.ai': (200, b'fl=1\nip=48.46.113.162\nloc=US\n'),
+                  'ipinfo.io': (429, b'{}'),
+                  'ipwho.is': (200, b'{"ip":"48.46.113.162","connection":{"isp":"Comcast Cable","org":"AviationAI"}}')}
+        hosts = []
+        def make(*_, **__):
+            conn = mock.MagicMock()
+            conn.set_tunnel.side_effect = lambda host, port: hosts.append((host, port))
+            def getresponse():
+                status, body = bodies[hosts[-1][0]]
+                return types.SimpleNamespace(status=status, read=lambda n: body)
+            conn.getresponse.side_effect = getresponse
+            return conn
+        with mock.patch.object(mod.http.client, 'HTTPSConnection', side_effect=make):
+            result = mod.probe(config)
+        self.assertEqual((result['ip'], result['loc'], result['org_source']), ('48.46.113.162', 'US', 'ipwho.is'))
+        self.assertIn('Comcast', result['org'])
+        self.assertEqual(hosts, [('claude.ai', 443), ('ipinfo.io', 443), ('ipwho.is', 443)])
+        bodies['claude.ai'] = (200, b'fl=1\n')
+        hosts.clear()
+        with mock.patch.object(mod.http.client, 'HTTPSConnection', side_effect=make), self.assertRaises(ValueError):
+            mod.probe(config)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

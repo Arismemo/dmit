@@ -20,8 +20,8 @@ elif os.stat('/proc/self/ns/net').st_ino != os.stat('/run/netns/claude').st_ino:
 
 env = {
     'HOME': account.pw_dir, 'USER': account.pw_name, 'LOGNAME': account.pw_name,
-    'PATH': '/usr/local/bin:/usr/bin:/bin', 'SHELL': '/bin/bash',
-    'LANG': 'C.UTF-8', 'TZ': 'America/New_York',
+    'PATH': '/usr/local/bin:' + account.pw_dir + '/.local/bin:/usr/bin:/bin', 'SHELL': '/bin/bash',
+    'LANG': 'en_US.UTF-8', 'LANGUAGE': 'en_US:en', 'TZ': 'America/New_York',
     'DISPLAY': ':99', 'XAUTHORITY': account.pw_dir + '/.Xauthority',
     'BROWSER': '/usr/local/bin/chrome-open',
     'HTTP_PROXY': cfg['http_proxy'], 'HTTPS_PROXY': cfg['http_proxy'],

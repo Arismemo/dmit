@@ -1,0 +1,13 @@
+[Unit]
+Description=Block direct Anthropic access from host user sessions (Claude must use its namespace)
+After=network-pre.target
+Before=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/claude-host-block.nft
+ExecStop=/usr/sbin/nft delete table inet claude_host_block
+
+[Install]
+WantedBy=multi-user.target

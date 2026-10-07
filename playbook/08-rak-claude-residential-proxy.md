@@ -21,7 +21,7 @@
 | 主机网桥 | `claude-bridge.service` |
 | 隔离环境内代理入口 | `claude-proxy-relay.service` |
 | 主机UNIX socket转发 | `claude-http-egress.socket`、`claude-socks-egress.socket` |
-| 15分钟健康检查 | `proxy-health-check.timer` |
+| 5分钟健康检查（出口不符时停止 Claude） | `proxy-health-check.timer` |
 
 凭据不写入源码、交接、命令输出或测试报告。网桥配置继续采用受限文件权限。集中配置只保存非秘密参数，守卫与健康探针从中读取同一组预期IP和组织信息。
 
@@ -32,21 +32,21 @@
 ```bash
 systemctl is-active claude-bridge claude-proxy-relay
 proxy-health-check
-/usr/local/sbin/claude-exec curl -fsS --max-time 15 https://ipinfo.io/ip
+/usr/local/sbin/claude-exec curl -fsS --max-time 15 https://claude.ai/cdn-cgi/trace
 /usr/local/sbin/claude-exec curl -fsS --max-time 15 --proxy socks5h://127.0.0.1:7891 https://ipinfo.io/ip
 /usr/local/sbin/claude-exec curl -sSI --max-time 15 https://api.anthropic.com
 cat /var/run/claude-proxy-status
 ```
 
-前两个出口检查应与集中配置一致。`socks5h` 把目标域名交给代理解析。Anthropic根路径404只能作为本次请求的可达性证据，不是登录或模型调用成功。
+前两个出口检查应与集中配置一致；trace 返回的 `ip`/`loc` 就是 Anthropic 边缘看到的来源。`socks5h` 把目标域名交给代理解析。Anthropic根路径404只能作为本次请求的可达性证据，不是登录或模型调用成功。
 
-健康状态另有 `/var/run/claude-proxy-status.json`。探针失败返回非零并保存原因，不自动重启桥，也不声称探针执行了网络阻断。
+健康状态另有 `/var/run/claude-proxy-status.json`。探针失败返回非零并保存原因，不自动重启桥；仅在确认出口 IP/国家不符时结束运行中的 Claude 与桌面。更换上游时先改集中配置再切桥，否则探针会按不符处置。
 
 ## 4. 更换住宅上游
 
 1. 记录当前配置的受限回滚副本，并检查是否有正在运行的Claude任务或授权流程。后续重启住宅桥会中断其连接。
 2. 在服务器上更新 `/etc/claude-bridge/config.json` 的上游接入地址、端口和凭据，保持入站回环绑定及无直连出站。
-3. 更新 `/etc/claude-runtime.json` 的 `expected_ip` 与 `expected_org`。供应商接入地址可能与实际出口IP不同，不能直接认为二者相同。
+3. 更新 `/etc/claude-runtime.json` 的 `expected_ip`、`expected_country` 与 `expected_org`。供应商接入地址可能与实际出口IP不同，不能直接认为二者相同。
 4. 检查配置语法后重启住宅链路的转发服务：
 
    ```bash

@@ -5,5 +5,7 @@
   "socks_proxy": "socks5h://127.0.0.1:7891",
   "runtime_user": "claude",
   "runtime_home": "/home/claude",
-  "bridge_service": "claude-bridge.service"
+  "bridge_service": "claude-bridge.service",
+  "expected_country": "US",
+  "claude_binary": "/home/claude/.local/bin/claude"
 }
