@@ -18,11 +18,12 @@ for (const path of sources) {
       { name: "AWS-US-Clean", type: "vless" },
       { name: "DMIT-Chained", type: "vless", "dialer-proxy": "Proxy" },
       { name: "DMIT-Direct", type: "direct" },
-      { name: "DMIT-Shadow", type: "vless" }
+      { name: "DMIT-Shadow", type: "vless" },
+      { name: "RAK-Bulk-1T", type: "vless" }
     ],
     "proxy-groups": [
       { name: "Auto", type: "url-test", proxies: ["DMIT-LA"] },
-      { name: "Proxy", type: "select", proxies: ["Auto", "DIRECT"] },
+      { name: "Proxy", type: "select", proxies: ["Auto", "RAK-Bulk-1T", "DIRECT"] },
       { name: "DMIT-Shadow", type: "select", proxies: ["Proxy"] },
       { name: "Grok-xAI", type: "select", proxies: ["AWS-US-Clean", "Proxy"] },
       { name: "AI", type: "select", proxies: ["DMIT-LA", "AWS-US-Clean", "Proxy", "Auto", "DIRECT", "RAK-Bulk-1T", "DMIT-Chained", "DMIT-Direct", "DMIT-Shadow", "missing"], use: ["provider"], "include-all": true, "include-all-proxies": true, "include-all-providers": true }
@@ -63,6 +64,26 @@ for (const path of sources) {
     !output.rules.concat(bare.rules).some(rule => /claude|anthropic/i.test(rule)),
     "no Claude/Anthropic rules are injected"
   );
+
+  // DMIT 与 RAK 是互不牵连的两条线路：组内只含本线路节点，停用的 RAK Reality 节点不得残留
+  for (const result of [output, bare]) {
+    const groups = Object.fromEntries(result["proxy-groups"].map(group => [group.name, group]));
+    assert.deepEqual(groups["线路选择"].proxies, ["DMIT", "RAK"]);
+    assert.deepEqual(groups.RAK.proxies, ["RAK-HY2"], "RAK line must not reference DMIT nodes");
+    assert.ok(groups.DMIT.proxies.length && groups.DMIT.proxies.every(name => /^DMIT-/.test(name)), "DMIT line must not reference RAK nodes");
+    assert.equal(groups["Bulk-Traffic"].proxies[0], "RAK", "bulk traffic defaults to the RAK line");
+    assert.ok(!result.proxies.some(proxy => proxy.name === "RAK-Bulk-1T"), "retired RAK Reality node removed");
+    assert.ok(!result["proxy-groups"].some(group => (group.proxies || []).includes("RAK-Bulk-1T")), "no group references the retired node");
+    const rak = result.proxies.find(proxy => proxy.name === "RAK-HY2");
+    assert.equal(rak.type, "hysteria2");
+    for (const key of ["server", "password", "sni", "fingerprint"]) assert.ok(rak[key], `RAK-HY2 must define ${key}`);
+  }
+  assert.deepEqual(
+    Object.fromEntries(output["proxy-groups"].map(group => [group.name, group])).DMIT.proxies,
+    ["DMIT-LA", "DMIT-HY2"],
+    "DMIT line prefers Reality and falls back to Hysteria2"
+  );
+  assert.equal(output["proxy-groups"].find(group => group.name === "Proxy").proxies[0], "线路选择", "Proxy defaults to the line selector");
   const known = new Set([
     "DIRECT", "REJECT",
     ...bare.proxies.map(proxy => proxy.name),

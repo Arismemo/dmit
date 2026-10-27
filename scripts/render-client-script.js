@@ -55,7 +55,10 @@ const env = parseEnv(secretsPath);
 if (!env.CLIENT_UUID && env.UUID) env.CLIENT_UUID = env.UUID;
 
 // 必填项：核心节点参数；可选模块：开关为 true 时其键必须齐全
-const coreKeys = ["SERVER_IP", "HY2_PASSWORD", "DOMAIN_NAME", "AWS_SERVER_IP", "RAK_SERVER_IP", "CLIENT_UUID"];
+const coreKeys = [
+  "SERVER_IP", "HY2_PASSWORD", "DOMAIN_NAME", "AWS_SERVER_IP", "RAK_SERVER_IP", "CLIENT_UUID",
+  "RAK_HY2_PASSWORD", "RAK_HY2_PIN_SHA256", "RAK_HY2_SNI"
+];
 const modules = {
   SSH_TUNNEL_ENABLE: {
     constant: "enableSshTunnel",

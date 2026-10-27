@@ -78,24 +78,19 @@ function main(config, profileName) {
     tfo: true
   };
 
+  // RAK 独立线路：Hysteria2 (UDP 443)，自签证书按指纹校验，不与 DMIT 共用任何凭据。
+  // RAK 原 IP 的 TCP 已被封锁，原 Reality 节点 RAK-Bulk-1T 停用，订阅里残留的同名节点在下方清除。
   const rakProxy = {
-    name: "RAK-Bulk-1T",
-    type: "vless",
+    name: "RAK-HY2",
+    type: "hysteria2",
     server: "<RAK_SERVER_IP>",
-    port: 3389,
-    uuid: "<CLIENT_UUID>",
-    network: "tcp",
-    tls: true,
-    udp: true,
-    flow: "xtls-rprx-vision",
-    "client-fingerprint": "chrome",
-    servername: "apple.com",
-    "reality-opts": {
-      "public-key": "wAgwdEPwgawxCmpFynh7--GzSEExDnFIDNpPa-T6a14",
-      "short-id": "abcd1234"
-    },
-    tfo: false
+    port: 443,
+    password: "<RAK_HY2_PASSWORD>",
+    sni: "<RAK_HY2_SNI>",
+    fingerprint: "<RAK_HY2_PIN_SHA256>",
+    "skip-cert-verify": false
   };
+  const retiredProxyNames = ["RAK-Bulk-1T"];
 
   let extraProxies = [];
   let fallbackGroup = null;
@@ -206,21 +201,60 @@ function main(config, profileName) {
   }
 
   const filteredExistingProxies = existingProxies.filter(
-    proxy => proxy && proxy.name !== hy2Proxy.name && proxy.name !== primaryName && proxy.name !== backupName && proxy.name !== backup2Name && proxy.name !== awsProxy.name && proxy.name !== rakProxy.name
+    proxy => proxy && proxy.name !== hy2Proxy.name && proxy.name !== primaryName && proxy.name !== backupName && proxy.name !== backup2Name && proxy.name !== awsProxy.name && proxy.name !== rakProxy.name && !retiredProxyNames.includes(proxy.name)
   );
   config.proxies = extraProxies.concat([hy2Proxy, awsProxy, rakProxy], filteredExistingProxies);
 
   // =========================================================================
-  // 模块 5: 策略组编排 (Bulk-Traffic 白名单泄洪组与通用策略组)
+  // 模块 5: 策略组编排 (DMIT/RAK 独立线路、Bulk-Traffic 白名单泄洪组与通用策略组)
   // =========================================================================
+  // DMIT 与 RAK 是互不共用凭据的两条线路：组内按可用性自动故障转移，组间在“线路选择”中手动切换
+  const lineHealthCheck = {
+    url: "https://www.gstatic.com/generate_204",
+    interval: 300,
+    timeout: 5000,
+    lazy: false,
+    "expected-status": "204"
+  };
+  const proxyNames = new Set(config.proxies.map(proxy => proxy.name));
+  const dmitGroup = Object.assign({
+    name: "DMIT",
+    type: "fallback",
+    proxies: ["DMIT-LA", hy2Proxy.name].filter(name => proxyNames.has(name))
+  }, lineHealthCheck);
+  const rakGroup = Object.assign({
+    name: "RAK",
+    type: "fallback",
+    proxies: [rakProxy.name]
+  }, lineHealthCheck);
+  const lineGroupName = "线路选择";
+  const lineGroup = {
+    name: lineGroupName,
+    type: "select",
+    proxies: [dmitGroup.name, rakGroup.name]
+  };
+  const lineGroups = [lineGroup, dmitGroup, rakGroup];
+  const lineGroupNames = new Set(lineGroups.map(group => group.name));
+
+  // 大流量默认走 RAK，避免占用 DMIT 每月流量额度
   const bulkGroupName = "Bulk-Traffic";
   const bulkGroup = {
     name: bulkGroupName,
     type: "select",
-    proxies: ["RAK-Bulk-1T", "Proxy", "DIRECT"]
+    proxies: [rakGroup.name, lineGroupName, "Proxy", "DIRECT"]
   };
 
-  const existingGroups = Array.isArray(config["proxy-groups"]) ? config["proxy-groups"] : [];
+  const existingGroups = (Array.isArray(config["proxy-groups"]) ? config["proxy-groups"] : [])
+    .filter(group => group && !lineGroupNames.has(group.name));
+  existingGroups.forEach(group => {
+    // 停用节点从订阅自带的策略组中移除，避免引用不存在的节点
+    if (Array.isArray(group.proxies)) {
+      group.proxies = group.proxies.filter(name => !retiredProxyNames.includes(name));
+    }
+    if (group.name === "Proxy" && Array.isArray(group.proxies) && !group.proxies.includes(lineGroupName)) {
+      group.proxies.unshift(lineGroupName);
+    }
+  });
   existingGroups.forEach(group => {
     if (group && (group.name === "Auto" || group.name === "Proxy" || group.name === "AI")) {
       if (Array.isArray(group.proxies)) {
@@ -233,7 +267,7 @@ function main(config, profileName) {
         if (!group.proxies.includes(awsProxy.name)) group.proxies.push(awsProxy.name);
       }
     }
-    // RAK-Bulk-1T 注入 Proxy 组作为备选用量；【严格禁止进入 AI 策略组，杜绝风控】
+    // RAK 节点注入 Proxy 组作为备选用量；【严格禁止进入 AI 策略组，杜绝风控】
     if (group && group.name === "Proxy") {
       if (Array.isArray(group.proxies)) {
         if (!group.proxies.includes(rakProxy.name)) group.proxies.push(rakProxy.name);
@@ -260,10 +294,11 @@ function main(config, profileName) {
   bulkGroup.proxies = bulkGroup.proxies.filter(name =>
     name === "DIRECT" || name === "REJECT" ||
     name === hy2Proxy.name || name === awsProxy.name || name === rakProxy.name ||
-    groupNames.has(name)
+    lineGroupNames.has(name) || groupNames.has(name)
   );
 
   const mergedGroups = [bulkGroup].concat(
+    lineGroups,
     existingGroups.filter(g => g && g.name !== bulkGroupName)
   );
 
