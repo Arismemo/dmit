@@ -56,8 +56,12 @@ for (const path of sources) {
   const bare = transform(source, bareFixture);
   assert.ok(!bare["proxy-groups"].some(group => group.name === "AI"), "no AI group synthesized");
   assert.ok(
-    bare.rules.includes("DOMAIN-SUFFIX,claude.ai," + bare.proxies.find(p => p.name === "AWS-US-Clean").name),
-    "AI rules must fall back to the injected AWS node when the profile has no AI group"
+    bare.rules.includes("DOMAIN-SUFFIX,grok.com," + bare.proxies.find(p => p.name === "AWS-US-Clean").name),
+    "Grok rules must fall back to the injected AWS node when the profile has no Grok-xAI group"
+  );
+  assert.ok(
+    !output.rules.concat(bare.rules).some(rule => /claude|anthropic/i.test(rule)),
+    "no Claude/Anthropic rules are injected"
   );
   const known = new Set([
     "DIRECT", "REJECT",

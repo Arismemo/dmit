@@ -100,20 +100,6 @@ function main(config, profileName) {
   let extraProxies = [];
   let fallbackGroup = null;
   let managedRules = [
-    // Claude / Anthropic 全域生态防风控加固 (最高优先级，锁定 AI 策略组，杜绝 IP 链路分裂)
-    "DOMAIN-SUFFIX,claude.ai,AI",
-    "DOMAIN-SUFFIX,claude.com,AI",
-    "DOMAIN-SUFFIX,claudeusercontent.com,AI",
-    "DOMAIN-SUFFIX,anthropic.com,AI",
-    "DOMAIN-KEYWORD,anthropic,AI",
-    "DOMAIN-KEYWORD,claude,AI",
-    "DOMAIN,usefathom.com,AI",
-    "DOMAIN-SUFFIX,browser-intake-us5-datadoghq.com,AI",
-    "DOMAIN,challenges.cloudflare.com,AI",
-    "DOMAIN-SUFFIX,auth0.com,AI",
-    "DOMAIN-SUFFIX,statsig.com,AI",
-    "DOMAIN-SUFFIX,statsigapi.net,AI",
-
     // Tailscale CGNAT 全网段直连
     "IP-CIDR,100.64.0.0/10,DIRECT,no-resolve",
     // 节点公网 IP 强制直连，避免路由递归自锁 (仅当配置了合规 IP 时注入，避免未替换占位符引发非法 CIDR 致命解析错误)
@@ -294,15 +280,10 @@ function main(config, profileName) {
     mergedGroups.filter(g => g && !privateGroupNames.has(g.name))
   );
 
-  // 订阅未提供 AI 策略组时，将 AI 规则降级指向脚本自注入的 AWS 容灾节点，避免引用不存在的组
+  // 订阅未提供 Grok-xAI 策略组时，将 Grok 规则降级指向脚本自注入的 AWS 容灾节点，避免引用不存在的组
   const finalGroupNames = new Set(
     (config["proxy-groups"] || []).filter(Boolean).map(group => group.name)
   );
-  if (!finalGroupNames.has("AI")) {
-    managedRules = managedRules.map(rule =>
-      rule.endsWith(",AI") ? rule.slice(0, -",AI".length) + "," + awsProxy.name : rule
-    );
-  }
   if (!finalGroupNames.has("Grok-xAI")) {
     managedRules = managedRules.map(rule =>
       rule.endsWith(",Grok-xAI") ? rule.slice(0, -",Grok-xAI".length) + "," + awsProxy.name : rule
