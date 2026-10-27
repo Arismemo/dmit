@@ -16,7 +16,7 @@
 | 对象 | 当前职责与路径 |
 |---|---|
 | DMIT | 主控与本机日常/AI 出口；本机 AI 分组验收时选择 DMIT-LA |
-| RAK 代理线路 | 2026-10-27 起改为独立的 Hysteria2（UDP443，`hysteria-rak.service`），承载大流量并作为 DMIT 的备用线路；原 Reality（TCP8443，marzban-node 容器）因 IP 的 TCP 被封锁已停用，容器保留。见 [Step 10](playbook/10-independent-nodes.md) |
+| RAK 代理线路 | 2026-10-27 起独立部署，不再接入 Marzban：主用 Hysteria2（UDP443，`hysteria-rak.service`），备用 VLESS+WebSocket 经 Cloudflare 转发（`xray-rak.service` 只监听回环，由 nginx 的 `rak-cdn` 站点反代）。原 Reality（TCP8443，marzban-node 容器）因 IP 的 TCP 被封锁已停用，容器暂留。见 [Step 10](playbook/10-independent-nodes.md) |
 | RAK Claude 与浏览器 | `claude` 用户、独立 `claude` 网络命名空间，仅经住宅代理访问公网 |
 | AWS | 本机 Grok 与备用节点；本次保持其分组策略 |
 | 管理链路 | 现有 SSH28827、SSH 本地转发、Marzban62050/62051 与 Tailscale |

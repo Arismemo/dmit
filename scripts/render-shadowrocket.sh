@@ -29,3 +29,19 @@ done
 
 printf '%s\n' "$output" > "$target"
 echo "已生成 $target（$(grep -cE '^[A-Z-]+,' "$target") 条规则）"
+
+# RAK 独立线路不在 Marzban 订阅里，另外生成导入链接（含凭据，权限 0600，放在仓库外）
+secret() { sed -nE "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*[\"']?([^\"']*)[\"']?[[:space:]]*\$/\\1/p" "$secrets" | tail -n1; }
+rak_ip="$(secret RAK_SERVER_IP)"; hy2_pass="$(secret RAK_HY2_PASSWORD)"; hy2_pin="$(secret RAK_HY2_PIN_SHA256)"; hy2_sni="$(secret RAK_HY2_SNI)"
+cdn_domain="$(secret CDN_DOMAIN)"; cdn_path="$(secret CDN_PATH)"; cdn_uuid="$(secret RAK_CDN_UUID)"
+if [[ -n "$rak_ip" && -n "$hy2_pass" && -n "$hy2_pin" && -n "$hy2_sni" && -n "$cdn_domain" && -n "$cdn_path" && -n "$cdn_uuid" ]]; then
+  nodes="${target%.conf}-rak-nodes.txt"
+  enc_path="$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$cdn_path")"
+  (umask 077; {
+    echo "hysteria2://${hy2_pass}@${rak_ip}:443?sni=${hy2_sni}&pinSHA256=${hy2_pin}#RAK-HY2"
+    echo "vless://${cdn_uuid}@${cdn_domain}:443?encryption=none&security=tls&sni=${cdn_domain}&fp=chrome&type=ws&host=${cdn_domain}&path=${enc_path}#RAK-CDN"
+  } > "$nodes")
+  echo "已生成 $nodes（RAK-HY2、RAK-CDN 导入链接，含凭据，导入后请删除）"
+else
+  echo "secrets.env 缺少 RAK 独立线路参数，跳过生成导入链接" >&2
+fi

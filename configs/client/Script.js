@@ -90,6 +90,23 @@ function main(config, profileName) {
     fingerprint: "<RAK_HY2_PIN_SHA256>",
     "skip-cert-verify": false
   };
+  // RAK 备用：VLESS + WebSocket 经 Cloudflare 转发，防火墙只看到 Cloudflare 的 IP，不受 RAK 原 IP 被封影响
+  const rakCdnProxy = {
+    name: "RAK-CDN",
+    type: "vless",
+    server: "<CDN_DOMAIN>",
+    port: 443,
+    uuid: "<RAK_CDN_UUID>",
+    udp: true,
+    tls: true,
+    servername: "<CDN_DOMAIN>",
+    "client-fingerprint": "chrome",
+    network: "ws",
+    "ws-opts": {
+      path: "<CDN_PATH>",
+      headers: { Host: "<CDN_DOMAIN>" }
+    }
+  };
   const retiredProxyNames = ["RAK-Bulk-1T"];
 
   let extraProxies = [];
@@ -201,9 +218,9 @@ function main(config, profileName) {
   }
 
   const filteredExistingProxies = existingProxies.filter(
-    proxy => proxy && proxy.name !== hy2Proxy.name && proxy.name !== primaryName && proxy.name !== backupName && proxy.name !== backup2Name && proxy.name !== awsProxy.name && proxy.name !== rakProxy.name && !retiredProxyNames.includes(proxy.name)
+    proxy => proxy && proxy.name !== hy2Proxy.name && proxy.name !== primaryName && proxy.name !== backupName && proxy.name !== backup2Name && proxy.name !== awsProxy.name && proxy.name !== rakProxy.name && proxy.name !== rakCdnProxy.name && !retiredProxyNames.includes(proxy.name)
   );
-  config.proxies = extraProxies.concat([hy2Proxy, awsProxy, rakProxy], filteredExistingProxies);
+  config.proxies = extraProxies.concat([hy2Proxy, awsProxy, rakProxy, rakCdnProxy], filteredExistingProxies);
 
   // =========================================================================
   // 模块 5: 策略组编排 (DMIT/RAK 独立线路、Bulk-Traffic 白名单泄洪组与通用策略组)
@@ -225,7 +242,7 @@ function main(config, profileName) {
   const rakGroup = Object.assign({
     name: "RAK",
     type: "fallback",
-    proxies: [rakProxy.name]
+    proxies: [rakProxy.name, rakCdnProxy.name]
   }, lineHealthCheck);
   const lineGroupName = "线路选择";
   const lineGroup = {

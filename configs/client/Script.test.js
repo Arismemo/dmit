@@ -69,7 +69,7 @@ for (const path of sources) {
   for (const result of [output, bare]) {
     const groups = Object.fromEntries(result["proxy-groups"].map(group => [group.name, group]));
     assert.deepEqual(groups["线路选择"].proxies, ["DMIT", "RAK"]);
-    assert.deepEqual(groups.RAK.proxies, ["RAK-HY2"], "RAK line must not reference DMIT nodes");
+    assert.deepEqual(groups.RAK.proxies, ["RAK-HY2", "RAK-CDN"], "RAK line must not reference DMIT nodes");
     assert.ok(groups.DMIT.proxies.length && groups.DMIT.proxies.every(name => /^DMIT-/.test(name)), "DMIT line must not reference RAK nodes");
     assert.equal(groups["Bulk-Traffic"].proxies[0], "RAK", "bulk traffic defaults to the RAK line");
     assert.ok(!result.proxies.some(proxy => proxy.name === "RAK-Bulk-1T"), "retired RAK Reality node removed");
@@ -77,6 +77,9 @@ for (const path of sources) {
     const rak = result.proxies.find(proxy => proxy.name === "RAK-HY2");
     assert.equal(rak.type, "hysteria2");
     for (const key of ["server", "password", "sni", "fingerprint"]) assert.ok(rak[key], `RAK-HY2 must define ${key}`);
+    const cdn = result.proxies.find(proxy => proxy.name === "RAK-CDN");
+    assert.equal(cdn.network, "ws");
+    assert.ok(cdn.tls && cdn.uuid && cdn.servername && cdn["ws-opts"].path && cdn["ws-opts"].headers.Host, "RAK-CDN must define TLS, uuid, SNI, path and Host");
   }
   assert.deepEqual(
     Object.fromEntries(output["proxy-groups"].map(group => [group.name, group])).DMIT.proxies,

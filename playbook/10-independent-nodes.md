@@ -1,6 +1,6 @@
 # Step 10：DMIT 与 RAK 独立部署
 
-更新日期：2026-10-27。状态：5.1、5.2 已施工并验收（手机端未改）；5.3 等待 DMIT 换 IP 审核；5.4、5.5、5.6 未开始。施工结果见第 9 节。
+更新日期：2026-10-27。状态：5.1、5.2、5.4、5.5 已施工并验收，手机端配置已生成但未在手机上验证；5.3 等待 DMIT 换 IP 审核；5.5 第 3 步（删除 marzban-node 容器）待观察 24 小时后执行。施工结果见第 9 节。
 
 ## 1. 背景与目标
 
@@ -34,7 +34,7 @@
 | 线路 | DMIT（新 IP） | RAK（原 IP） |
 |---|---|---|
 | 主协议 | Reality，TCP 443，新密钥、新伪装目标 | Hysteria2，UDP 443，自签证书并在客户端固定证书指纹 |
-| 备用协议 | Hysteria2，UDP 443（保持现状） | CDN 线路：VLESS + XHTTP，经 Cloudflare 转发，由现有 nginx 按子域名 `<CDN_DOMAIN>` 反代到本机回环端口 |
+| 备用协议 | Hysteria2，UDP 443（保持现状） | CDN 线路：VLESS + WebSocket，经 Cloudflare 转发，由现有 nginx 按子域名 `<CDN_DOMAIN>` 反代到本机回环端口 |
 | 管理方式 | 保留 Marzban | 独立的 systemd 服务，脱离 Marzban |
 | 客户端配置来源 | Marzban 订阅 | 本机渲染脚本从 `secrets.env` 注入，不经网络下发 |
 
@@ -104,8 +104,8 @@ RAK 原来的 Reality 入站随 marzban-node 一起停用，不再部署。RAK �
 ### 5.4 RAK 部署 CDN 线路（约 1 小时）
 
 1. 在 Cloudflare 为 `<CDN_ZONE>` 添加子域名 `<CDN_DOMAIN>` 的 A 记录，指向 RAK 的 IP，开启代理（橙色云朵）。该域名的 SSL 模式当前为“完全”，与源站证书兼容，保持不变；它是整个域名的设置，改动会影响同域名下的 harbor、jd 等现有子域名。
-2. 签发 Cloudflare 源站证书（只包含 `<CDN_DOMAIN>`），放到 RAK 的 `/etc/nginx/ssl/<CDN_DOMAIN>/`，权限 0600。
-3. 用官方 Xray 二进制写独立配置 `/usr/local/etc/xray-rak/config.json`，由新的 systemd 服务 `xray-rak.service` 运行：VLESS + XHTTP 入站只监听 `127.0.0.1` 的一个高位端口，路径使用随机字符串，使用新的用户 ID，出站保留服务端屏蔽规则。
+2. 在 RAK 上生成 `<CDN_DOMAIN>` 的自签证书，放到 `/etc/nginx/ssl/<CDN_DOMAIN>/`，权限 0600。SSL 模式“完全”不校验源站证书的签发者，自签证书即可使用，不需要在 Cloudflare 后台签发源站证书。
+3. 用官方 Xray 二进制写独立配置 `/etc/xray-rak/config.json`，由新的 systemd 服务 `xray-rak.service` 运行：VLESS + WebSocket 入站只监听 `127.0.0.1` 的一个高位端口，路径使用随机字符串，使用新的用户 ID，出站保留服务端屏蔽规则。
 4. 新增 nginx server 块：仅匹配 `<CDN_DOMAIN>`，指定路径反代到上述回环端口，其他路径返回普通网页；`nginx -t` 通过后用 `systemctl reload nginx` 平滑加载，不重启，不影响现有网站。
 5. 在客户端脚本中加入 RAK-CDN，重新渲染并安装。
 
@@ -189,4 +189,29 @@ RAK 侧：
 1. 手机端 Shadowrocket 配置未改。它的节点全部来自 Marzban 订阅，RAK-HY2 需要单独导入，证书指纹参数未在手机上验证。
 2. 服务端重启 `hysteria-rak` 后，客户端约需 10 秒重新建立连接，期间请求会超时。
 3. Hysteria2 没有按协议识别 BT 流量的能力，RAK-HY2 无法像 Xray 那样屏蔽 BT。
+4. 后续修正：`geosite:cn` 所用的域名库把国内可访问的谷歌、苹果等域名也算作中国域名，导致健康检查地址 www.gstatic.com 被拒绝、RAK 组误切到 CDN 节点。已从 RAK-HY2 的访问控制中删除 `geosite:cn`，只保留 `geoip:cn`。
+
+### 2026-10-27：5.4、5.5 与手机端
+
+5.4 RAK CDN 线路：
+
+1. Xray v26.10.21 安装在 `/usr/local/lib/xray-rak/`（含 geoip、geosite 数据），安装前核对了官方发布的 SHA-256。配置在 `/etc/xray-rak/config.json`，服务 `xray-rak.service` 以 systemd 动态用户运行，不授予任何特权能力，入站只监听 `127.0.0.1` 的高位端口（端口号记在本机 `secrets.env` 的 `RAK_CDN_LOCAL_PORT`）。
+2. 路由规则拒绝私有网段、Tailscale 网段、RAK 公网 IP、`geoip:cn`、`geosite:cn` 和 BT 协议。这里的 `geosite:cn` 来自 Xray 自带的数据文件，实测不影响苹果、微软、iCloud、GitHub 和 gstatic。
+3. nginx 新增 `/etc/nginx/sites-available/rak-cdn` 并链接到 `sites-enabled`：只匹配 `<CDN_DOMAIN>`，指定路径上的 WebSocket 请求反代到 Xray，其余请求返回 404；证书为自签证书。只做了 `systemctl reload nginx`，主进程 PID 未变，现有网站返回正常。改动前的 nginx 目录备份在 RAK 的 `/var/backups/independent-nodes/cdn-20261027T034908Z/`。
+4. Cloudflare 中为 `<CDN_ZONE>` 新增了 `<CDN_DOMAIN>` 的 A 记录，指向 RAK，已开启代理。
+5. 方案原定使用 XHTTP 传输。服务端链路验证通过（请求经 Cloudflare 和 nginx 到达 Xray），但当前 Clash Verge 内置的 mihomo v1.19.21 用 XHTTP 连接时在 TLS 阶段报 `protocol version` 错误，因此改为 WebSocket，Shadowrocket 也支持。
+6. 验收：从本机物理网卡经 Cloudflare 连接，generate_204 返回 204，出口 IP 为 RAK，YouTube 正常，下载约 2.2 MB/s；百度、RAK 本机回环、Tailscale 地址、RAK 公网 IP 均被拒绝。Clash 中 RAK 组为“RAK-HY2 优先、RAK-CDN 备用”，两者延迟测试约 196 ms 和 222 ms。
+
+5.5 RAK 脱离 Marzban：
+
+1. 修改前备份了 DMIT 上的 `/var/lib/marzban/db.sqlite3`（同目录下 `db.sqlite3.pre-rak-detach-*.bak`）。
+2. 经 Marzban 接口把 RAK-Bulk-1T 节点设为 disabled；DMIT 上的 `marzban-node-tunnel.service` 已停止并取消开机自启。
+3. 面板返回 200，DMIT 的 `hysteria-server`、`marzban-aws-tunnel` 和 AWS 节点不受影响。
+4. RAK 上的 marzban-node 容器仍保留，观察 24 小时后再删除容器和镜像。
+
+手机端：
+
+1. `configs/client/shadowrocket.conf` 改为“线路选择”“DMIT”“RAK”三个分组，Bulk-Traffic 默认走 RAK。
+2. `scripts/render-shadowrocket.sh` 在生成配置的同时，从 `secrets.env` 生成 RAK-HY2 与 RAK-CDN 的导入链接，写到配置文件旁的 `*-rak-nodes.txt`，权限 0600，导入后应删除。
+3. 未在手机上验证，尤其是 Shadowrocket 对 Hysteria2 链接中 `pinSHA256` 参数的支持。
 
