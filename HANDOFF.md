@@ -7,6 +7,7 @@
 - [当前架构、命令、测试记录与恢复边界](playbook/09-rak-claude-isolated-runtime.md)：维护 RAK Claude 的主要依据。
 - [住宅代理网桥](playbook/08-rak-claude-residential-proxy.md)：维护上游接入、集中出口配置和健康探针。
 - [多节点集群](playbook/07-multi-node-cluster.md)：DMIT、RAK、AWS 的职责与管理隧道背景。
+- [DMIT 承接 BOM 与 Claude Pro](playbook/12-dmit-bom-migration.md)：RAK 磁盘故障后的迁移结果、验证证据与待办。
 - [运行环境源码及安装位置](configs/server/claude-runtime/README.md)：已部署脚本、systemd 单元与离线测试。
 
 旧方案中的 root 全局代理、全部网卡桌面监听、root 浏览器及 `--no-sandbox` 已替换。当前隔离由网络命名空间实现，不能把出口 IP、时区或 HTTP 404 当作账号不会被封的保证。
@@ -17,7 +18,7 @@
 |---|---|
 | DMIT | 主控与本机日常/AI 出口；本机 AI 分组验收时选择 DMIT-LA |
 | RAK 代理线路 | 2026-10-27 起独立部署，不再接入 Marzban：主用 Hysteria2（UDP443，`hysteria-rak.service`），备用 VLESS+WebSocket 经 Cloudflare 转发（`xray-rak.service` 只监听回环，由 nginx 的 `rak-cdn` 站点反代）。原 Reality（TCP8443，marzban-node 容器）因 IP 的 TCP 被封锁已停用，容器暂留。见 [Step 10](playbook/10-independent-nodes.md) |
-| RAK Claude 与浏览器 | `claude` 用户、独立 `claude` 网络命名空间，仅经住宅代理访问公网 |
+| RAK Claude 与浏览器 | `claude` 用户、独立 `claude` 网络命名空间，仅经住宅代理访问公网。2026-11-01 起 RAK 云盘反复 I/O 故障，new-api、Magpie 与 Claude Pro 账号已迁至 DMIT，见 [Step 12](playbook/12-dmit-bom-migration.md) |
 | AWS | 本机 Grok 与备用节点；本次保持其分组策略 |
 | 管理链路 | 现有 SSH28827、SSH 本地转发、Marzban62050/62051 与 Tailscale |
 
@@ -77,7 +78,7 @@ systemctl list-timers claude-backup.timer proxy-health-check.timer
 
 ## 5. 已验证与待验证
 
-已验证：HTTP/SOCKS/浏览器住宅出口；删除代理变量后的IPv4/IPv6/UDP直连阻断；子进程无法访问主机管理端口；上游故障时拒绝运行及故障恢复；浏览器sandbox；SSH/noVNC；备份归档、独立目录恢复和内容比对；冷启动就绪及网络环境重建；3389重定向幂等恢复。普通Xray未重启，管理连接仍在。
+已验证：HTTP/SOCKS/浏览器住宅出口；删除代理变量后的IPv4/IPv6/UDP直连阻断；子进程无法访问主机管理端口；上游故障时拒绝运行及故障恢复；浏览器sandbox；SSH/noVNC；备份归档、独立目录恢复和内容比对；冷启动就绪及网络环境重建；8443/3389重定向幂等恢复。普通Xray未重启，管理连接仍在。
 
 本机AI组已移除通向普通Proxy组的间接路径，并完成热加载。验收时AI已成功挂载纽约家宽（Comcast 48.46.113.162），其他分组选择保持。DMIT远程订阅模板与本机持久扩展脚本已全部发布，并放行受信任家宽节点进入AI策略组。
 
