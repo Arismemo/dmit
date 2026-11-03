@@ -27,6 +27,16 @@ Nginx 站点沿用 RAK 配置与证书：`bom.tokenbom.com`（9443）、`magpie.
 - Claude Pro 账号凭据：`/home/claude/.claude/.credentials.json`（订阅类型 pro）。
 - new-api 镜像二进制：从 RAK containerd 快照取出，与 RAK 镜像内二进制校验和一致。
 
+### DMIT 上的端口调整（2026-11-03）
+
+marzban 的 Reality 入站 `DMIT-LA` 原监听 `0.0.0.0:443`，与 Cloudflare 回源 443 冲突，导致 bom 返回 526。现改为：
+
+- Reality 入站监听 `127.0.0.1:9444`（`/var/lib/marzban/xray_config.json`，marzban 重启会保留该文件的改动手工修改）。
+- nginx 的 stream 模块按 SNI 分流 443：`bom.tokenbom.com` 转到 `127.0.0.1:9443`（nginx 的 bom HTTPS 站点），其余 SNI 转到 `127.0.0.1:9444`（Reality）。配置在 `/etc/nginx/stream-enabled/reality-split.conf`，该 include 必须位于 `include /etc/nginx/modules-enabled/*.conf;` 之后。
+- marzban 的 `hosts` 表端口仍为空，客户端订阅继续使用 443，经分流后照常可用；无需更新客户端。
+- hysteria2（DMIT-HY2，UDP 443）完全未改动，代理线路不中断。
+- Magpie 网页密钥固定在 `/root/services/magpie/.web-key`（容器环境变量 `MAGPIE_WEB_KEY`），避免每次重启变化导致浏览器 cookie 失效。
+
 ### 账号与出口
 
 | 账号 | 出口 | 状态 |
