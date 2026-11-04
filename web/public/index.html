@@ -104,15 +104,15 @@
         <g class="n">
           <rect x="40" y="40" width="190" height="58" fill="var(--client-bg)" stroke="var(--client)"/>
           <text x="54" y="64" class="t">Mac（这台）</text>
-          <text x="54" y="84" class="s">Clash Verge Rev，TUN 接管，端口 7897</text>
+          <text x="54" y="84" class="s">Clash Verge Rev，TUN，端口 7897</text>
 
           <rect x="250" y="40" width="170" height="58" fill="var(--client-bg)" stroke="var(--client)"/>
           <text x="264" y="64" class="t">iPhone</text>
-          <text x="264" y="84" class="s">Shadowrocket，订阅加独立配置</text>
+          <text x="264" y="84" class="s">Shadowrocket，订阅加配置</text>
 
           <rect x="440" y="40" width="170" height="58" fill="var(--client-bg)" stroke="var(--client)"/>
           <text x="454" y="64" class="t">seed-ser</text>
-          <text x="454" y="84" class="s">mihomo，本地配置，不随订阅更新</text>
+          <text x="454" y="84" class="s">mihomo，本地配置</text>
 
           <rect x="630" y="40" width="180" height="58" fill="var(--client-bg)" stroke="var(--client)"/>
           <text x="644" y="64" class="t">liuqing 的电脑</text>
@@ -383,8 +383,12 @@
         <li><span class="tag on">在用</span>Magpie 主网关 13425 / 13430</li>
         <li><span class="tag on">在用</span>new-api 127.0.0.1:13000</li>
         <li><span class="tag on">在用</span>CLIProxyAPI 8317、CPA Manager Plus 18317</li>
-        <li><span class="tag on">在用</span>Claude 隔离环境与住宅代理桥</li>
-        <li><span class="tag on">在用</span>nginx 站点 bom / magpie / magpie-api，均 9443</li>
+        <li><span class="tag on">在用</span>Claude 隔离环境 A：住宅代理桥 7890 / 7891、网关 3425</li>
+        <li><span class="tag on">在用</span>Claude 隔离环境 B（ci-dmit-b）：住宅桥 17890 / 17891、网关 3425</li>
+        <li><span class="tag on">在用</span>browser-hub 面板 28000 / 28443–28446</li>
+        <li><span class="tag on">在用</span>nginx 站点 bom / magpie / magpie-api，均 9443；公网 443 按 SNI 分流</li>
+        <li><span class="tag on">在用</span>marzban-aws-tunnel，本地 62060 / 62061</li>
+        <li><span class="tag off">已停用</span>老的 xray 服务</li>
         <li><span class="tag pri">注意</span>CPA 用量采集已关闭，历史库已清空</li>
       </ul>
     </div>
@@ -395,10 +399,11 @@
       <ul>
         <li><span class="tag on">在用</span>Hysteria2（RAK-HY2，UDP 443），独立部署、自签证书</li>
         <li><span class="tag on">在用</span>Xray + WebSocket（RAK-CDN），经 nginx 反代到 Cloudflare</li>
-        <li><span class="tag on">在用</span>nginx 站点，含 rak-cdn 反代</li>
-        <li><span class="tag on">在用</span>Claude 隔离运行环境与住宅代理桥</li>
-        <li><span class="tag off">已停用</span>marzban-node 容器，重启策略 no，TCP 8443 不再监听</li>
-        <li><span class="tag off">已停用</span>Magpie、new-api、订阅网关、浏览器桌面，保留数据与备份</li>
+        <li><span class="tag on">在用</span>nginx 站点，含 rak-cdn 反代；公网 80 / 443 / 9443</li>
+        <li><span class="tag on">在用</span>Claude 隔离运行环境与住宅代理桥 7890 / 7891</li>
+        <li><span class="tag off">已停用</span>没有运行中的容器：marzban-node、Magpie、new-api 均已停，restart policy 为 no</li>
+        <li><span class="tag off">已停用</span>8 个 magpie 回滚容器仍是 Exited，另有 1 个 New API 容器停在 Created</li>
+        <li><span class="tag off">已停用</span>claude-desktop、magpie-claude 单元；隔离桌面与 noVNC 入口已关</li>
         <li><span class="tag pri">注意</span>安全组是入站白名单，UDP 443 需要单独放行</li>
       </ul>
     </div>
@@ -407,8 +412,8 @@
       <h4>AWS（纯净出口与容灾）</h4>
       <p class="role">俄亥俄，专供 Grok/xAI 解锁与容灾</p>
       <ul>
-        <li><span class="tag on">在用</span>marzban-node 容器，VLESS Reality TCP 443</li>
-        <li><span class="tag on">在用</span>经 DMIT 的 SSH 隧道 62060 / 62061 纳管</li>
+        <li><span class="tag pri">未核实</span>2026-11-04 从本机直连和经 DMIT 跳板都认证失败，服务端状态没有现场确认</li>
+        <li><span class="tag on">在用</span>DMIT 上通往它的 SSH 隧道 62060 / 62061 仍在运行，但隧道本身不等于节点可用</li>
         <li><span class="tag on">在用</span>作为 AWS-US-Clean 节点提供 Grok 与容灾出口</li>
         <li><span class="tag pri">注意</span>国内到该 IP 的 TCP 已被封，出口是否可用取决于当时链路</li>
       </ul>
@@ -425,7 +430,7 @@
       <tr><td>DMIT-HY2</td><td class="mono">179.255.119.112</td><td class="mono">Hysteria2，UDP 443</td><td>TCP 被封时的备用入口</td><td><span class="tag on">在用</span></td></tr>
       <tr><td>RAK-HY2</td><td class="mono">137.175.65.78</td><td class="mono">Hysteria2，UDP 443</td><td>大流量白名单，YouTube、Telegram、Docker</td><td><span class="tag on">在用</span></td></tr>
       <tr><td>RAK-CDN</td><td class="mono">assets.230254.xyz</td><td class="mono">VLESS + WebSocket，经 Cloudflare</td><td>UDP 被限速或被封时的兜底</td><td><span class="tag on">在用</span></td></tr>
-      <tr><td>AWS-US-Clean</td><td class="mono">18.188.243.223</td><td class="mono">VLESS Reality，TCP 443</td><td>Grok/xAI 解锁与容灾</td><td><span class="tag on">在用</span></td></tr>
+      <tr><td>AWS-US-Clean</td><td class="mono">18.188.243.223</td><td class="mono">VLESS Reality，TCP 443</td><td>Grok/xAI 解锁与容灾</td><td><span class="tag pri">未核实</span></td></tr>
       <tr><td>RAK-Bulk-1T</td><td class="mono">137.175.65.78</td><td class="mono">VLESS Reality，TCP 8443</td><td>旧 Marzban 节点，客户端已清除</td><td><span class="tag off">已停用</span></td></tr>
     </tbody>
   </table>
@@ -454,6 +459,7 @@
       <tr><td>RAK 云盘故障</td><td>工单 90180815 等待服务商处理；RAK 上旧模型服务已停用，DMIT 是唯一承载模型服务的机器</td></tr>
       <tr><td>账号层风险</td><td>住宅出口能降低暴露面，但账号注册地区、订阅渠道和客户端特征不在网络层可控范围内</td></tr>
       <tr><td>未验收项</td><td>DMIT 第二账号尚未开通订阅，双上游路由组未建，DMIT 整机重启后的端到端恢复没有验证</td></tr>
+      <tr><td>AWS 未现场核实</td><td>2026-11-04 从本机直连与经 DMIT 跳板访问 AWS 都失败在公钥认证，页面上的 AWS 描述来自部署记录，不是当天实测</td></tr>
     </tbody>
   </table>
 
