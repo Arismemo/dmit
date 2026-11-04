@@ -7,72 +7,82 @@
 <style>
   :root {
     --ink: #1b2027;
-    --ink-soft: #5b6672;
-    --line: #d7dde4;
-    --bg: #f5f7fa;
+    --ink-soft: #5f6b78;
+    --line: #dde3ea;
+    --bg: #f4f6f9;
     --card: #ffffff;
     --client: #2f6fb0;
     --client-bg: #eaf2fa;
     --node: #0f7b6c;
     --node-bg: #e6f4f1;
-    --srv: #8a5a00;
-    --srv-bg: #fdf2e0;
-    --ext: #6b4bab;
-    --ext-bg: #f0ebfa;
-    --stop: #9aa3ad;
+    --srv: #9a6413;
+    --srv-bg: #fdf3e3;
+    --ext: #64409c;
+    --ext-bg: #f1ecfa;
+    --stop: #8b949e;
     --stop-bg: #eef0f3;
-    --warn: #b3261e;
+    --pri: #b3261e;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; padding: 0 20px 64px;
     background: var(--bg); color: var(--ink);
-    font: 15px/1.6 -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    font: 15px/1.65 -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   }
-  header { max-width: 1080px; margin: 0 auto; padding: 36px 0 8px; }
-  h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: .3px; }
-  .sub { color: var(--ink-soft); font-size: 14px; margin: 0; }
+  header { max-width: 1120px; margin: 0 auto; padding: 34px 0 10px; }
+  h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: .4px; }
+  .sub { color: var(--ink-soft); font-size: 14px; margin: 0; max-width: 820px; }
   .sub code { background: #e9edf2; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
-  .wrap { max-width: 1080px; margin: 0 auto; }
-  h2 { font-size: 18px; margin: 36px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
-  h3 { font-size: 15px; margin: 22px 0 8px; color: var(--ink-soft); font-weight: 600; }
-  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 6px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  h2 { font-size: 18px; margin: 38px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--line); }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 14px; }
   .tabs button {
-    font: inherit; font-size: 14px; padding: 7px 14px; cursor: pointer;
-    background: var(--card); border: 1px solid var(--line); border-radius: 7px; color: var(--ink-soft);
+    font: inherit; font-size: 14px; padding: 8px 16px; cursor: pointer;
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px; color: var(--ink-soft);
+    transition: background .12s, color .12s;
   }
+  .tabs button:hover { border-color: #b9c3cd; }
   .tabs button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
   .panel { display: none; }
   .panel.on { display: block; }
-  .diagram { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 4px; }
+  .diagram {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 14px; box-shadow: 0 1px 2px rgba(16, 30, 45, .04);
+  }
   svg { width: 100%; height: auto; display: block; }
-  .n rect { stroke-width: 1.5; rx: 8; }
+  .n rect { stroke-width: 1.4; rx: 10; filter: url(#sh); }
   .n text { font: 13px/1.35 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; fill: var(--ink); }
-  .n .t { font-weight: 600; }
+  .n .t { font-weight: 600; font-size: 13.5px; }
   .n .s { font-size: 11.5px; fill: var(--ink-soft); }
-  .lane { font: 12px/1 -apple-system, "PingFang SC", sans-serif; fill: #97a1ad; }
-  .edge { stroke: #9aa7b4; stroke-width: 1.4; fill: none; }
-  .edge.hl { stroke: #2f6fb0; stroke-width: 2; }
-  .elabel { font: 11px/1 -apple-system, "PingFang SC", sans-serif; fill: #7d8894; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
-  .card h4 { margin: 0 0 2px; font-size: 15px; }
-  .card .role { color: var(--ink-soft); font-size: 13px; margin: 0 0 10px; }
+  .branch { font: 600 12.5px/1 -apple-system, "PingFang SC", sans-serif; fill: #7e8a97; letter-spacing: .6px; }
+  .edge { stroke: #aab4bf; stroke-width: 1.5; fill: none; }
+  .edge.flow { stroke: #7fa8cd; }
+  .edge.auto { stroke: #6bb3a4; }
+  .edge.mgmt { stroke: #b7a3d8; }
+  .edge.pick { stroke: #c2a76e; stroke-dasharray: 5 4; }
+  .elabel { font: 11px/1 -apple-system, "PingFang SC", sans-serif; fill: #9aa5b1; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 15px 17px; }
+  .card h4 { margin: 0 0 3px; font-size: 15.5px; }
+  .card .role { color: var(--ink-soft); font-size: 13px; margin: 0 0 11px; }
   .card ul { margin: 0; padding-left: 18px; font-size: 13.5px; }
-  .card li { margin: 2px 0; }
+  .card li { margin: 3px 0; }
   .tag { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 999px; margin-right: 5px; }
   .tag.on { background: #e4f3ec; color: #14663f; }
   .tag.off { background: var(--stop-bg); color: #5d6773; }
   .tag.pri { background: #fdf0dc; color: #8a5a00; }
-  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 13.5px; }
-  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid #edf0f3; vertical-align: top; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 11px; overflow: hidden; font-size: 13.5px; }
+  th, td { text-align: left; padding: 10px 13px; border-bottom: 1px solid #eef1f4; vertical-align: top; }
   th { background: #f2f5f8; font-weight: 600; color: var(--ink-soft); font-size: 12.5px; }
   tr:last-child td { border-bottom: none; }
   td.mono, th.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
-  .note { color: var(--ink-soft); font-size: 13px; margin: 10px 0 0; }
-  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-soft); margin-top: 12px; }
-  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
-  footer { max-width: 1080px; margin: 40px auto 0; color: var(--ink-soft); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .note { color: var(--ink-soft); font-size: 13px; margin: 12px 2px 0; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-soft); margin-top: 16px; }
+  .legend i { display: inline-block; width: 18px; height: 0; margin-right: 6px; vertical-align: 4px; border-top: 2px solid #7fa8cd; }
+  .legend i.auto { border-top-color: #6bb3a4; }
+  .legend i.mgmt { border-top-color: #b7a3d8; }
+  .legend i.pick { border-top-color: #c2a76e; border-top-style: dashed; }
+  footer { max-width: 1120px; margin: 42px auto 0; color: var(--ink-soft); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 15px; }
 </style>
 </head>
 <body>
@@ -95,213 +105,231 @@
   <!-- ================= 上网链路 ================= -->
   <section class="panel on" id="p-web">
     <div class="diagram">
-      <svg viewBox="0 0 1040 470" role="img" aria-label="上网链路拓扑">
-        <text class="lane" x="16" y="30">客户端</text>
-        <text class="lane" x="16" y="140">本机策略组</text>
-        <text class="lane" x="16" y="250">代理节点</text>
-        <text class="lane" x="16" y="360">出口</text>
+      <svg viewBox="0 0 1120 430" role="img" aria-label="上网链路拓扑">
+        <defs>
+          <filter id="sh" x="-25%" y="-25%" width="150%" height="150%">
+            <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0e1c2b" flood-opacity="0.09"/>
+          </filter>
+          <marker id="aFlow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#7fa8cd"/>
+          </marker>
+          <marker id="aAuto" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#6bb3a4"/>
+          </marker>
+          <marker id="aMgmt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#b7a3d8"/>
+          </marker>
+        </defs>
 
         <g class="n">
-          <rect x="40" y="40" width="190" height="58" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="54" y="64" class="t">Mac（这台）</text>
-          <text x="54" y="84" class="s">Clash Verge Rev，TUN，端口 7897</text>
-
-          <rect x="250" y="40" width="170" height="58" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="264" y="64" class="t">iPhone</text>
-          <text x="264" y="84" class="s">Shadowrocket，订阅加配置</text>
-
-          <rect x="440" y="40" width="170" height="58" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="454" y="64" class="t">seed-ser</text>
-          <text x="454" y="84" class="s">mihomo，本地配置</text>
-
-          <rect x="630" y="40" width="180" height="58" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="644" y="64" class="t">liuqing 的电脑</text>
-          <text x="644" y="84" class="s">Clash Verge，订阅地址国内不可直连</text>
-        </g>
-
-        <g class="n">
-          <rect x="40" y="150" width="190" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="54" y="174" class="t">线路选择</text>
-          <text x="54" y="194" class="s">手动选 DMIT / RAK / AWS</text>
-
-          <rect x="250" y="150" width="170" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="264" y="174" class="t">DMIT 组</text>
-          <text x="264" y="194" class="s">fallback，间隔 300 秒</text>
-
-          <rect x="440" y="150" width="170" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="454" y="174" class="t">RAK 组</text>
-          <text x="454" y="194" class="s">fallback，HY2 优先、CDN 兜底</text>
-
-          <rect x="630" y="150" width="180" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="644" y="174" class="t">AI 组 / Grok 组</text>
-          <text x="644" y="194" class="s">只放 DMIT 与 AWS 节点</text>
-
-          <rect x="830" y="150" width="170" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="844" y="174" class="t">Bulk-Traffic</text>
-          <text x="844" y="194" class="s">大流量白名单，首项 RAK</text>
+          <rect x="320" y="14" width="480" height="84" fill="var(--client-bg)" stroke="var(--client)"/>
+          <text x="338" y="42" class="t">本机与家庭设备</text>
+          <text x="338" y="64" class="s">Mac（Clash Verge，TUN 7897）· iPhone（Shadowrocket）</text>
+          <text x="338" y="84" class="s">seed-ser（mihomo）· liuqing 的电脑（Clash Verge）</text>
         </g>
 
         <g class="n">
-          <rect x="40" y="260" width="190" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="54" y="284" class="t">DMIT-LA</text>
-          <text x="54" y="303" class="s">VLESS Reality，TCP 443</text>
-          <text x="54" y="318" class="s">nginx 按 SNI 分流到 9444</text>
+          <rect x="50" y="160" width="300" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
+          <text x="66" y="184" class="t">DMIT 组（fallback）</text>
+          <text x="66" y="204" class="s">线路选择可手动切到 RAK 或 AWS</text>
 
-          <rect x="250" y="260" width="170" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="264" y="284" class="t">DMIT-HY2</text>
-          <text x="264" y="303" class="s">Hysteria2，UDP 443</text>
-          <text x="264" y="318" class="s">TCP 被封时的备用入口</text>
+          <rect x="410" y="160" width="300" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
+          <text x="426" y="184" class="t">RAK 组（fallback）</text>
+          <text x="426" y="204" class="s">Bulk-Traffic 白名单首项，HY2 优先</text>
 
-          <rect x="440" y="260" width="170" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="454" y="284" class="t">RAK-HY2</text>
-          <text x="454" y="303" class="s">Hysteria2，UDP 443</text>
-          <text x="454" y="318" class="s">独立部署，自签证书</text>
-
-          <rect x="630" y="260" width="180" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="644" y="284" class="t">RAK-CDN</text>
-          <text x="644" y="303" class="s">VLESS + WebSocket</text>
-          <text x="644" y="318" class="s">经 Cloudflare 转发到 RAK</text>
-
-          <rect x="830" y="260" width="170" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="844" y="284" class="t">AWS-US-Clean</text>
-          <text x="844" y="303" class="s">VLESS Reality，TCP 443</text>
-          <text x="844" y="318" class="s">Grok 与容灾用</text>
+          <rect x="770" y="160" width="300" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
+          <text x="786" y="184" class="t">AI 组 / Grok 组</text>
+          <text x="786" y="204" class="s">只放 DMIT 与 AWS 节点，不进 Auto 测速</text>
         </g>
 
         <g class="n">
-          <rect x="40" y="370" width="190" height="56" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="54" y="394" class="t">DMIT 洛杉矶</text>
-          <text x="54" y="412" class="s">CN2 GIA，每月 1TB 双向</text>
+          <rect x="50" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="64" y="274" class="t">DMIT-LA</text>
+          <text x="64" y="293" class="s">Reality，TCP 443</text>
+          <text x="64" y="307" class="s">nginx 按 SNI 分流</text>
 
-          <rect x="250" y="370" width="170" height="56" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="264" y="394" class="t">DMIT 洛杉矶</text>
-          <text x="264" y="412" class="s">同一台机器，换 UDP 协议</text>
+          <rect x="205" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="219" y="274" class="t">DMIT-HY2</text>
+          <text x="219" y="293" class="s">Hysteria2，UDP 443</text>
+          <text x="219" y="307" class="s">TCP 被封时用</text>
 
-          <rect x="440" y="370" width="170" height="56" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="454" y="394" class="t">RAK 圣何塞</text>
-          <text x="454" y="412" class="s">共享机房，1000G 流量</text>
+          <rect x="410" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="424" y="274" class="t">RAK-HY2</text>
+          <text x="424" y="293" class="s">Hysteria2，UDP 443</text>
+          <text x="424" y="307" class="s">独立部署，自签证书</text>
 
-          <rect x="630" y="370" width="180" height="56" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="644" y="394" class="t">Cloudflare 边缘</text>
-          <text x="644" y="412" class="s">只看到 CF 的出口 IP</text>
+          <rect x="565" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="579" y="274" class="t">RAK-CDN</text>
+          <text x="579" y="293" class="s">VLESS + WebSocket</text>
+          <text x="579" y="307" class="s">经 Cloudflare 转发</text>
 
-          <rect x="830" y="370" width="170" height="56" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="844" y="394" class="t">AWS 俄亥俄</text>
-          <text x="844" y="412" class="s">纯净出口</text>
+          <rect x="770" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="784" y="274" class="t">DMIT-LA</text>
+          <text x="784" y="293" class="s">Reality，TCP 443</text>
+          <text x="784" y="307" class="s">复用左侧那条线路</text>
+
+          <rect x="925" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="939" y="274" class="t">AWS-US-Clean</text>
+          <text x="939" y="293" class="s">Reality，TCP 443</text>
+          <text x="939" y="307" class="s">Grok 与容灾用</text>
         </g>
 
-        <g class="edge">
-          <path d="M135 98 V150"/><path d="M335 98 V150"/><path d="M525 98 V150"/><path d="M720 98 V150"/>
-          <path d="M135 208 V260"/><path d="M335 208 V260"/><path d="M525 208 V260"/><path d="M720 208 V260"/>
-          <path d="M915 208 V260"/>
-          <path d="M135 324 V370"/><path d="M335 324 V370"/><path d="M525 324 V370"/><path d="M720 324 V370"/><path d="M915 324 V370"/>
-          <path class="hl" d="M525 208 C525 240,135 240,135 260"/>
-          <path class="hl" d="M720 208 C720 235,915 235,915 260"/>
+        <g class="n">
+          <rect x="50" y="340" width="300" height="58" fill="var(--ext-bg)" stroke="var(--ext)"/>
+          <text x="66" y="364" class="t">DMIT 洛杉矶</text>
+          <text x="66" y="384" class="s">CN2 GIA，套餐每月 1TB 双向流量</text>
+
+          <rect x="410" y="340" width="300" height="58" fill="var(--ext-bg)" stroke="var(--ext)"/>
+          <text x="426" y="364" class="t">RAK 圣何塞</text>
+          <text x="426" y="384" class="s">共享机房，1000G 流量</text>
+
+          <rect x="770" y="340" width="145" height="58" fill="var(--ext-bg)" stroke="var(--ext)"/>
+          <text x="784" y="364" class="t">DMIT 洛杉矶</text>
+          <text x="784" y="384" class="s">同一台机器</text>
+
+          <rect x="925" y="340" width="145" height="58" fill="var(--ext-bg)" stroke="var(--ext)"/>
+          <text x="939" y="364" class="t">AWS 俄亥俄</text>
+          <text x="939" y="384" class="s">纯净出口</text>
         </g>
-        <text class="elabel" x="200" y="243">RAK 优先</text>
-        <text class="elabel" x="790" y="243">AWS 容灾</text>
+
+        <g class="edge flow">
+          <path d="M560 98 V112" marker-end="url(#aFlow)"/>
+          <path d="M200 112 H920" marker-end="url(#aFlow)"/>
+          <path d="M200 112 V160" marker-end="url(#aFlow)"/>
+          <path d="M560 112 V160" marker-end="url(#aFlow)"/>
+          <path d="M920 112 V160" marker-end="url(#aFlow)"/>
+        </g>
+        <g class="edge auto">
+          <path d="M200 218 V232 H277.5" marker-end="url(#aAuto)"/>
+          <path d="M122.5 232 V250" marker-end="url(#aAuto)"/>
+          <path d="M277.5 232 V250" marker-end="url(#aAuto)"/>
+          <path d="M122.5 312 V340" marker-end="url(#aAuto)"/>
+          <path d="M277.5 312 V340" marker-end="url(#aAuto)"/>
+
+          <path d="M560 218 V232 H637.5" marker-end="url(#aAuto)"/>
+          <path d="M482.5 232 V250" marker-end="url(#aAuto)"/>
+          <path d="M637.5 232 V250" marker-end="url(#aAuto)"/>
+          <path d="M482.5 312 V340" marker-end="url(#aAuto)"/>
+          <path d="M637.5 312 V340" marker-end="url(#aAuto)"/>
+
+          <path d="M920 218 V232 H997.5" marker-end="url(#aAuto)"/>
+          <path d="M842.5 232 V250" marker-end="url(#aAuto)"/>
+          <path d="M997.5 232 V250" marker-end="url(#aAuto)"/>
+          <path d="M842.5 312 V340" marker-end="url(#aAuto)"/>
+          <path d="M997.5 312 V340" marker-end="url(#aAuto)"/>
+        </g>
+        <g>
+          <rect x="104" y="126" width="192" height="20" fill="#ffffff"/>
+          <text class="branch" x="200" y="140" text-anchor="middle">日常与普通流量</text>
+          <rect x="474" y="126" width="172" height="20" fill="#ffffff"/>
+          <text class="branch" x="560" y="140" text-anchor="middle">大流量与 Telegram</text>
+          <rect x="844" y="126" width="152" height="20" fill="#ffffff"/>
+          <text class="branch" x="920" y="140" text-anchor="middle">AI 与 Grok</text>
+        </g>
       </svg>
     </div>
     <p class="note">
-      2026-10-26 起，DMIT、RAK、AWS 三台的公网 TCP 从国内被封（回程丢包），UDP 不受影响。因此只有走 UDP 的 DMIT-HY2 与 RAK-HY2 稳定可用，Reality 节点会时好时坏。订阅地址同样走 TCP，从国内直接拉会失败。
+      本机还有一个“线路选择”组，是手动总开关，可以在 DMIT、RAK、AWS 三条线路之间直接切换；上面画的是各组默认的归属。2026-10-26 起，DMIT、RAK、AWS 三台的公网 TCP 从国内被封（回程丢包），UDP 不受影响，因此只有走 UDP 的 DMIT-HY2 与 RAK-HY2 稳定可用，Reality 节点会时好时坏。订阅地址同样走 TCP，从国内直接拉会失败。
     </p>
   </section>
 
   <!-- ================= 模型调用链路 ================= -->
   <section class="panel" id="p-model">
     <div class="diagram">
-      <svg viewBox="0 0 1040 400" role="img" aria-label="模型调用链路拓扑">
-        <text class="lane" x="16" y="28">调用方</text>
-        <text class="lane" x="16" y="120">中转与面板</text>
-        <text class="lane" x="16" y="215">隔离环境</text>
-        <text class="lane" x="16" y="310">出口</text>
+      <svg viewBox="0 0 1120 480" role="img" aria-label="模型调用链路拓扑">
+        <defs>
+          <filter id="sh2" x="-25%" y="-25%" width="150%" height="150%">
+            <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0e1c2b" flood-opacity="0.09"/>
+          </filter>
+          <marker id="mFlow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#7fa8cd"/>
+          </marker>
+          <marker id="mAuto" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#6bb3a4"/>
+          </marker>
+        </defs>
+        <style>
+          #p-model .n rect { filter: url(#sh2); }
+        </style>
+
+        <text class="branch" x="135" y="18" text-anchor="middle">调用方</text>
+        <text class="branch" x="395" y="18" text-anchor="middle">中转与入口</text>
+        <text class="branch" x="665" y="18" text-anchor="middle">隔离环境</text>
+        <text class="branch" x="960" y="18" text-anchor="middle">出口</text>
 
         <g class="n">
-          <rect x="40" y="38" width="200" height="56" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="54" y="62" class="t">Claude Code</text>
-          <text x="54" y="81" class="s">本机，走 new-api 渠道</text>
+          <rect x="30" y="24" width="210" height="66" fill="var(--client-bg)" stroke="var(--client)"/>
+          <text x="46" y="50" class="t">Claude Code</text>
+          <text x="46" y="70" class="s">本机，经 new-api 渠道调用</text>
 
-          <rect x="270" y="38" width="210" height="56" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="284" y="62" class="t">CLIProxyAPI</text>
-          <text x="284" y="81" class="s">127.0.0.1:8317，另有管理面板</text>
+          <rect x="30" y="130" width="210" height="66" fill="var(--client-bg)" stroke="var(--client)"/>
+          <text x="46" y="156" class="t">CLIProxyAPI</text>
+          <text x="46" y="176" class="s">127.0.0.1:8317，直连官方上游</text>
 
-          <rect x="510" y="38" width="210" height="56" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="524" y="62" class="t">CPA Manager Plus</text>
-          <text x="524" y="81" class="s">127.0.0.1:18317，用量采集已关闭</text>
-
-          <rect x="750" y="38" width="250" height="56" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="764" y="62" class="t">Claude 隔离环境（B 套）</text>
-          <text x="764" y="81" class="s">DMIT 上的独立账号环境</text>
-        </g>
-
-        <g class="n">
-          <rect x="40" y="130" width="200" height="60" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="54" y="154" class="t">new-api</text>
-          <text x="54" y="173" class="s">127.0.0.1:13000，OpenAI 兼容</text>
-
-          <rect x="270" y="130" width="210" height="60" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="284" y="154" class="t">Magpie 主网关</text>
-          <text x="284" y="173" class="s">13425 / 13430，登记两个子网关</text>
-
-          <rect x="510" y="130" width="210" height="60" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="524" y="154" class="t">Magpie 路由组</text>
-          <text x="524" y="173" class="s">claude-pro 与 dmit-b 两个上游</text>
-
-          <rect x="750" y="130" width="250" height="60" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="764" y="154" class="t">私有入口</text>
-          <text x="764" y="173" class="s">只监听 Tailscale 地址，限来源</text>
+          <rect x="30" y="236" width="210" height="66" fill="var(--client-bg)" stroke="var(--client)"/>
+          <text x="46" y="262" class="t">CPA Manager Plus</text>
+          <text x="46" y="282" class="s">127.0.0.1:18317，用量采集已关</text>
         </g>
 
         <g class="n">
-          <rect x="40" y="225" width="200" height="60" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="54" y="249" class="t">claude-rak 网关</text>
-          <text x="54" y="268" class="s">命名空间内 3425，socket 转发</text>
+          <rect x="290" y="24" width="210" height="66" fill="var(--node-bg)" stroke="var(--node)"/>
+          <text x="306" y="50" class="t">new-api</text>
+          <text x="306" y="70" class="s">127.0.0.1:13000，OpenAI 兼容</text>
 
-          <rect x="270" y="225" width="210" height="60" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="284" y="249" class="t">隔离环境 A</text>
-          <text x="284" y="268" class="s">Claude Pro 账号，已在网关登录</text>
+          <rect x="290" y="130" width="210" height="66" fill="var(--node-bg)" stroke="var(--node)"/>
+          <text x="306" y="156" class="t">Magpie 主网关</text>
+          <text x="306" y="176" class="s">13425 / 13430，登记两个子网关</text>
 
-          <rect x="510" y="225" width="210" height="60" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="524" y="249" class="t">隔离环境 B</text>
-          <text x="524" y="268" class="s">网页已登录，网关账号数仍为 0</text>
-
-          <rect x="750" y="225" width="250" height="60" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="764" y="249" class="t">nginx 站点</text>
-          <text x="764" y="268" class="s">bom / magpie / magpie-api，均 9443</text>
+          <rect x="290" y="236" width="210" height="66" fill="var(--node-bg)" stroke="var(--node)"/>
+          <text x="306" y="262" class="t">nginx 对外站点</text>
+          <text x="306" y="282" class="s">bom / magpie / magpie-api，9443</text>
         </g>
 
         <g class="n">
-          <rect x="40" y="315" width="200" height="56" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="54" y="339" class="t">住宅代理桥</text>
-          <text x="54" y="357" class="s">Xray，127.0.0.1:7890 / 7891</text>
+          <rect x="550" y="24" width="230" height="66" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="566" y="50" class="t">隔离环境 A（claude-pro）</text>
+          <text x="566" y="70" class="s">Claude Pro 账号，已在网关登录</text>
 
-          <rect x="270" y="315" width="210" height="56" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="284" y="339" class="t">住宅 SOCKS5 供应商</text>
-          <text x="284" y="357" class="s">美国 Comcast，落地 48.46.113.162</text>
+          <rect x="550" y="130" width="230" height="66" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="566" y="156" class="t">隔离环境 B（dmit-b）</text>
+          <text x="566" y="176" class="s">网页已登录，网关账号数仍为 0</text>
 
-          <rect x="510" y="315" width="210" height="56" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="524" y="339" class="t">第二住宅出口</text>
-          <text x="524" y="357" class="s">落地 48.45.131.171</text>
-
-          <rect x="750" y="315" width="250" height="56" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="764" y="339" class="t">Anthropic</text>
-          <text x="764" y="357" class="s">账号订阅，不含第三方中转</text>
+          <rect x="550" y="236" width="230" height="66" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="566" y="262" class="t">住宅代理桥</text>
+          <text x="566" y="282" class="s">Xray，127.0.0.1:7890 / 7891</text>
         </g>
 
-        <g class="edge">
-          <path class="hl" d="M140 94 V130"/>
-          <path class="hl" d="M140 190 V225"/>
-          <path class="hl" d="M375 190 V225"/>
-          <path class="hl" d="M375 285 V315"/>
-          <path class="hl" d="M615 190 V225"/>
-          <path class="hl" d="M615 285 V315"/>
-          <path d="M375 94 V130"/>
-          <path d="M615 94 V130"/>
-          <path d="M875 94 V130"/>
-          <path d="M875 190 V225"/>
-          <path d="M140 250 H270"/>
-          <path d="M480 250 H510"/>
+        <g class="n">
+          <rect x="830" y="24" width="260" height="66" fill="var(--ext-bg)" stroke="var(--ext)"/>
+          <text x="846" y="50" class="t">住宅 SOCKS5 供应商</text>
+          <text x="846" y="70" class="s">美国 Comcast，落地 48.46.113.162</text>
+
+          <rect x="830" y="130" width="260" height="66" fill="var(--ext-bg)" stroke="var(--ext)"/>
+          <text x="846" y="156" class="t">第二住宅出口</text>
+          <text x="846" y="176" class="s">落地 48.45.131.171</text>
+
+          <rect x="830" y="236" width="260" height="66" fill="var(--ext-bg)" stroke="var(--ext)"/>
+          <text x="846" y="262" class="t">Anthropic</text>
+          <text x="846" y="282" class="s">账号订阅，不含第三方中转</text>
         </g>
+
+        <g class="edge flow">
+          <path d="M240 57 H290" marker-end="url(#mFlow)"/>
+          <path d="M395 90 V130" marker-end="url(#mFlow)"/>
+          <path d="M500 150 H525 V57 H550" marker-end="url(#mFlow)"/>
+          <path d="M500 163 H550" marker-end="url(#mFlow)"/>
+          <path d="M395 302 V196" marker-end="url(#mFlow)"/>
+          <path d="M135 196 V215 H265 V430 H1005 V302" marker-end="url(#mFlow)"/>
+        </g>
+        <g class="edge auto">
+          <path d="M665 90 V236" marker-end="url(#mAuto)"/>
+          <path d="M665 196 V236" marker-end="url(#mAuto)"/>
+          <path d="M780 269 H805 V57 H830" marker-end="url(#mAuto)"/>
+          <path d="M780 163 H830" marker-end="url(#mAuto)"/>
+          <path d="M960 90 V120 H1105 V269 H1090" marker-end="url(#mAuto)"/>
+          <path d="M960 196 V236" marker-end="url(#mAuto)"/>
+        </g>
+        <text class="elabel" x="520" y="430">CLIProxyAPI 直连官方接口，不经 Magpie</text>
       </svg>
     </div>
     <p class="note">
@@ -312,62 +340,77 @@
   <!-- ================= 管理与运维 ================= -->
   <section class="panel" id="p-mgmt">
     <div class="diagram">
-      <svg viewBox="0 0 1040 320" role="img" aria-label="管理与运维拓扑">
-        <text class="lane" x="16" y="28">本机</text>
-        <text class="lane" x="16" y="128">私有网络</text>
-        <text class="lane" x="16" y="238">被管机器</text>
+      <svg viewBox="0 0 1120 320" role="img" aria-label="管理与运维拓扑">
+        <defs>
+          <filter id="sh3" x="-25%" y="-25%" width="150%" height="150%">
+            <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0e1c2b" flood-opacity="0.09"/>
+          </filter>
+          <marker id="gMgmt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#b7a3d8"/>
+          </marker>
+        </defs>
+        <style>
+          #p-mgmt .n rect { filter: url(#sh3); }
+        </style>
 
         <g class="n">
-          <rect x="40" y="38" width="230" height="58" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="54" y="62" class="t">Mac</text>
-          <text x="54" y="82" class="s">ssh dmit、~/.ssh/config 别名</text>
+          <rect x="30" y="18" width="250" height="64" fill="var(--client-bg)" stroke="var(--client)"/>
+          <text x="46" y="44" class="t">Mac</text>
+          <text x="46" y="64" class="s">ssh dmit、~/.ssh/config 别名</text>
 
-          <rect x="300" y="38" width="230" height="58" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="314" y="62" class="t">Cloudflare 账号</text>
-          <text x="314" y="82" class="s">三个 zone，DNS 与 Worker</text>
-        </g>
-
-        <g class="n">
-          <rect x="40" y="138" width="230" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="54" y="162" class="t">Tailscale</text>
-          <text x="54" y="182" class="s">xfinhome 私有网，100.64.0.0/10</text>
-
-          <rect x="300" y="138" width="230" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="314" y="162" class="t">SSH 跳板</text>
-          <text x="314" y="182" class="s">经 ninestep2 到内网机器</text>
+          <rect x="620" y="18" width="250" height="64" fill="var(--client-bg)" stroke="var(--client)"/>
+          <text x="636" y="44" class="t">Cloudflare 账号</text>
+          <text x="636" y="64" class="s">三个 zone，DNS 与 Worker</text>
         </g>
 
         <g class="n">
-          <rect x="40" y="238" width="230" height="58" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="54" y="262" class="t">DMIT</text>
-          <text x="54" y="282" class="s">100.120.162.88，root</text>
+          <rect x="30" y="120" width="250" height="64" fill="var(--node-bg)" stroke="var(--node)"/>
+          <text x="46" y="146" class="t">Tailscale</text>
+          <text x="46" y="166" class="s">xfinhome 私有网，100.64.0.0/10</text>
 
-          <rect x="300" y="238" width="230" height="58" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="314" y="262" class="t">RAK</text>
-          <text x="314" y="282" class="s">100.95.87.62:28827</text>
-
-          <rect x="560" y="238" width="230" height="58" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="574" y="262" class="t">seed-ser</text>
-          <text x="574" y="282" class="s">100.112.81.111</text>
-
-          <rect x="820" y="238" width="180" height="58" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="834" y="262" class="t">willianliu</text>
-          <text x="834" y="282" class="s">100.70.70.3</text>
+          <rect x="320" y="120" width="250" height="64" fill="var(--node-bg)" stroke="var(--node)"/>
+          <text x="336" y="146" class="t">SSH 跳板</text>
+          <text x="336" y="166" class="s">经 ninestep2 到内网机器</text>
         </g>
 
-        <g class="edge">
-          <path class="hl" d="M155 96 V138"/>
-          <path class="hl" d="M155 196 V238"/>
-          <path class="hl" d="M415 196 V238"/>
-          <path d="M155 196 V218 H910"/>
-          <path d="M675 218 V238"/>
-          <path d="M910 218 V238"/>
-          <path d="M155 167 H300"/>
+        <g class="n">
+          <rect x="30" y="230" width="180" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="44" y="256" class="t">DMIT</text>
+          <text x="44" y="276" class="s">100.120.162.88，root</text>
+
+          <rect x="225" y="230" width="180" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="239" y="256" class="t">RAK</text>
+          <text x="239" y="276" class="s">100.95.87.62:28827</text>
+
+          <rect x="420" y="230" width="180" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="434" y="256" class="t">seed-ser</text>
+          <text x="434" y="276" class="s">100.112.81.111</text>
+
+          <rect x="615" y="230" width="180" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="629" y="256" class="t">willianliu</text>
+          <text x="629" y="276" class="s">100.70.70.3</text>
+
+          <rect x="810" y="230" width="230" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
+          <text x="824" y="256" class="t">liuqing 的电脑</text>
+          <text x="824" y="276" class="s">192.168.1.68，只认密码</text>
         </g>
+
+        <g class="edge mgmt">
+          <path d="M155 82 V120" marker-end="url(#gMgmt)"/>
+          <path d="M280 50 H620" stroke-dasharray="5 4" marker-end="url(#gMgmt)"/>
+          <path d="M280 78 H445 V120" marker-end="url(#gMgmt)"/>
+          <path d="M155 184 V202 H705" marker-end="url(#gMgmt)"/>
+          <path d="M120 202 V230" marker-end="url(#gMgmt)"/>
+          <path d="M315 202 V230" marker-end="url(#gMgmt)"/>
+          <path d="M510 202 V230" marker-end="url(#gMgmt)"/>
+          <path d="M705 202 V230" marker-end="url(#gMgmt)"/>
+          <path d="M445 184 V216 H925 V230" marker-end="url(#gMgmt)"/>
+        </g>
+        <text class="elabel" x="420" y="44">wrangler 与浏览器</text>
       </svg>
     </div>
     <p class="note">
-      公网 TCP 被封后，Tailscale 是管理这些机器的主通道；Rak 的 SSH 端口是 28827，DMIT 走默认端口 22。公网 SSH 走不通不代表机器出问题。
+      公网 TCP 被封后，Tailscale 是管理这些机器的主通道；RAK 的 SSH 端口是 28827，DMIT 走默认端口 22。公网 SSH 走不通不代表机器出问题。
     </p>
   </section>
 
@@ -464,15 +507,15 @@
   </table>
 
   <div class="legend">
-    <span><i style="background:var(--client-bg);border:1px solid var(--client)"></i>客户端</span>
-    <span><i style="background:var(--node-bg);border:1px solid var(--node)"></i>本机策略与网关</span>
-    <span><i style="background:var(--srv-bg);border:1px solid var(--srv)"></i>自建节点与服务</span>
-    <span><i style="background:var(--ext-bg);border:1px solid var(--ext)"></i>第三方与出口</span>
+    <span><i></i>客户端到策略组</span>
+    <span><i class="auto"></i>组内自动故障转移</span>
+    <span><i class="pick"></i>手动指定</span>
+    <span><i class="mgmt"></i>管理与运维通道</span>
   </div>
 </div>
 
 <footer>
-  数据来自仓库 playbook、交接文档与 2026-11-04 对三台服务器的只读核查。页面只记录主机、端口、服务名和线路关系，不含任何密码、令牌或密钥。
+  数据来自仓库 playbook、交接文档与 2026-11-04 对 DMIT、RAK 的只读核查；AWS 当天未能连接，页面上的 AWS 部分来自部署记录。页面只记录主机、端口、服务名和线路关系，不含任何密码、令牌或密钥。
 </footer>
 
 <script>
@@ -491,7 +534,7 @@
   });
 
   const wanted = location.hash.replace('#', '');
-  show(panels.length && document.getElementById(wanted) ? wanted : panels[0].id, false);
+  show(document.getElementById(wanted) ? wanted : panels[0].id, false);
 </script>
 </body>
 </html>
