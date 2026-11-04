@@ -55,6 +55,7 @@
 | RAK-CDN 线路 | 2026-10-27 部署完成时延迟 196/222 ms，之后多轮测速超时，一直没有复测 | 复测该线路；不通时检查 Cloudflare 回源和 RAK 上的 `xray-rak` | [Step 10](playbook/10-independent-nodes.md) |
 | 分流归属 | `modelscope.cn` 被归到 `Bulk-Traffic` 走美国出口；`api.factory.ai`、`cloudcode-pa.googleapis.com`、`antigravity-*` 等 AI 工具域名走兜底 Proxy 而非 AI 组 | 确认这两处是否有意为之，需要的话改 [configs/server/custom-clash.yml](configs/server/custom-clash.yml) | [Step 5](playbook/05-subscription-template.md) 第 4 节 |
 | 其他设备的配置 | seed-ser 跑的是本机 `~/.config/mihomo/config.yaml`，不会随 Marzban 订阅更新；这台 Mac 曾在 Clash Verge 退出时把内存里的旧空配置写回磁盘，导入的订阅被覆盖 | 每次手动更新后核对配置内容，必要时在程序完全退出后再写文件 | [Step 5](playbook/05-subscription-template.md) 第 4 节 |
+| 本机已安装的客户端脚本与仓库模板不一致 | 本机 `profiles/Script.js`（2026-11-03 写入）的"线路选择"是 `DMIT / RAK / AWS-US-Clean` 三项，仓库模板是 `DMIT / RAK` 两项，本机那份通不过仓库的 `Script.test.js`。两边都确认已不含 Claude/Anthropic 规则 | 决定要不要把 AWS-US-Clean 写回模板；写回前先跑 `node configs/client/Script.test.js` | 本文 |
 
 ## 4. 可复用的核验方法：中转上游到底是不是它声称的模型
 

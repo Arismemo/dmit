@@ -132,8 +132,12 @@ ssh dmit    # Tailscale 100.120.162.88，用户 root
 |---|---|---|
 | CLIProxy API | `http://127.0.0.1:8317/` | HTTP 200 |
 | CLIProxy API 内置管理面板 | `http://127.0.0.1:8317/management.html` | HTTP 200，页面标题为 CLI Proxy API Management Center |
-| CPA Manager Plus 面板 | `http://127.0.0.1:18317/` | HTTP 200，页面标题为 CPA Manager Plus |
+| CPA Manager Plus 面板 | `http://127.0.0.1:18317/management.html` | 根路径 `/` 返回 307 跳到这个地址，跟随后 HTTP 200，页面标题为 CPA Manager Plus |
 
-`/v1/models` 在未带密钥时返回 401，说明鉴权正常。面板本身没有接入隔离网络，从主机网络直接访问即可。
+两个端口都只监听 `127.0.0.1`。`/v1/models` 在未带密钥时返回 401，说明鉴权正常。面板本身没有接入隔离网络，从主机网络直接访问即可。
 
 另有一条与 BOM 计费相关的行为变化：Magpie 从 v0.1.1180 升到 v0.1.1220 之后，发往 Anthropic 接口的请求如果不指定 `max_tokens`，输出上限改为模型自身的上限，不再固定为 16384。付费 Claude 渠道的请求若不带这个参数，单次回复可能更长，费用也会更高。
+
+Magpie 容器当前运行的是 v0.1.2753（2026-11-04 核实），镜像仍固定到摘要 `ghcr.io/yetone/magpie@sha256:25da1306…`，没有使用浮动标签。
+
+CPA 的用量库在 2026-11-04 复核过：清空后只留下 1 条 2026-11-02 的记录，之后没有新增用量事件，库文件稳定在约 756KB。
