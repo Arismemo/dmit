@@ -1,13 +1,14 @@
-# 工程交接：RAK 多业务节点与 Claude 隔离运行环境
+# 工程交接：多节点代理与 Claude 隔离运行环境
 
-更新日期：2026-10-04。当前基础设施已部署并通过验收。用户选择暂时不登录，真实模型请求与 OAuth Token 恢复留待登录后验证；没有执行整机重启。
+更新日期：2026-11-04。Claude 隔离运行环境、Magpie 主网关和 new-api 已迁至 DMIT，见 [Step 12](playbook/12-dmit-bom-migration.md)；RAK 只保留代理线路和共享业务，云盘故障尚未修复，其旧的模型服务已停用。本次没有执行整机重启验收。
 
 ## 1. 从这里开始
 
 - [当前架构、命令、测试记录与恢复边界](playbook/09-rak-claude-isolated-runtime.md)：维护 RAK Claude 的主要依据。
 - [住宅代理网桥](playbook/08-rak-claude-residential-proxy.md)：维护上游接入、集中出口配置和健康探针。
 - [多节点集群](playbook/07-multi-node-cluster.md)：DMIT、RAK、AWS 的职责与管理隧道背景。
-- [DMIT 承接 BOM 与 Claude Pro](playbook/12-dmit-bom-migration.md)：RAK 磁盘故障后的迁移结果、验证证据与待办。
+- [DMIT 承接 BOM 与 Claude Pro](playbook/12-dmit-bom-migration.md)：RAK 磁盘故障后的迁移结果、验证证据、迁移后的运维记录与待办。
+- [其它会话沉淀（2026-11-04）](SESSION-SUMMARY-2026-11-04.md)：已归档会话的结论、证据与去向，以及仍未处理的待办。
 - [运行环境源码及安装位置](configs/server/claude-runtime/README.md)：已部署脚本、systemd 单元与离线测试。
 
 旧方案中的 root 全局代理、全部网卡桌面监听、root 浏览器及 `--no-sandbox` 已替换。当前隔离由网络命名空间实现，不能把出口 IP、时区或 HTTP 404 当作账号不会被封的保证。
@@ -16,15 +17,17 @@
 
 | 对象 | 当前职责与路径 |
 |---|---|
-| DMIT | 主控与本机日常/AI 出口；本机 AI 分组验收时选择 DMIT-LA |
+| DMIT | 主控与本机日常/AI 出口；本机 AI 分组验收时选择 DMIT-LA。同时承载 Claude 隔离环境、Magpie 主网关和 new-api |
 | RAK 代理线路 | 2026-10-27 起独立部署，不再接入 Marzban：主用 Hysteria2（UDP443，`hysteria-rak.service`），备用 VLESS+WebSocket 经 Cloudflare 转发（`xray-rak.service` 只监听回环，由 nginx 的 `rak-cdn` 站点反代）。原 Reality（TCP8443，marzban-node 容器）因 IP 的 TCP 被封锁已停用，容器暂留。见 [Step 10](playbook/10-independent-nodes.md) |
-| RAK Claude 与浏览器 | `claude` 用户、独立 `claude` 网络命名空间，仅经住宅代理访问公网。2026-11-01 起 RAK 云盘反复 I/O 故障，new-api、Magpie 与 Claude Pro 账号已迁至 DMIT，见 [Step 12](playbook/12-dmit-bom-migration.md) |
+| RAK Claude 与浏览器 | 2026-11-01 起 Cloud 盘反复 I/O 故障，new-api、Magpie 与 Claude Pro 账号迁至 DMIT。2026-11-04 恢复后，RAK 上的旧 Magpie、new-api、Claude 订阅网关和浏览器桌面已停用并关闭自启，容器重启策略为 `no`，避免与 DMIT 上的同一账号争抢凭据刷新；数据、配置和备份保留。RAK 的 Hysteria2、Xray 和 Nginx 继续运行 |
 | AWS | 本机 Grok 与备用节点；本次保持其分组策略 |
-| 管理链路 | 现有 SSH28827、SSH 本地转发、Marzban62050/62051 与 Tailscale |
+| 管理链路 | 现有 SSH28827、SSH 本地转发、Marzban62050/62051 与 Tailscale；DMIT 管理入口是本机 `~/.ssh/config` 里的 `dmit` 别名（Tailscale 100.120.162.88） |
 
 RAK 是共享业务节点。不要为 Claude 修改全机默认 DROP、限制整个 root 用户出站、移除普通 Xray 的正常出站或全局禁用 UDP。
 
 ## 3. 使用与数据位置
+
+本节以 RAK 为例。Claude 隔离环境已迁至 DMIT，DMIT 上的对应组件、端口和备份位置见 [Step 12](playbook/12-dmit-bom-migration.md)。
 
 仍通过原 SSH 登录：
 
@@ -85,3 +88,5 @@ systemctl list-timers claude-backup.timer proxy-health-check.timer
 已完成 cleanip.io/claude 端到端全维度检测验证：环境评分从 53 分（机房IP+出口漂移）提升至 90 分（低风险安全绿灯）；出口网络确认为 Comcast Cable 住宅宽带，WebRTC 与 Claude 核心端点出口完全统一（真实 IP 未暴露）。
 
 待验证：登录后的真实模型请求、真实OAuth凭据恢复、整机重启后的端到端恢复。住宅供应商仍使用原有SOCKS5协议，供应商加密接入与主机整体升级不是本次已完成的项目。
+
+迁移到 DMIT 之后新增的未验证项：DMIT 第二个隔离环境的真实模型调用、主网关双上游路由组的故障切换、DMIT 磁盘清理后 CPA 链路的真实请求，以及 DMIT 整机重启后的端到端恢复（开机依赖已修配置，但没有再重启验证）。详细清单见 [Step 12](playbook/12-dmit-bom-migration.md) 第 3、5 节和 [会话沉淀](SESSION-SUMMARY-2026-11-04.md) 第 3、5 节。

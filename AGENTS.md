@@ -56,8 +56,11 @@ AI 必须按序执行 `playbook/` 下的各阶段剧本：
 | **Step 7** | [`playbook/07-multi-node-cluster.md`](file:///Users/liukun/j/dmit/playbook/07-multi-node-cluster.md) | 多节点集群纳管、安全隧道映射与智能泄洪容灾 | 所有 Node 状态 connected，三机同屏流量实时入库 |
 | **Step 8** | [住宅代理网桥](playbook/08-rak-claude-residential-proxy.md) | RAK 住宅上游、集中出口配置与探针 | 网桥 active，出口与配置一致；HTTP404仅证明对应请求可达 |
 | **Step 9** | [Claude 隔离运行环境](playbook/09-rak-claude-isolated-runtime.md) | 专用用户、仅回环网络命名空间、桌面与恢复 | 代理成功；绕过代理失败；共享业务正常；冷启动与恢复通过；账号验收另记 |
+| **Step 10** | [独立节点](playbook/10-independent-nodes.md) | RAK 脱离 Marzban 的 Hysteria2 与 CDN 备用线路 | 两条线路各自可用；客户端分组互不共用凭据 |
+| **Step 11** | [统一订阅](playbook/11-unified-subscription.md) | 多节点统一订阅的生成与下发 | 订阅拉取 HTTP 200，YAML 合法，分组齐全 |
+| **Step 12** | [DMIT 承接 BOM 与 Claude Pro](playbook/12-dmit-bom-migration.md) | RAK 云盘故障后的迁移、验证与迁移后运维 | new-api 与 Magpie 在 DMIT 上端到端可调用；RAK 侧旧服务停用 |
 
-维护现有 RAK 时，以 [HANDOFF.md](HANDOFF.md) 和 Step 9 的部署状态为准，不自动重跑新机施工流程。Claude 网络限制仅作用于其专用环境；保留普通 Xray、SSH、Marzban 管理和 Tailscale 的既有路径。不得恢复 root 全局住宅代理、全部网卡免密桌面或 root/no-sandbox 浏览器。配置只读检查与脚本测试不能替代登录后的真实模型请求；区分环境重建测试和整机重启验收。
+维护现有节点时，以 [HANDOFF.md](HANDOFF.md) 和 Step 9、Step 12 的部署状态为准，不自动重跑新机施工流程。Claude 网络限制仅作用于其专用环境；保留普通 Xray、SSH、Marzban 管理和 Tailscale 的既有路径。不得恢复 root 全局住宅代理、全部网卡免密桌面或 root/no-sandbox 浏览器。配置只读检查与脚本测试不能替代登录后的真实模型请求；区分环境重建测试和整机重启验收。
 
 ---
 

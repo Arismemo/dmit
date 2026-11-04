@@ -5,11 +5,11 @@
 
 ---
 
-## 当前维护入口（2026-10-04）
+## 当前维护入口（2026-11-04）
 
-现有 RAK 是共享业务节点，维护前先看 [当前交接](HANDOFF.md) 和 [Claude 隔离运行环境](playbook/09-rak-claude-isolated-runtime.md)。Claude/浏览器已采用专用非 root 用户及仅回环的网络命名空间；普通大流量 Xray、SSH 和 Tailscale 保留原有网络路径。住宅代理变量仅在 Claude 环境内设置。
+Claude 隔离运行环境、Magpie 主网关和 new-api 已迁至 DMIT，RAK 只保留代理线路和共享业务，详见 [DMIT 承接 BOM 与 Claude Pro](playbook/12-dmit-bom-migration.md)。维护前先看 [当前交接](HANDOFF.md) 和 [其它会话沉淀](SESSION-SUMMARY-2026-11-04.md)。Claude/浏览器已采用专用非 root 用户及仅回环的网络命名空间；普通大流量 Xray、SSH 和 Tailscale 保留原有网络路径。住宅代理变量仅在 Claude 环境内设置。
 
-基础设施验收已完成，包括上游故障、绕过代理阻断、桌面隧道、备份恢复和环境重建。用户暂时不登录，真实模型调用与 OAuth 凭据恢复留待登录后验证；没有执行整机重启。本机 AI 分组已修复并热加载，当前仍选 DMIT-LA，与 RAK Claude 的住宅出口是两条独立路径。
+基础设施验收已完成，包括上游故障、绕过代理阻断、桌面隧道、备份恢复和环境重建。真实模型调用与 OAuth 凭据恢复留待登录后验证；DMIT 整机重启后的端到端恢复也尚未做。本机 AI 分组已修复并热加载，当前仍选 DMIT-LA，与 RAK Claude 的住宅出口是两条独立路径。
 
 当前部署的脚本、服务文件和离线测试见 [运行环境源码说明](configs/server/claude-runtime/README.md)。该目录保存维护源码，不包含凭据，也不是一键重装器。下方的全新 VPS 流程不能直接当作现有共享节点的重装指令。
 
