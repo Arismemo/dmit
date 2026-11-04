@@ -37,6 +37,7 @@
 | 订阅地址从国内直连拉不下来，原因同样是 DMIT 公网 TCP 被封 | 在 DMIT 上抓包：国内出口发来的 SYN 到达、服务器回了 SYN-ACK，但客户端收不到；HTTPS 握手在 ClientHello 之后即断 | [Step 5](playbook/05-subscription-template.md) 第 4.4 节 |
 | Magpie 从 v0.1.1180 升到 v0.1.1220 后，发往 Anthropic 的请求若不带 `max_tokens`，输出上限改为模型自身上限，不再固定 16384 | 升级对比与官方发布说明；升级后模型目录仍为 27 个 | 本地项目记忆 `magpie-on-dmit` |
 | 客户端从 2026-10-11 起就在拨 RAK 的 8443，而服务端模板一直写 3389 | 2026-10-11 的 mihomo 日志显示 `137.175.65.78:8443` 连接被拒后自行恢复 | 本文第 6 节 |
+| 本机正在跑的客户端脚本比仓库模板多一个"线路选择"选项，已按本机现状对齐 | 本机 `profiles/Script.js`（2026-11-03 写入）的"线路选择"是 `DMIT / RAK / AWS-US-Clean`，仓库模板原本只有两项，本机那份通不过仓库的 `Script.test.js` | 仓库模板已改成三项并同步测试，模板与本机现在都通过同一套测试；两边都确认不含 Claude/Anthropic 规则 | 本文 |
 
 ## 3. 尚未处理的待办
 
@@ -55,7 +56,6 @@
 | RAK-CDN 线路 | 2026-10-27 部署完成时延迟 196/222 ms，之后多轮测速超时，一直没有复测 | 复测该线路；不通时检查 Cloudflare 回源和 RAK 上的 `xray-rak` | [Step 10](playbook/10-independent-nodes.md) |
 | 分流归属 | `modelscope.cn` 被归到 `Bulk-Traffic` 走美国出口；`api.factory.ai`、`cloudcode-pa.googleapis.com`、`antigravity-*` 等 AI 工具域名走兜底 Proxy 而非 AI 组 | 确认这两处是否有意为之，需要的话改 [configs/server/custom-clash.yml](configs/server/custom-clash.yml) | [Step 5](playbook/05-subscription-template.md) 第 4 节 |
 | 其他设备的配置 | seed-ser 跑的是本机 `~/.config/mihomo/config.yaml`，不会随 Marzban 订阅更新；这台 Mac 曾在 Clash Verge 退出时把内存里的旧空配置写回磁盘，导入的订阅被覆盖 | 每次手动更新后核对配置内容，必要时在程序完全退出后再写文件 | [Step 5](playbook/05-subscription-template.md) 第 4 节 |
-| 本机已安装的客户端脚本与仓库模板不一致 | 本机 `profiles/Script.js`（2026-11-03 写入）的"线路选择"是 `DMIT / RAK / AWS-US-Clean` 三项，仓库模板是 `DMIT / RAK` 两项，本机那份通不过仓库的 `Script.test.js`。两边都确认已不含 Claude/Anthropic 规则 | 决定要不要把 AWS-US-Clean 写回模板；写回前先跑 `node configs/client/Script.test.js` | 本文 |
 
 ## 4. 可复用的核验方法：中转上游到底是不是它声称的模型
 

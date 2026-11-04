@@ -226,6 +226,7 @@ function main(config, profileName) {
   // 模块 5: 策略组编排 (DMIT/RAK 独立线路、Bulk-Traffic 白名单泄洪组与通用策略组)
   // =========================================================================
   // DMIT 与 RAK 是互不共用凭据的两条线路：组内按可用性自动故障转移，组间在“线路选择”中手动切换
+  // “线路选择”里的第三项 AWS-US-Clean 是手动容灾节点：它不进 Auto 测速组，也不参与线路间的自动故障转移
   const lineHealthCheck = {
     url: "https://www.gstatic.com/generate_204",
     interval: 300,
@@ -248,7 +249,7 @@ function main(config, profileName) {
   const lineGroup = {
     name: lineGroupName,
     type: "select",
-    proxies: [dmitGroup.name, rakGroup.name]
+    proxies: [dmitGroup.name, rakGroup.name, awsProxy.name]
   };
   const lineGroups = [lineGroup, dmitGroup, rakGroup];
   const lineGroupNames = new Set(lineGroups.map(group => group.name));

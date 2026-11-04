@@ -68,7 +68,7 @@ for (const path of sources) {
   // DMIT 与 RAK 是互不牵连的两条线路：组内只含本线路节点，停用的 RAK Reality 节点不得残留
   for (const result of [output, bare]) {
     const groups = Object.fromEntries(result["proxy-groups"].map(group => [group.name, group]));
-    assert.deepEqual(groups["线路选择"].proxies, ["DMIT", "RAK"]);
+    assert.deepEqual(groups["线路选择"].proxies, ["DMIT", "RAK", "AWS-US-Clean"]);
     assert.deepEqual(groups.RAK.proxies, ["RAK-HY2", "RAK-CDN"], "RAK line must not reference DMIT nodes");
     assert.ok(groups.DMIT.proxies.length && groups.DMIT.proxies.every(name => /^DMIT-/.test(name)), "DMIT line must not reference RAK nodes");
     assert.equal(groups["Bulk-Traffic"].proxies[0], "RAK", "bulk traffic defaults to the RAK line");
