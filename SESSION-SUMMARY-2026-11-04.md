@@ -72,3 +72,13 @@
 | `configs/client/Script.js`、`scripts/render-client-script.js`、`secrets.example.env` | 新增 `INTERNAL_SUBNET_3` 这个内网分流网段 |
 
 需要注意：客户端脚本 `configs/client/Script.js` 已经把 `RAK-Bulk-1T` 列为停用节点并从订阅里清除，服务端模板里的这条节点名只是残留。改端口前应先确认 RAK 上 8443 端口现在由谁提供服务，避免与隔离网关或其它服务冲突。
+
+## 7. 一并补录的先前交付文件
+
+下面这几个文件也是先前会话做出但一直没提交的内容，本次一并入库，状态如实标注：
+
+| 文件 | 内容 | 状态 |
+|---|---|---|
+| [Step 11 统一订阅](playbook/11-unified-subscription.md)、`scripts/render-portable-subscription.js`、`configs/server/portable-clash.json` | 从本机 `secrets.env` 和客户端脚本生成统一订阅配置，下发 DMIT-HY2、RAK-HY2、RAK-CDN 三个节点 | 可用。快照已脱敏，真实凭据只在生成时从 `secrets.env` 读取 |
+| [住宅代理接入手册](playbook/residential-proxy-guide.md) | 服务器接入住宅 SOCKS5 代理、验证出口和排障 | 可用。地址和凭据均为占位符 |
+| `configs/server/isolated-instances/` | 第二套隔离实例的实验性运行时和说明 | **未完成**，不能直接用于生产：一键创建器、独立服务、登录方式和隔离测试都还没有做，只通过了 Python 语法检查 |
