@@ -9,6 +9,7 @@
 - [多节点集群](playbook/07-multi-node-cluster.md)：DMIT、RAK、AWS 的职责与管理隧道背景。
 - [DMIT 承接 BOM 与 Claude Pro](playbook/12-dmit-bom-migration.md)：RAK 磁盘故障后的迁移结果、验证证据、迁移后的运维记录与待办。
 - [其它会话沉淀（2026-11-04）](SESSION-SUMMARY-2026-11-04.md)：已归档会话的结论、证据与去向，以及仍未处理的待办。
+- [网络架构图](web/public/index.html)：三台海外服务器、本机代理链路、模型服务链路与管理通道的现状图，部署在 `arch.230254.xyz`。网络有变更时必须先改这个文件再重新部署，见 [web/README.md](web/README.md)。
 - [运行环境源码及安装位置](configs/server/claude-runtime/README.md)：已部署脚本、systemd 单元与离线测试。
 
 旧方案中的 root 全局代理、全部网卡桌面监听、root 浏览器及 `--no-sandbox` 已替换。当前隔离由网络命名空间实现，不能把出口 IP、时区或 HTTP 404 当作账号不会被封的保证。

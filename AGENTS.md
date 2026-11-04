@@ -59,8 +59,11 @@ AI 必须按序执行 `playbook/` 下的各阶段剧本：
 | **Step 10** | [独立节点](playbook/10-independent-nodes.md) | RAK 脱离 Marzban 的 Hysteria2 与 CDN 备用线路 | 两条线路各自可用；客户端分组互不共用凭据 |
 | **Step 11** | [统一订阅](playbook/11-unified-subscription.md) | 多节点统一订阅的生成与下发 | 订阅拉取 HTTP 200，YAML 合法，分组齐全 |
 | **Step 12** | [DMIT 承接 BOM 与 Claude Pro](playbook/12-dmit-bom-migration.md) | RAK 云盘故障后的迁移、验证与迁移后运维 | new-api 与 Magpie 在 DMIT 上端到端可调用；RAK 侧旧服务停用 |
+| **Step 13** | [网络架构图](web/README.md) | 更新自建网络的架构图页面并重新部署 | 页面能访问，内容与服务器实际状态一致 |
 
 维护现有节点时，以 [HANDOFF.md](HANDOFF.md) 和 Step 9、Step 12 的部署状态为准，不自动重跑新机施工流程。Claude 网络限制仅作用于其专用环境；保留普通 Xray、SSH、Marzban 管理和 Tailscale 的既有路径。不得恢复 root 全局住宅代理、全部网卡免密桌面或 root/no-sandbox 浏览器。配置只读检查与脚本测试不能替代登录后的真实模型请求；区分环境重建测试和整机重启验收。
+
+**任何网络变更都要同步更新架构图。** 增删服务器、节点或代理线路，改动服务、端口、域名、订阅、分流规则或管理通道之后，先改 `web/public/index.html`（唯一真源），再按 [web/README.md](web/README.md) 重新部署到 Cloudflare Worker。页面只写主机、端口、服务名和线路关系，不写密码、令牌和密钥。
 
 ---
 

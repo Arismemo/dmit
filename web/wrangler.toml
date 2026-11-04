@@ -1,0 +1,12 @@
+name = "dmit-net-arch"
+main = "src/worker.js"
+compatibility_date = "2026-11-04"
+
+# 自定义域名必须写在所有 [section] 之前。TOML 里放在 [assets] 之后的键会被解析成
+# assets.routes 而静默失效，部署能成功但域名不会生效。
+routes = [{ pattern = "arch.230254.xyz", custom_domain = true }]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
