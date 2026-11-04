@@ -107,3 +107,29 @@ except Exception as e:
 ### 4.3 本机代理接管方式
 
 本机 Clash Verge 开启的是 TUN 模式（`utun` 网卡并劫持 DNS），系统代理是关闭的，所以应用流量由 TUN 接管，判断一条连接走哪条线路要看 mihomo 的实时连接表，而不是系统代理设置。
+
+### 4.4 订阅地址从国内直连拉不下来
+
+订阅地址走 TCP，而 DMIT 的公网 IP 的 TCP 已被封锁，所以从国内直接拉订阅会失败。这不是订阅本身的问题。
+
+在 DMIT 上抓包看到的现象：国内出口发来的 SYN 到达服务器，服务器每次都回了 SYN-ACK，客户端却一直在重发 SYN，说明应答在回程被丢弃。与三台 VPS 的 TCP 被封是同一件事，见 [Step 10](10-independent-nodes.md) 第 1 节。
+
+影响与对策：
+
+- HY2 走 UDP 不受影响，代理本身可用；受影响的只有订阅拉取这类 TCP 请求。
+- 客户端上的绕过办法：先导入一份能用的配置建立代理，再在订阅设置里打开"使用 Clash 代理"或"使用自身代理更新"，之后更新走代理。
+- 根本办法：把订阅换到国内能直连的地址（例如经 Cloudflare 代理的端口，或由另一台服务器中转），或者给 DMIT 换 IP。换 IP 需要人工审核，前提是该 IP 的 ICMP 和所有 TCP 端口都从国内不通。
+
+### 4.5 分流归属待确认
+
+两处值得复核，都不是故障：
+
+- `modelscope.cn` 被归到 `Bulk-Traffic`，走美国出口。ModelScope 是国内模型站，这样会明显变慢，除非是有意为之。
+- `api.factory.ai`、`prem.factory.ai`、`telemetry.factory.ai`、`cloudcode-pa.googleapis.com`、`antigravity-unleash.goog`、`antigravity-ide-auto-updater-*.run.app` 这些 AI 工具域名走兜底 `Proxy`，而不是 `AI` 组。功能上没有问题，但不受 AI 组的固定节点约束。
+
+要改的话改 [configs/server/custom-clash.yml](../configs/server/custom-clash.yml)。
+
+### 4.6 客户端本地的两个坑
+
+- Clash Verge 退出时会把内存里的旧配置写回磁盘。在"配置"页导入订阅后如果内核没有生效，先确认程序是否已完全退出，再写入文件。
+- 不一定所有设备都跟着订阅更新。seed-ser 跑的是本机的 `~/.config/mihomo/config.yaml`，不随 Marzban 订阅变化；这类机器要单独把节点和分组合并进去，合并前先备份原配置。

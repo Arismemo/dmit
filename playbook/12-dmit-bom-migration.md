@@ -123,3 +123,17 @@ ssh dmit    # Tailscale 100.120.162.88，用户 root
 ### 5.6 磁盘看护
 
 用量库已清空且采集已关闭，不再持续增长。仍需留意 `/root/j/browsers/profiles`（约 587MB，4 个浏览器账号资料）和 `/root/service-upgrade-backups`（约 984MB，升级回滚点）两处。
+
+### 5.7 DMIT 上的其它本地服务入口
+
+除了模型服务，DMIT 上还有两个只监听回环的管理入口，需要 SSH 转发到本机才能访问，不要改成对外监听：
+
+| 服务 | 服务器上的地址 | 检查结果 |
+|---|---|---|
+| CLIProxy API | `http://127.0.0.1:8317/` | HTTP 200 |
+| CLIProxy API 内置管理面板 | `http://127.0.0.1:8317/management.html` | HTTP 200，页面标题为 CLI Proxy API Management Center |
+| CPA Manager Plus 面板 | `http://127.0.0.1:18317/` | HTTP 200，页面标题为 CPA Manager Plus |
+
+`/v1/models` 在未带密钥时返回 401，说明鉴权正常。面板本身没有接入隔离网络，从主机网络直接访问即可。
+
+另有一条与 BOM 计费相关的行为变化：Magpie 从 v0.1.1180 升到 v0.1.1220 之后，发往 Anthropic 接口的请求如果不指定 `max_tokens`，输出上限改为模型自身的上限，不再固定为 16384。付费 Claude 渠道的请求若不带这个参数，单次回复可能更长，费用也会更高。
