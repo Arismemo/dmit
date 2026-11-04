@@ -51,7 +51,7 @@
 | DMIT 磁盘看护 | 用量库已清空且采集已关闭，不会再快速增长；`/root/j/browsers/profiles` 约 587MB，`/root/service-upgrade-backups` 约 984MB | 定期检查根盘占用，备份目录按保留策略清理 | [Step 12](playbook/12-dmit-bom-migration.md) 第 5 节 |
 | RAK 上 Claude 用户的全局规则 | 资源约束提示写在 `/home/claude/.claude/CLAUDE.md`，仓库没有备份 | 需要长期保留时补一份副本进仓库 | 本文 |
 | RAK 的主机资源约束 | 机器只有 2 核 4GB 内存并与其他业务共用，2026-10-06 出现过内存不足被系统杀进程；已加 4GB swap，`/etc/sysctl.d/60-swap.conf` 写入 `vm.swappiness=10` 与 `vm.vfs_cache_pressure=50` | 补记进 [Step 9](playbook/09-rak-claude-isolated-runtime.md) 的主机约束一节 | 本文 |
-| 手机端 Shadowrocket | 2026-10-27 停在空的"添加节点"页面：手机拉不到订阅（新节点不在订阅里），需要先手工导入一个可用节点建立连接，再刷新订阅。导入链接与配置在 Mac 的"下载"文件夹，用完应删除 | 在真机上完成节点导入、连接和联网验证 | [Step 11](playbook/11-unified-subscription.md) |
+| 手机端 Shadowrocket | 2026-10-27 停在空的"添加节点"页面：手机拉不到订阅（新节点不在订阅里），需要先手工导入一个可用节点建立连接，再刷新订阅。导入链接与配置仍在 Mac 的"下载"文件夹（`shadowrocket-dmit.conf`、`shadowrocket-dmit-rak-nodes.txt`，2026-10-27 生成，含节点密码），手机导入完成后应删除 | 在真机上完成节点导入、连接和联网验证；需要重新生成时跑 `scripts/render-shadowrocket.sh` | [Step 11](playbook/11-unified-subscription.md) |
 | RAK-CDN 线路 | 2026-10-27 部署完成时延迟 196/222 ms，之后多轮测速超时，一直没有复测 | 复测该线路；不通时检查 Cloudflare 回源和 RAK 上的 `xray-rak` | [Step 10](playbook/10-independent-nodes.md) |
 | 分流归属 | `modelscope.cn` 被归到 `Bulk-Traffic` 走美国出口；`api.factory.ai`、`cloudcode-pa.googleapis.com`、`antigravity-*` 等 AI 工具域名走兜底 Proxy 而非 AI 组 | 确认这两处是否有意为之，需要的话改 [configs/server/custom-clash.yml](configs/server/custom-clash.yml) | [Step 5](playbook/05-subscription-template.md) 第 4 节 |
 | 其他设备的配置 | seed-ser 跑的是本机 `~/.config/mihomo/config.yaml`，不会随 Marzban 订阅更新；这台 Mac 曾在 Clash Verge 退出时把内存里的旧空配置写回磁盘，导入的订阅被覆盖 | 每次手动更新后核对配置内容，必要时在程序完全退出后再写文件 | [Step 5](playbook/05-subscription-template.md) 第 4 节 |
