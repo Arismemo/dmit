@@ -138,6 +138,28 @@ ssh dmit    # Tailscale 100.120.162.88，用户 root
 
 另有一条与 BOM 计费相关的行为变化：Magpie 从 v0.1.1180 升到 v0.1.1220 之后，发往 Anthropic 接口的请求如果不指定 `max_tokens`，输出上限改为模型自身的上限，不再固定为 16384。付费 Claude 渠道的请求若不带这个参数，单次回复可能更长，费用也会更高。
 
-Magpie 容器当前运行的是 v0.1.2753（2026-11-04 核实），镜像仍固定到摘要 `ghcr.io/yetone/magpie@sha256:25da1306…`，没有使用浮动标签。
+Magpie 容器 2026-11-04 晚经 relay-stack-upgrade 升级到 v0.1.2976（此前 v0.1.2753 固定摘要的做法已被滚动升级取代），CLIProxyAPI、CPA Manager Plus 与 new-api 同轮升级，见 5.8。
 
 CPA 的用量库在 2026-11-04 复核过：清空后只留下 1 条 2026-11-02 的记录，之后没有新增用量事件，库文件稳定在约 756KB。
+
+### 5.8 2026-11-04 四项中转服务升级
+
+relay-stack-upgrade 技能的三日周期在 2026-11-04 到期，四项服务当轮全部处理，端点表已随迁移修正（magpie 与 new-api 从 RAK 改指 DMIT 的 `dmit` 别名，SSH 走 Tailscale）：
+
+| 服务 | 旧版本 | 新版本 | 验证 |
+|---|---|---|---|
+| magpie | v0.1.2753 | v0.1.2976 | healthy、未鉴权 401、4 个模型；真实推理因 claude-pro 账号登出暂不可验（见下） |
+| CLIProxyAPI | v8.0.47 | v8.0.54 | healthz 200、14 个模型、gpt-6-luna 真实推理 200 |
+| CPA Manager Plus | v1.14.10 | 无更新 | cleanup-derived 完成，覆盖索引就绪 |
+| new-api | rc.45 | rc.48 | /api/status 版本一致、303 项价格/钱包测试、三项定制功能实页确认 |
+
+每项都有停写备份与回滚脚本，在 `/root/service-upgrade-backups/<组件>-20261104T15*/`。new-api 的 compose 已固定到 rc.48 镜像标签。
+
+升级过程中发现四个与版本无关的问题，其中第一个已随升级顺带修复：
+
+1. **容器 DNS 快照指向 Tailscale MagicDNS**。11-03 重启后创建的容器把宿主机当时的 resolv.conf（100.100.100.100）快照进了 Docker 内嵌 DNS，而 MagicDNS 对公网域名返回 SERVFAIL，导致 CLIProxyAPI 访问 chatgpt.com 当日 684 次全部 500。容器重建后快照恢复为 1.1.1.1，故障消失；new-api 与 UI 容器同样中招并同轮修复。MagicDNS 本身解析不了公网域名的问题仍在，宿主机 resolv.conf 再被 tailscaled 覆盖期间创建的容器会复现。
+2. **claude-pro 上游账号登出**。隔离订阅网关直连秒回 "Claude Code is no longer signed in"，说明账号会话已失效；主 magpie 对这种上游的请求无限排队（客户端只收到 SSE keepalive，不会快速报错）。重新登录前 claude-pro 的 4 个模型不可用，BOM 渠道 8（claude pro 订阅）同样受影响。重登需要走隔离环境的浏览器登录流程，未在本轮处理。
+3. **BOM 渠道 6 的 factory/* 映射失效**。渠道 6（claude-4）三个模型的渠道测试均 404：magpie 已无 factory 前缀模型名。属 11-01 迁移遗留，按升级纪律未改映射，待决策后单独修。
+4. **iso-gateway-relay.py 清理路径缺陷**。连接结束的清理代码对 StreamReader 调 close，每次连接收尾都抛 AttributeError（12 小时 876 次）。当前进程 fd 数 8，暂无泄漏迹象；源码在 DMIT `/usr/local/libexec/iso-gateway-relay.py`，不在本仓库，待修。
+
+另注：magpie 的 GHCR `:latest` 是滚动标签，发布日一天多次前进（本轮 2975→2976 后复核又见新镜像），"最新"以部署时刻为准，剩余差距由三日周期跟进。
