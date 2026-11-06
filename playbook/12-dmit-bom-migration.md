@@ -122,7 +122,7 @@ ssh dmit    # Tailscale 100.120.162.88，用户 root
 
 ### 5.6 磁盘看护
 
-用量库已清空且采集已关闭，不再持续增长。仍需留意 `/root/j/browsers/profiles`（约 587MB，4 个浏览器账号资料）和 `/root/service-upgrade-backups`（约 984MB，升级回滚点）两处。
+用量库已清空且采集已关闭，不再持续增长。仍需留意 `/root/j/browsers/profiles`（约 587MB，4 个浏览器账号资料）。`/root/service-upgrade-backups` 的历史备份（约 984MB）已在 2026-11-06 经用户授权清空，仅保留 reality-split 一项与当轮新回滚点；旧回滚容器与 rc.45/rc.47 镜像同批删除。
 
 ### 5.7 DMIT 上的其它本地服务入口
 
@@ -163,3 +163,5 @@ relay-stack-upgrade 技能的三日周期在 2026-11-04 到期，四项服务当
 4. **iso-gateway-relay.py 清理路径缺陷**。连接结束的清理代码对 StreamReader 调 close，每次连接收尾都抛 AttributeError（12 小时 876 次）。当前进程 fd 数 8，暂无泄漏迹象；源码在 DMIT `/usr/local/libexec/iso-gateway-relay.py`，不在本仓库，待修。
 
 另注：magpie 的 GHCR `:latest` 是滚动标签，发布日一天多次前进（本轮 2975→2976 后复核又见新镜像），"最新"以部署时刻为准，剩余差距由三日周期跟进。
+
+2026-11-06 追加一轮（用户指示）：清空旧备份后按同流程升级 magpie v0.1.2976→v0.1.3123、CLIProxyAPI v8.0.54→v8.0.57（模型数 15→18，升级前后真实推理均 200，11-04 的 DNS 修复持续有效）；UI 与 new-api 无更新（v1.14.10 / rc.48 仍为最新，UI 照常完成 cleanup-derived）。claude-pro 账号登出、渠道 6 factory/* 映射、MagicDNS 三个遗留问题当日仍未处理。
