@@ -158,10 +158,47 @@ relay-stack-upgrade 技能的三日周期在 2026-11-04 到期，四项服务当
 升级过程中发现四个与版本无关的问题，其中第一个已随升级顺带修复：
 
 1. **容器 DNS 快照指向 Tailscale MagicDNS**。11-03 重启后创建的容器把宿主机当时的 resolv.conf（100.100.100.100）快照进了 Docker 内嵌 DNS，而 MagicDNS 对公网域名返回 SERVFAIL，导致 CLIProxyAPI 访问 chatgpt.com 当日 684 次全部 500。容器重建后快照恢复为 1.1.1.1，故障消失；new-api 与 UI 容器同样中招并同轮修复。MagicDNS 本身解析不了公网域名的问题仍在，宿主机 resolv.conf 再被 tailscaled 覆盖期间创建的容器会复现。
-2. **claude-pro 上游账号登出**。隔离订阅网关直连秒回 "Claude Code is no longer signed in"，说明账号会话已失效；主 magpie 对这种上游的请求无限排队（客户端只收到 SSE keepalive，不会快速报错）。重新登录前 claude-pro 的 4 个模型不可用，BOM 渠道 8（claude pro 订阅）同样受影响。重登需要走隔离环境的浏览器登录流程，未在本轮处理。
+2. **claude-pro 上游账号登出**。隔离订阅网关直连秒回 "Claude Code is no longer signed in"，说明账号会话已失效；主 magpie 对这种上游的请求无限排队（客户端只收到 SSE keepalive，不会快速报错）。重新登录前 claude-pro 的 4 个模型不可用，BOM 渠道 8（claude pro 订阅）同样受影响。**2026-11-06 已恢复**：在隔离环境用 `claude auth login --claudeai` 触发授权码流程重新登录，三层验证全部通过（CLI 订阅类型 pro、隔离网关推理 200、主 magpie claude-pro 推理 200），见 5.10。
 3. **BOM 渠道 6 的 factory/* 映射失效**。渠道 6（claude-4）三个模型的渠道测试均 404：magpie 已无 factory 前缀模型名。属 11-01 迁移遗留，按升级纪律未改映射，待决策后单独修。
 4. **iso-gateway-relay.py 清理路径缺陷**。连接结束的清理代码对 StreamReader 调 close，每次连接收尾都抛 AttributeError（12 小时 876 次）。当前进程 fd 数 8，暂无泄漏迹象；源码在 DMIT `/usr/local/libexec/iso-gateway-relay.py`，不在本仓库，待修。
 
 另注：magpie 的 GHCR `:latest` 是滚动标签，发布日一天多次前进（本轮 2975→2976 后复核又见新镜像），"最新"以部署时刻为准，剩余差距由三日周期跟进。
 
 2026-11-06 追加一轮（用户指示）：清空旧备份后按同流程升级 magpie v0.1.2976→v0.1.3123、CLIProxyAPI v8.0.54→v8.0.57（模型数 15→18，升级前后真实推理均 200，11-04 的 DNS 修复持续有效）；UI 与 new-api 无更新（v1.14.10 / rc.48 仍为最新，UI 照常完成 cleanup-derived）。claude-pro 账号登出、渠道 6 factory/* 映射、MagicDNS 三个遗留问题当日仍未处理。
+
+### 5.9 Claude Pro 按需登录桌面
+
+2026-11-06 在 DMIT 的原账号环境 `claude-rak` 中启动临时桌面，供用户自行登录。与第二个账号 `ci-dmit-b` 的桌面相互独立。
+
+| 组件 | 位置与用途 |
+|---|---|
+| 桌面单元 | `iso-claude-rak-desktop.service`，以 `claude` 用户运行，使用原 `claude-rak` 网络命名空间 |
+| 浏览器资料 | `/home/claude/browser-profile`，持久保留；浏览器配置和缓存另放临时运行目录，避免改动既有 Magpie 配置权限 |
+| VNC 与 noVNC | 命名空间内回环 `5900` / `6080`，桌面为 1366×768，Chrome 保留 sandbox |
+| 主机转发 | `iso-claude-rak-novnc.socket` / `.service`，只监听 DMIT `127.0.0.1:16080`，转入命名空间的 `6080` |
+| 本机入口 | SSH 隧道监听 `127.0.0.1:6080`，访问 `http://127.0.0.1:6080/vnc.html?autoconnect=1&resize=scale` |
+| 浏览器出口 | 命名空间回环 HTTP 代理 `7890`；本轮核实住宅出口 `48.46.113.162` / US |
+
+在本机保持以下隧道运行：
+
+```bash
+ssh -N -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -L 127.0.0.1:6080:127.0.0.1:16080 dmit
+```
+
+桌面和转发使用临时 systemd 单元，不随服务器重启恢复。本轮已验证 noVNC HTTP 200、VNC 完整握手及分辨率，并核实 Chrome 的运行用户、网络命名空间和代理参数；账号登录和真实模型调用须在用户完成授权后另验。仅登录 Claude 网页不能视为订阅网关的 Claude Code 授权已恢复。
+
+结束使用时先关闭本机 SSH 隧道，再在 DMIT 停止这组临时单元：
+
+```bash
+systemctl stop iso-claude-rak-novnc.socket iso-claude-rak-novnc.service iso-claude-rak-desktop.service
+```
+
+### 5.10 2026-11-06 Claude Code 重新登录与整机重启
+
+按 5.9 启动桌面后，1 核 2GB 的 DMIT 两次被桌面交互压满（Chrome 14 个进程约 832MB，负载峰值 19.6），SSH 握手超时、BOM 源站无响应，第二次用户从 DMIT 控制面板触发强重启。这是 11-03 两处开机修复（nginx 等待 Tailscale/Docker 就绪、/run/iso-gateway 自动创建）之后的首次真实重启，两项均验证通过；全部容器按重启策略自动恢复，bom 经 nginx 返回 200。
+
+重启后按用户指示先停 marzban 容器释放资源，再重启桌面并重新触发登录。登录流程：在 claude-rak 命名空间内以 claude 用户运行 `claude auth login --claudeai`，CLI 输出授权链接并等待粘贴授权码；进程用 FIFO 做标准输入、detached 运行，链接在隔离桌面浏览器打开，授权码回传后写入 FIFO 完成。凭据更新于 11-06 11:06 UTC。
+
+恢复验证（三层）：CLI `auth status` 显示订阅类型 pro；经 13437 直连隔离网关推理返回 200 "OK"；主 magpie `claude-pro/claude/claude-sonnet-5-5` 返回 200 "OK"（3.3 秒），用量记录 err 为空。
+
+当日遗留状态：marzban 容器处于手动停止（DMIT-LA 节点临时下线，等用户决定恢复时机）；临时桌面单元在登录完成后停止，浏览器资料与 claude.ai 会话保留在 /home/claude/browser-profile。
