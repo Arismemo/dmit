@@ -201,4 +201,4 @@ systemctl stop iso-claude-rak-novnc.socket iso-claude-rak-novnc.service iso-clau
 
 恢复验证（三层）：CLI `auth status` 显示订阅类型 pro；经 13437 直连隔离网关推理返回 200 "OK"；主 magpie `claude-pro/claude/claude-sonnet-5-5` 返回 200 "OK"（3.3 秒），用量记录 err 为空。
 
-当日遗留状态：marzban 容器处于手动停止（DMIT-LA 节点临时下线，等用户决定恢复时机）；临时桌面单元在登录完成后停止，浏览器资料与 claude.ai 会话保留在 /home/claude/browser-profile。
+当日收尾：登录完成后临时桌面单元已停止（本机 SSH 隧道同关），浏览器资料与 claude.ai 会话保留在 /home/claude/browser-profile 供下次按需启动；marzban 容器于 11:10 UTC 重新启动，Reality 9444 监听与 443 SNI 分流恢复，DMIT-LA 节点重新上线。
