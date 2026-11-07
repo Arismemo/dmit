@@ -428,7 +428,7 @@
         <li><span class="tag on">在用</span>CLIProxyAPI 8317、CPA Manager Plus 18317</li>
         <li><span class="tag on">在用</span>Claude 隔离环境 A：住宅代理桥 7890 / 7891、网关 3425</li>
         <li><span class="tag on">在用</span>Claude 隔离环境 B（ci-dmit-b）：住宅桥 17890 / 17891、网关 3425</li>
-        <li><span class="tag on">在用</span>home-egress 家宽中转：回环 17990 转 RAK 账号家宽，17991 转 B 账号家宽，带认证，供本机 HOME-RAK / HOME-DMIT 节点经 DMIT-HY2 链式使用</li>
+        <li><span class="tag on">在用</span>home-egress 家宽中转：回环 17990 转 RAK 账号家宽，17991 转 B 账号家宽，带认证，供本机家宽节点经 DMIT-HY2 链式使用</li>
         <li><span class="tag on">在用</span>browser-hub 面板 28000 / 28443–28446</li>
         <li><span class="tag on">在用</span>nginx 站点 bom / magpie / magpie-api，均 9443；公网 443 按 SNI 分流</li>
         <li><span class="tag on">在用</span>marzban-aws-tunnel，本地 62060 / 62061</li>
@@ -472,8 +472,8 @@
     <tbody>
       <tr><td>DMIT-LA</td><td class="mono">179.255.119.112</td><td class="mono">VLESS Reality，TCP 443（实际监听 127.0.0.1:9444）</td><td>日常主力，AI 与普通流量</td><td><span class="tag on">在用</span></td></tr>
       <tr><td>DMIT-HY2</td><td class="mono">179.255.119.112</td><td class="mono">Hysteria2，UDP 443</td><td>TCP 被封时的备用入口</td><td><span class="tag on">在用</span></td></tr>
-      <tr><td>HOME-RAK</td><td class="mono">经 DMIT-HY2 到 DMIT 127.0.0.1:17990</td><td class="mono">SOCKS5 链式，落地 48.46.113.162</td><td>手动选用，与 RAK 隔离环境账号同一家宽，仅本机脚本注入</td><td><span class="tag on">在用</span></td></tr>
-      <tr><td>HOME-DMIT</td><td class="mono">经 DMIT-HY2 到 DMIT 127.0.0.1:17991</td><td class="mono">SOCKS5 链式，落地 48.45.131.171</td><td>手动选用，与 ci-dmit-b 账号同一家宽，仅本机脚本注入</td><td><span class="tag on">在用</span></td></tr>
+      <tr><td>家宽-RAK号 48.46.113.162</td><td class="mono">经 DMIT-HY2 到 DMIT 127.0.0.1:17990</td><td class="mono">SOCKS5 链式，落地 48.46.113.162</td><td>手动选用，与 RAK 隔离环境账号同一家宽，仅本机脚本注入</td><td><span class="tag on">在用</span></td></tr>
+      <tr><td>家宽-DMIT-B号 48.45.131.171</td><td class="mono">经 DMIT-HY2 到 DMIT 127.0.0.1:17991</td><td class="mono">SOCKS5 链式，落地 48.45.131.171</td><td>手动选用，与 ci-dmit-b 账号同一家宽，仅本机脚本注入</td><td><span class="tag on">在用</span></td></tr>
       <tr><td>RAK-HY2</td><td class="mono">137.175.65.78</td><td class="mono">Hysteria2，UDP 443</td><td>大流量白名单，YouTube、Telegram、Docker</td><td><span class="tag on">在用</span></td></tr>
       <tr><td>RAK-CDN</td><td class="mono">assets.230254.xyz</td><td class="mono">VLESS + WebSocket，经 Cloudflare</td><td>UDP 被限速或被封时的兜底</td><td><span class="tag on">在用</span></td></tr>
       <tr><td>AWS-US-Clean</td><td class="mono">18.188.243.223</td><td class="mono">VLESS Reality，TCP 443</td><td>Grok/xAI 解锁与容灾</td><td><span class="tag pri">未核实</span></td></tr>
