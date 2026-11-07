@@ -1,0 +1,25 @@
+{
+  "log": { "loglevel": "warning" },
+  "inbounds": [
+    { "tag": "HOME_RAK_IN", "listen": "127.0.0.1", "port": 17990, "protocol": "socks",
+      "settings": { "auth": "password", "accounts": [{ "user": "<HOME_SOCKS_USER>", "pass": "<HOME_RAK_SOCKS_PASS>" }], "udp": true } },
+    { "tag": "HOME_DMIT_IN", "listen": "127.0.0.1", "port": 17991, "protocol": "socks",
+      "settings": { "auth": "password", "accounts": [{ "user": "<HOME_SOCKS_USER>", "pass": "<HOME_DMIT_SOCKS_PASS>" }], "udp": true } }
+  ],
+  "outbounds": [
+    { "tag": "BLOCK", "protocol": "blackhole" },
+    { "tag": "RAK_RESIDENTIAL", "protocol": "socks",
+      "settings": { "servers": [{ "address": "48.46.113.162", "port": 47940, "users": [{ "user": "<RAK_RESIDENTIAL_USER>", "pass": "<RAK_RESIDENTIAL_PASS>" }] }] } },
+    { "tag": "DMIT_RESIDENTIAL", "protocol": "socks",
+      "settings": { "servers": [{ "address": "48.45.131.171", "port": 41212, "users": [{ "user": "<DMIT_RESIDENTIAL_USER>", "pass": "<DMIT_RESIDENTIAL_PASS>" }] }] } }
+  ],
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      { "type": "field", "ip": ["geoip:private"], "outboundTag": "BLOCK" },
+      { "type": "field", "network": "udp", "port": "443", "outboundTag": "BLOCK" },
+      { "type": "field", "inboundTag": ["HOME_RAK_IN"], "outboundTag": "RAK_RESIDENTIAL" },
+      { "type": "field", "inboundTag": ["HOME_DMIT_IN"], "outboundTag": "DMIT_RESIDENTIAL" }
+    ]
+  }
+}

@@ -72,6 +72,10 @@ const modules = {
   GITLAB_AUTO_ENABLE: {
     constant: "enableGitlabAuto",
     keys: ["GITLAB_DOMAIN", "GITLAB_IP", "GITLAB_SSH_PORT"]
+  },
+  HOME_EGRESS_ENABLE: {
+    constant: "enableHomeEgress",
+    keys: ["HOME_SOCKS_USER", "HOME_RAK_SOCKS_PASS", "HOME_DMIT_SOCKS_PASS"]
   }
 };
 

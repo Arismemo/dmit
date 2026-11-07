@@ -109,6 +109,28 @@ function main(config, profileName) {
   };
   const retiredProxyNames = ["RAK-Bulk-1T"];
 
+  // 家宽链式节点 (按需启用)：先经 DMIT-HY2 到 DMIT，再由 DMIT 本机的 home-egress 转到两个 Claude 账号各自的家宽出口。
+  // 入口只监听 DMIT 回环地址并要求认证；不进 AI/Proxy 等自动分流组，需要时在全局模式下手动选择。
+  const enableHomeEgress = false; // 若需启用家宽链式节点，将其置为 true
+  const homeGroupName = "家宽";
+  const createHomeProxy = (name, port, password) => ({
+    name,
+    type: "socks5",
+    server: "127.0.0.1",
+    port,
+    username: "<HOME_SOCKS_USER>",
+    password,
+    udp: false,
+    "dialer-proxy": hy2Proxy.name
+  });
+  const homeProxies = enableHomeEgress
+    ? [createHomeProxy("HOME-RAK", 17990, "<HOME_RAK_SOCKS_PASS>"), createHomeProxy("HOME-DMIT", 17991, "<HOME_DMIT_SOCKS_PASS>")]
+    : [];
+  const homeProxyNames = homeProxies.map(proxy => proxy.name);
+  const homeGroups = homeProxies.length
+    ? [{ name: homeGroupName, type: "select", proxies: homeProxyNames }]
+    : [];
+
   let extraProxies = [];
   let fallbackGroup = null;
   let managedRules = [
@@ -218,9 +240,9 @@ function main(config, profileName) {
   }
 
   const filteredExistingProxies = existingProxies.filter(
-    proxy => proxy && proxy.name !== hy2Proxy.name && proxy.name !== primaryName && proxy.name !== backupName && proxy.name !== backup2Name && proxy.name !== awsProxy.name && proxy.name !== rakProxy.name && proxy.name !== rakCdnProxy.name && !retiredProxyNames.includes(proxy.name)
+    proxy => proxy && proxy.name !== hy2Proxy.name && proxy.name !== primaryName && proxy.name !== backupName && proxy.name !== backup2Name && proxy.name !== awsProxy.name && proxy.name !== rakProxy.name && proxy.name !== rakCdnProxy.name && !retiredProxyNames.includes(proxy.name) && !homeProxyNames.includes(proxy.name)
   );
-  config.proxies = extraProxies.concat([hy2Proxy, awsProxy, rakProxy, rakCdnProxy], filteredExistingProxies);
+  config.proxies = extraProxies.concat([hy2Proxy, awsProxy, rakProxy, rakCdnProxy], homeProxies, filteredExistingProxies);
 
   // =========================================================================
   // 模块 5: 策略组编排 (DMIT/RAK 独立线路、Bulk-Traffic 白名单泄洪组与通用策略组)
@@ -317,7 +339,8 @@ function main(config, profileName) {
 
   const mergedGroups = [bulkGroup].concat(
     lineGroups,
-    existingGroups.filter(g => g && g.name !== bulkGroupName)
+    homeGroups,
+    existingGroups.filter(g => g && g.name !== bulkGroupName && g.name !== homeGroupName)
   );
 
   // GitLab-Auto 只引用确定存在的目标（订阅没有 Proxy 组时仅保留 DIRECT）
