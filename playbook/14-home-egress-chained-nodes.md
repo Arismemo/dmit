@@ -23,7 +23,9 @@
 | 配置（含凭据，0600） | `/etc/home-egress/config.json`（脱敏结构：`configs/server/home-egress/config.example.json`） |
 | 客户端入口凭据（0600） | `/etc/home-egress/client.env` |
 
-两个 SOCKS5 入口只监听回环地址并要求用户名密码。路由规则：私网地址拦截；UDP 443 拦截，让浏览器退回 TCP；其余按入口分别转到对应家宽。没有直连出站，家宽不可用时连接直接失败，不会改用 DMIT 自己的 IP。
+每个家宽有两个入口，都要求用户名密码：回环地址（127.0.0.1）供本机经 DMIT-HY2 链式连接使用，Tailscale 地址（100.120.162.88）供手机 Shadowrocket 使用。Tailscale 走 ufw 之前的 ts-input 链，不会暴露到公网。路由规则：私网地址拦截；UDP 443 拦截，让浏览器退回 TCP；其余按入口分别转到对应家宽。没有直连出站，家宽不可用时连接直接失败，不会改用 DMIT 自己的 IP。
+
+Xray 的访问日志已关闭（`log.access` 置为 none），避免把访问的目标域名写进系统日志。
 
 家宽上游的凭据在部署时从服务器上已有的 `/etc/claude-bridge/config.json` 和 `/etc/residential-dmit-b/config.json` 读取，不经过本机。
 
@@ -47,11 +49,26 @@ node scripts/render-client-script.js
 
 用命令行请求 claude.ai 返回 403，这是 Cloudflare 对非浏览器客户端的拦截，不能据此判断 IP 被封；要以浏览器实际打开为准。
 
-## 5. 已知问题
+两个家宽的地理位置都是纽约，时区 America/New_York。
+
+## 5. 手机（Shadowrocket）
+
+手机装 Tailscale 并登录同一个账号后，就能连到 DMIT 的 Tailscale 地址。Shadowrocket 里手工加节点：
+
+| 节点 | 类型 | 地址 | 端口 | 用户名 | 密码 |
+|---|---|---|---|---|---|
+| 家宽-RAK号 | SOCKS5 | 100.120.162.88 | 17990 | `HOME_SOCKS_USER` | `HOME_RAK_SOCKS_PASS` |
+| 家宽-DMIT-B号 | SOCKS5 | 100.120.162.88 | 17991 | `HOME_SOCKS_USER` | `HOME_DMIT_SOCKS_PASS` |
+
+凭据在 DMIT 的 `/etc/home-egress/client.env`，用 `ssh dmit cat /etc/home-egress/client.env` 取。手机不需要再套 DMIT-HY2：流量走的是手机到 Tailscale 到 DMIT 的加密隧道，再由 DMIT 转家宽，本身就已经经过 DMIT。
+
+用的时候在 Shadowrocket 里把全局路由切到对应节点，用完切回直连或原订阅。手机订阅目前不含这些节点，只能手工添加。
+
+## 6. 已知问题
 
 `residential-dmit-b.service` 的 SOCKS 入口 `127.0.0.1:17891` 没有认证，而 DMIT-HY2 没有配置访问控制规则。按推断，持有 HY2 凭据的人可以经 HY2 连到这个端口，用 B 账号的家宽出网；没有实测。修复需要给 Hysteria 加访问控制规则或给该入口加认证，前者要重启 UDP 443。
 
-## 6. 回滚
+## 7. 回滚
 
 ```bash
 ssh dmit 'systemctl disable --now home-egress.service'
