@@ -1,0 +1,11 @@
+[Unit]
+Description=Private Unix socket for Claude http egress
+[Socket]
+ListenStream=/run/claude2-egress/http.sock
+SocketUser=claude2
+SocketGroup=claude2
+SocketMode=0600
+DirectoryMode=0755
+RemoveOnStop=yes
+[Install]
+WantedBy=sockets.target

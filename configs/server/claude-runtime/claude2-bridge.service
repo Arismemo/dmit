@@ -1,0 +1,13 @@
+[Unit]
+Description=Claude Code Local Residential Proxy Bridge (second account)
+After=network.target
+[Service]
+Type=simple
+User=root
+Environment=XRAY_LOCATION_ASSET=/usr/local/share/claude-xray
+ExecStart=/usr/local/bin/claude-xray run -config /etc/claude2-bridge/config.json
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+{
+  "expected_ip": "48.46.113.162",
+  "expected_org": "Comcast",
+  "http_proxy": "http://127.0.0.1:7890",
+  "socks_proxy": "socks5h://127.0.0.1:7891",
+  "runtime_user": "claude2",
+  "runtime_home": "/home/claude2",
+  "expected_country": "US",
+  "claude_binary": "/home/claude2/.local/bin/claude"
+}

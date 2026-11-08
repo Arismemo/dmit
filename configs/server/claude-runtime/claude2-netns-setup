@@ -1,0 +1,7 @@
+#!/usr/bin/python3
+import pathlib
+import subprocess
+
+if not pathlib.Path('/run/netns/claude2').exists():
+    subprocess.run(['ip', 'netns', 'add', 'claude2'], check=True)
+subprocess.run(['ip', '-n', 'claude2', 'link', 'set', 'lo', 'up'], check=True)

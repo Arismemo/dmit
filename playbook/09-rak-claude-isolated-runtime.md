@@ -129,3 +129,32 @@ AI 组仅保留明确允许的 DMIT/AWS 具体节点，移除对通用 Proxy 组
 维护时先使用日常备份保存最新会话，再处理 Claude 相关服务。不要把旧的全部网卡桌面监听和 root/no-sandbox 当作安全的默认恢复目标。不能修改全机默认 DROP、停止普通 Xray、移除其正常公网出站或全局禁用 UDP 来修复 Claude。
 
 住宅供应商仍提供原有 SOCKS5 协议，本机无法单方面为供应商不支持的链路增加端到端加密。SSH 登录策略、管理面证书和主机全局软件升级需结合其他业务单独维护；本次没有将这些列为已完成的全机加固。
+
+## 第二个账号的隔离环境（claude2）
+
+2026-11-07 新增，用于承载第二个 Claude 账号。它与第一个账号（用户 claude、命名空间 claude）完全并行，住宅出口相同（48.46.113.162，纽约）。
+
+| 部件 | 第一个账号 | 第二个账号 |
+|---|---|---|
+| 运行用户 | claude | claude2 |
+| 网络命名空间 | claude | claude2 |
+| 住宅桥入口（主机回环） | 7890 / 7891 | 17880 / 17881 |
+| 桥配置 | /etc/claude-bridge/config.json | /etc/claude2-bridge/config.json |
+| Unix socket | /run/claude-egress/ | /run/claude2-egress/ |
+| 中继服务 | claude-proxy-relay.service | claude2-proxy-relay.service |
+| 订阅网关 | magpie-claude.service，命名空间内 3425 | magpie-claude2.service，命名空间内 3425 |
+| 桌面与 noVNC | 5900 / 6080 | 5901 / 6081（默认不启动） |
+| 运行时配置 | /etc/claude-runtime.json | /etc/claude2-runtime.json |
+| 命令 | /usr/local/bin/claude | /usr/local/bin/claude2 |
+
+仓库里对应的脚本和单元在 `configs/server/claude-runtime/`，文件名带 claude2 前缀（`claude2-netns-setup`、`claude2-proxy-relay`、`claude2-exec`、`claude2-guard`、`claude2-desktop`、`claude2-bridge.service`、`magpie-claude2.service` 等）。
+
+要点：
+
+- 第二个环境独立持有 CLI 二进制副本（`/home/claude2/.local/share/claude/versions/`），不与第一个账号共用文件。
+- 两个命名空间都只有回环网卡，回环必须显式拉起，否则代理能监听但连不通；命名空间创建脚本里 `-n` 的参数要跟命名空间名一致。
+- 住宅上游凭据由 `/etc/claude-bridge/config.json` 复制生成，两个账号共用同一条家宽；桥里没有直连出站，家宽不可用时直接失败。
+- 桌面单元默认不启动，登录用 URL 直接在本机浏览器完成即可，需要隔离浏览器时再开 `claude2-desktop.service` 和两个 socket。
+- 登录流程：先在命名空间内起 `claude auth login --claudeai`，从日志取授权 URL；用户拿授权码后写进 FIFO，由登录进程接收。
+
+回滚：`systemctl disable --now` 对应的 claude2 单元，删除用户 claude2 及其家目录即可，第一个账号不受影响。

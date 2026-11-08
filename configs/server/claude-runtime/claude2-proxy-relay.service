@@ -1,0 +1,20 @@
+[Unit]
+Description=Claude namespace proxy socket relay
+Requires=claude2-netns.service claude2-http-egress.socket claude2-socks-egress.socket
+After=claude2-netns.service claude2-http-egress.socket claude2-socks-egress.socket
+[Service]
+User=claude2
+Group=claude2
+NetworkNamespacePath=/run/netns/claude2
+ExecStart=/usr/local/libexec/claude2-proxy-relay
+ExecStartPost=/usr/local/libexec/claude-wait-ports 7890 7891
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_UNIX
+CapabilityBoundingSet=
+[Install]
+WantedBy=multi-user.target

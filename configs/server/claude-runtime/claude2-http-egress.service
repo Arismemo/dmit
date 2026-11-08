@@ -1,0 +1,14 @@
+[Unit]
+Description=Forward Claude http socket to residential bridge
+Requires=claude2-bridge.service
+After=claude2-bridge.service
+[Service]
+User=claude2-relay
+Group=claude2-relay
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd 127.0.0.1:17880
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_UNIX

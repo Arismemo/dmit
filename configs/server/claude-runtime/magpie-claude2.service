@@ -1,0 +1,28 @@
+[Unit]
+Description=Claude subscription gateway in the isolated runtime (second account)
+Requires=claude2-netns.service claude2-proxy-relay.service
+After=claude2-netns.service claude2-proxy-relay.service
+[Service]
+User=claude2
+Group=claude2
+NetworkNamespacePath=/run/netns/claude2
+WorkingDirectory=/home/claude2/workspace
+Environment=HOME=/home/claude2
+Environment=PATH=/home/claude2/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=MAGPIE_ADDR=0.0.0.0:3425
+Environment=HTTP_PROXY=http://127.0.0.1:7890
+Environment=HTTPS_PROXY=http://127.0.0.1:7890
+Environment=ALL_PROXY=socks5h://127.0.0.1:7891
+Environment=NO_PROXY=localhost,127.0.0.1,::1
+ExecStart=/usr/local/lib/magpie-claude/magpie-v0.1.1710 serve
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ReadWritePaths=/home/claude2
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0077
+[Install]
+WantedBy=multi-user.target

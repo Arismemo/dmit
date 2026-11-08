@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/local/sbin/claude2-exec /usr/local/libexec/claude2-guard "$@"
