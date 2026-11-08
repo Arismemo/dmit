@@ -202,3 +202,19 @@ systemctl stop iso-claude-rak-novnc.socket iso-claude-rak-novnc.service iso-clau
 恢复验证（三层）：CLI `auth status` 显示订阅类型 pro；经 13437 直连隔离网关推理返回 200 "OK"；主 magpie `claude-pro/claude/claude-sonnet-5-5` 返回 200 "OK"（3.3 秒），用量记录 err 为空。
 
 当日收尾：登录完成后临时桌面单元已停止（本机 SSH 隧道同关），浏览器资料与 claude.ai 会话保留在 /home/claude/browser-profile 供下次按需启动；marzban 容器于 11:10 UTC 重新启动，Reality 9444 监听与 443 SNI 分流恢复，DMIT-LA 节点重新上线。
+
+## 2026-11-08 新增第二个 Claude 账号渠道
+
+第二个账号登录在 RAK 的 claude2 隔离环境里，接入 DMIT 的链路见 playbook/09。new-api 侧的分组约定：**账号维度放在 Magpie 渠道层，new-api 只按客户分组，不按账号分组**。所以第二个账号的渠道（id 11，claude-pro-2）直接放进已有的 claude-2 分组，不再新建 claude-5 分组；GroupRatio 与 UserUsableGroups 里也不再有 claude-5。
+
+| 渠道 | id | 分组 | 状态 | 映射 |
+|---|---|---|---|---|
+| claude-2(0.2x) | 8 | claude-2 | 已停用 | claude-pro/claude/...（旧账号，账号已失效，调用 502） |
+| claude-pro-2(0.2x) | 11 | claude-2 | 在用 | claude-pro-2/claude/...（RAK 第二个账号） |
+| claude-4(0.2x) | 6 | claude-4 | 在用 | factory/claude/...（Magpie 的 factory 供应商） |
+
+2026-11-08 实测：new-api 用 claude-2 分组令牌调 claude-sonnet-5-5 与 claude-opus-5-5 均返回 200（约 2.7 到 2.9 秒）；claude-fable-5-1 返回 429，原因是 Anthropic 侧要求该模型有 usage credits，与链路无关。
+
+BOM 账号相关（同一轮处理）：用户 xfinhome@gmail.com 在 users 表里不存在，注册接口要求 Turnstile 令牌且选项 RegisterEnabled=false，因此无法自行注册。已按站点的 Argon2id 参数（v=19, m=19456, t=2, p=1，16 字节盐、32 字节哈希）建号，id 36，group default，quota 取站点默认值 QuotaForNewUser=136986。登录验证：临时关闭 TurnstileCheckEnabled 后调用 /api/user/login 成功签发 access_token，随即恢复，线上状态 turnstile_check=true。
+
+待定：落地页写着「开放注册」并链接 /sign-up，但选项 RegisterEnabled=false，实际注册是关的；是否打开注册由用户决定。落地页 logo 资源 /landing/brand.svg 从公网取回为 200 image/svg+xml，headless Chrome 渲染落地页与注册页均正常，页面引用的其他资源也都是 200；用户反馈的 logo 不显示尚未复现，需要用户给出具体位置或截图。
