@@ -29,38 +29,46 @@
     background: var(--bg); color: var(--ink);
     font: 15px/1.65 -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   }
-  header { max-width: 1120px; margin: 0 auto; padding: 34px 0 10px; }
+  header { max-width: 1400px; margin: 0 auto; padding: 34px 0 10px; }
   h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: .4px; }
-  .sub { color: var(--ink-soft); font-size: 14px; margin: 0; max-width: 820px; }
+  .sub { color: var(--ink-soft); font-size: 14px; margin: 0; max-width: 900px; }
   .sub code { background: #e9edf2; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
-  .wrap { max-width: 1120px; margin: 0 auto; }
+  .wrap { max-width: 1400px; margin: 0 auto; }
   h2 { font-size: 18px; margin: 38px 0 12px; padding-bottom: 7px; border-bottom: 1px solid var(--line); }
-  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 14px; }
-  .tabs button {
-    font: inherit; font-size: 14px; padding: 8px 16px; cursor: pointer;
-    background: var(--card); border: 1px solid var(--line); border-radius: 8px; color: var(--ink-soft);
-    transition: background .12s, color .12s;
+  .mapcard { background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 1px 2px rgba(16, 30, 45, .04); overflow: hidden; }
+  .mapbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--line); background: #fafbfc; }
+  .mapbar .hint { font-size: 12.5px; color: var(--ink-soft); margin-right: auto; }
+  .mapbar button {
+    font: inherit; font-size: 13px; padding: 5px 11px; cursor: pointer; color: var(--ink);
+    background: #fff; border: 1px solid var(--line); border-radius: 7px;
   }
-  .tabs button:hover { border-color: #b9c3cd; }
-  .tabs button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
-  .panel { display: none; }
-  .panel.on { display: block; }
-  .diagram {
-    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
-    padding: 18px 14px; box-shadow: 0 1px 2px rgba(16, 30, 45, .04);
-  }
-  svg { width: 100%; height: auto; display: block; }
-  .n rect { stroke-width: 1.4; rx: 10; filter: url(#sh); }
-  .n text { font: 13px/1.35 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; fill: var(--ink); }
-  .n .t { font-weight: 600; font-size: 13.5px; }
-  .n .s { font-size: 11.5px; fill: var(--ink-soft); }
-  .branch { font: 600 12.5px/1 -apple-system, "PingFang SC", sans-serif; fill: #7e8a97; letter-spacing: .6px; }
+  .mapbar button:hover { border-color: #b9c3cd; }
+  .mapbar .zoom { font-size: 12.5px; color: var(--ink-soft); min-width: 52px; text-align: center; }
+  .mapwrap { position: relative; height: 74vh; min-height: 520px; overflow: hidden; background: #fbfcfd; cursor: grab; touch-action: none; }
+  .mapwrap.drag { cursor: grabbing; }
+  .mapscene { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+  svg { display: block; }
+  .gbox { fill: #f7f9fb; stroke: #d8e0e8; stroke-width: 1.2; stroke-dasharray: 6 4; rx: 14; }
+  .gt { font: 600 12.5px/1 -apple-system, "PingFang SC", sans-serif; fill: #8b95a1; letter-spacing: .6px; }
+  .band { font: 600 15px/1 -apple-system, "PingFang SC", sans-serif; fill: #6b7683; letter-spacing: 1px; }
+  .nd .box { stroke-width: 1.4; rx: 10; filter: url(#sh); }
+  .nd text { font: 13px/1.35 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; fill: var(--ink); }
+  .nd .t { font-weight: 600; font-size: 13.5px; }
+  .nd .s { font-size: 11.5px; fill: var(--ink-soft); }
+  .nd .badge { font: 600 10.5px/1 -apple-system, "PingFang SC", sans-serif; }
+  .k-client .box { fill: var(--client-bg); stroke: var(--client); }
+  .k-grp .box { fill: var(--node-bg); stroke: var(--node); }
+  .k-node .box { fill: var(--srv-bg); stroke: var(--srv); }
+  .k-ext .box { fill: var(--ext-bg); stroke: var(--ext); }
+  .k-off .box { fill: var(--stop-bg); stroke: var(--stop); }
+  .k-plan .box { fill: #fdf6e6; stroke: #c9a227; stroke-dasharray: 5 3; }
+  .k-off .t, .k-off .s { fill: #6b7580; }
   .edge { stroke: #aab4bf; stroke-width: 1.5; fill: none; }
   .edge.flow { stroke: #7fa8cd; }
   .edge.auto { stroke: #6bb3a4; }
   .edge.mgmt { stroke: #b7a3d8; }
   .edge.pick { stroke: #c2a76e; stroke-dasharray: 5 4; }
-  .elabel { font: 11px/1 -apple-system, "PingFang SC", sans-serif; fill: #9aa5b1; }
+  .elabel { font: 11px/1 -apple-system, "PingFang SC", sans-serif; fill: #8b95a1; paint-order: stroke; stroke: #fbfcfd; stroke-width: 3px; stroke-linejoin: round; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 15px 17px; }
   .card h4 { margin: 0 0 3px; font-size: 15.5px; }
@@ -82,337 +90,55 @@
   .legend i.auto { border-top-color: #6bb3a4; }
   .legend i.mgmt { border-top-color: #b7a3d8; }
   .legend i.pick { border-top-color: #c2a76e; border-top-style: dashed; }
-  footer { max-width: 1120px; margin: 42px auto 0; color: var(--ink-soft); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 15px; }
+  footer { max-width: 1400px; margin: 42px auto 0; color: var(--ink-soft); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 15px; }
 </style>
 </head>
 <body>
 <header>
   <h1>自建网络架构图</h1>
   <p class="sub">
-    更新日期 2026-11-04。覆盖三台海外服务器（DMIT、RAK、AWS）上运行的节点服务、本机代理链路、模型服务链路与管理通道。
+    更新日期 2026-11-08。一张大图覆盖三台海外服务器（DMIT、RAK、AWS）、本机与家庭设备、代理节点、模型中转链路、Claude 隔离环境、家宽出口以及管理与运维通道。
+    鼠标滚轮缩放，按住拖动平移，右上角按钮可复位。
     源文件在仓库 <code>/Users/liukun/j/dmit/web/public/index.html</code>，网络有变更时必须同步改这个文件并重新部署。
   </p>
 </header>
 
 <div class="wrap">
 
-  <div class="tabs" id="tabs">
-    <button class="on" data-p="p-web">上网链路</button>
-    <button data-p="p-model">模型调用链路</button>
-    <button data-p="p-mgmt">管理与运维</button>
+  <div class="mapcard">
+    <div class="mapbar">
+      <span class="hint">滚轮缩放 · 拖动平移 · 双击复位</span>
+      <button id="zin">放大</button>
+      <button id="zout">缩小</button>
+      <button id="zfit">全览</button>
+      <button id="z100">1:1</button>
+      <span class="zoom" id="zval">100%</span>
+    </div>
+    <div class="mapwrap" id="mapwrap">
+      <div class="mapscene" id="scene">
+        <svg id="map" width="1940" height="1660" role="img" aria-label="自建网络整体拓扑">
+          <defs>
+            <filter id="sh" x="-25%" y="-25%" width="150%" height="150%">
+              <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0e1c2b" flood-opacity="0.09"/>
+            </filter>
+            <marker id="aFlow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="#7fa8cd"/>
+            </marker>
+            <marker id="aAuto" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="#6bb3a4"/>
+            </marker>
+            <marker id="aMgmt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="#b7a3d8"/>
+            </marker>
+            <marker id="aPick" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="#c2a76e"/>
+            </marker>
+          </defs>
+          <g id="world"></g>
+        </svg>
+      </div>
+    </div>
   </div>
-
-  <!-- ================= 上网链路 ================= -->
-  <section class="panel on" id="p-web">
-    <div class="diagram">
-      <svg viewBox="0 0 1120 430" role="img" aria-label="上网链路拓扑">
-        <defs>
-          <filter id="sh" x="-25%" y="-25%" width="150%" height="150%">
-            <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0e1c2b" flood-opacity="0.09"/>
-          </filter>
-          <marker id="aFlow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="#7fa8cd"/>
-          </marker>
-          <marker id="aAuto" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="#6bb3a4"/>
-          </marker>
-          <marker id="aMgmt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="#b7a3d8"/>
-          </marker>
-        </defs>
-
-        <g class="n">
-          <rect x="320" y="14" width="480" height="84" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="338" y="42" class="t">本机与家庭设备</text>
-          <text x="338" y="64" class="s">Mac（Clash Verge，TUN 7897）· iPhone（Shadowrocket）</text>
-          <text x="338" y="84" class="s">seed-ser（mihomo）· liuqing 的电脑（Clash Verge）</text>
-        </g>
-
-        <g class="n">
-          <rect x="50" y="160" width="300" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="66" y="184" class="t">DMIT 组（fallback）</text>
-          <text x="66" y="204" class="s">线路选择可手动切到 RAK 或 AWS</text>
-
-          <rect x="410" y="160" width="300" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="426" y="184" class="t">RAK 组（fallback）</text>
-          <text x="426" y="204" class="s">Bulk-Traffic 白名单首项，HY2 优先</text>
-
-          <rect x="770" y="160" width="300" height="58" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="786" y="184" class="t">AI 组 / Grok 组</text>
-          <text x="786" y="204" class="s">只放 DMIT 与 AWS 节点，不进 Auto 测速</text>
-        </g>
-
-        <g class="n">
-          <rect x="50" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="64" y="274" class="t">DMIT-LA</text>
-          <text x="64" y="293" class="s">Reality，TCP 443</text>
-          <text x="64" y="307" class="s">nginx 按 SNI 分流</text>
-
-          <rect x="205" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="219" y="274" class="t">DMIT-HY2</text>
-          <text x="219" y="293" class="s">Hysteria2，UDP 443</text>
-          <text x="219" y="307" class="s">TCP 被封时用</text>
-
-          <rect x="410" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="424" y="274" class="t">RAK-HY2</text>
-          <text x="424" y="293" class="s">Hysteria2，UDP 443</text>
-          <text x="424" y="307" class="s">独立部署，自签证书</text>
-
-          <rect x="565" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="579" y="274" class="t">RAK-CDN</text>
-          <text x="579" y="293" class="s">VLESS + WebSocket</text>
-          <text x="579" y="307" class="s">经 Cloudflare 转发</text>
-
-          <rect x="770" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="784" y="274" class="t">DMIT-LA</text>
-          <text x="784" y="293" class="s">Reality，TCP 443</text>
-          <text x="784" y="307" class="s">复用左侧那条线路</text>
-
-          <rect x="925" y="250" width="145" height="62" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="939" y="274" class="t">AWS-US-Clean</text>
-          <text x="939" y="293" class="s">Reality，TCP 443</text>
-          <text x="939" y="307" class="s">Grok 与容灾用</text>
-        </g>
-
-        <g class="n">
-          <rect x="50" y="340" width="300" height="58" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="66" y="364" class="t">DMIT 洛杉矶</text>
-          <text x="66" y="384" class="s">CN2 GIA，套餐每月 1TB 双向流量</text>
-
-          <rect x="410" y="340" width="300" height="58" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="426" y="364" class="t">RAK 圣何塞</text>
-          <text x="426" y="384" class="s">共享机房，1000G 流量</text>
-
-          <rect x="770" y="340" width="145" height="58" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="784" y="364" class="t">DMIT 洛杉矶</text>
-          <text x="784" y="384" class="s">同一台机器</text>
-
-          <rect x="925" y="340" width="145" height="58" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="939" y="364" class="t">AWS 俄亥俄</text>
-          <text x="939" y="384" class="s">纯净出口</text>
-        </g>
-
-        <g class="edge flow">
-          <path d="M560 98 V112" marker-end="url(#aFlow)"/>
-          <path d="M200 112 H920" marker-end="url(#aFlow)"/>
-          <path d="M200 112 V160" marker-end="url(#aFlow)"/>
-          <path d="M560 112 V160" marker-end="url(#aFlow)"/>
-          <path d="M920 112 V160" marker-end="url(#aFlow)"/>
-        </g>
-        <g class="edge auto">
-          <path d="M200 218 V232 H277.5" marker-end="url(#aAuto)"/>
-          <path d="M122.5 232 V250" marker-end="url(#aAuto)"/>
-          <path d="M277.5 232 V250" marker-end="url(#aAuto)"/>
-          <path d="M122.5 312 V340" marker-end="url(#aAuto)"/>
-          <path d="M277.5 312 V340" marker-end="url(#aAuto)"/>
-
-          <path d="M560 218 V232 H637.5" marker-end="url(#aAuto)"/>
-          <path d="M482.5 232 V250" marker-end="url(#aAuto)"/>
-          <path d="M637.5 232 V250" marker-end="url(#aAuto)"/>
-          <path d="M482.5 312 V340" marker-end="url(#aAuto)"/>
-          <path d="M637.5 312 V340" marker-end="url(#aAuto)"/>
-
-          <path d="M920 218 V232 H997.5" marker-end="url(#aAuto)"/>
-          <path d="M842.5 232 V250" marker-end="url(#aAuto)"/>
-          <path d="M997.5 232 V250" marker-end="url(#aAuto)"/>
-          <path d="M842.5 312 V340" marker-end="url(#aAuto)"/>
-          <path d="M997.5 312 V340" marker-end="url(#aAuto)"/>
-        </g>
-        <g>
-          <rect x="104" y="126" width="192" height="20" fill="#ffffff"/>
-          <text class="branch" x="200" y="140" text-anchor="middle">日常与普通流量</text>
-          <rect x="474" y="126" width="172" height="20" fill="#ffffff"/>
-          <text class="branch" x="560" y="140" text-anchor="middle">大流量与 Telegram</text>
-          <rect x="844" y="126" width="152" height="20" fill="#ffffff"/>
-          <text class="branch" x="920" y="140" text-anchor="middle">AI 与 Grok</text>
-        </g>
-      </svg>
-    </div>
-    <p class="note">
-      本机还有一个“线路选择”组，是手动总开关，可以在 DMIT、RAK、AWS 三条线路之间直接切换；上面画的是各组默认的归属。2026-10-26 起，DMIT、RAK、AWS 三台的公网 TCP 从国内被封（回程丢包），UDP 不受影响，因此只有走 UDP 的 DMIT-HY2 与 RAK-HY2 稳定可用，Reality 节点会时好时坏。订阅地址同样走 TCP，从国内直接拉会失败。
-    </p>
-  </section>
-
-  <!-- ================= 模型调用链路 ================= -->
-  <section class="panel" id="p-model">
-    <div class="diagram">
-      <svg viewBox="0 0 1120 480" role="img" aria-label="模型调用链路拓扑">
-        <defs>
-          <filter id="sh2" x="-25%" y="-25%" width="150%" height="150%">
-            <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0e1c2b" flood-opacity="0.09"/>
-          </filter>
-          <marker id="mFlow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="#7fa8cd"/>
-          </marker>
-          <marker id="mAuto" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="#6bb3a4"/>
-          </marker>
-        </defs>
-        <style>
-          #p-model .n rect { filter: url(#sh2); }
-        </style>
-
-        <text class="branch" x="135" y="18" text-anchor="middle">调用方</text>
-        <text class="branch" x="395" y="18" text-anchor="middle">中转与入口</text>
-        <text class="branch" x="665" y="18" text-anchor="middle">隔离环境</text>
-        <text class="branch" x="960" y="18" text-anchor="middle">出口</text>
-
-        <g class="n">
-          <rect x="30" y="24" width="210" height="66" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="46" y="50" class="t">Claude Code</text>
-          <text x="46" y="70" class="s">本机，经 new-api 渠道调用</text>
-
-          <rect x="30" y="130" width="210" height="66" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="46" y="156" class="t">CLIProxyAPI</text>
-          <text x="46" y="176" class="s">127.0.0.1:8317，直连官方上游</text>
-
-          <rect x="30" y="236" width="210" height="66" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="46" y="262" class="t">CPA Manager Plus</text>
-          <text x="46" y="282" class="s">127.0.0.1:18317，用量采集已关</text>
-        </g>
-
-        <g class="n">
-          <rect x="290" y="24" width="210" height="66" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="306" y="50" class="t">new-api</text>
-          <text x="306" y="70" class="s">127.0.0.1:13000，OpenAI 兼容</text>
-
-          <rect x="290" y="130" width="210" height="66" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="306" y="156" class="t">Magpie 主网关</text>
-          <text x="306" y="176" class="s">13425 / 13430，登记两个子网关</text>
-
-          <rect x="290" y="236" width="210" height="66" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="306" y="262" class="t">nginx 对外站点</text>
-          <text x="306" y="282" class="s">bom / magpie / magpie-api，9443</text>
-        </g>
-
-        <g class="n">
-          <rect x="550" y="24" width="230" height="66" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="566" y="50" class="t">隔离环境 A（claude-pro）</text>
-          <text x="566" y="70" class="s">Claude Pro 账号，已在网关登录</text>
-
-          <rect x="550" y="130" width="230" height="66" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="566" y="156" class="t">隔离环境 B（dmit-b）</text>
-          <text x="566" y="176" class="s">网页已登录，网关账号数仍为 0</text>
-
-          <rect x="550" y="236" width="230" height="66" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="566" y="262" class="t">住宅代理桥</text>
-          <text x="566" y="282" class="s">Xray，127.0.0.1:7890 / 7891</text>
-        </g>
-
-        <g class="n">
-          <rect x="830" y="24" width="260" height="66" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="846" y="50" class="t">住宅 SOCKS5 供应商</text>
-          <text x="846" y="70" class="s">美国 Comcast，落地 48.46.113.162</text>
-
-          <rect x="830" y="130" width="260" height="66" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="846" y="156" class="t">第二住宅出口</text>
-          <text x="846" y="176" class="s">落地 48.45.131.171</text>
-
-          <rect x="830" y="236" width="260" height="66" fill="var(--ext-bg)" stroke="var(--ext)"/>
-          <text x="846" y="262" class="t">Anthropic</text>
-          <text x="846" y="282" class="s">账号订阅，不含第三方中转</text>
-        </g>
-
-        <g class="edge flow">
-          <path d="M240 57 H290" marker-end="url(#mFlow)"/>
-          <path d="M395 90 V130" marker-end="url(#mFlow)"/>
-          <path d="M500 150 H525 V57 H550" marker-end="url(#mFlow)"/>
-          <path d="M500 163 H550" marker-end="url(#mFlow)"/>
-          <path d="M395 302 V196" marker-end="url(#mFlow)"/>
-          <path d="M135 196 V215 H265 V430 H1005 V302" marker-end="url(#mFlow)"/>
-        </g>
-        <g class="edge auto">
-          <path d="M665 90 V236" marker-end="url(#mAuto)"/>
-          <path d="M665 196 V236" marker-end="url(#mAuto)"/>
-          <path d="M780 269 H805 V57 H830" marker-end="url(#mAuto)"/>
-          <path d="M780 163 H830" marker-end="url(#mAuto)"/>
-          <path d="M960 90 V120 H1105 V269 H1090" marker-end="url(#mAuto)"/>
-          <path d="M960 196 V236" marker-end="url(#mAuto)"/>
-        </g>
-        <text class="elabel" x="520" y="430">CLIProxyAPI 直连官方接口，不经 Magpie</text>
-      </svg>
-    </div>
-    <p class="note">
-      Claude 隔离环境靠 Linux 网络命名空间实现：命名空间内只有回环网卡，没有默认路由，任何忽略代理的直连都会失败而不是绕到机房出口。主网关 Magpie 通过 Unix socket 转发进隔离环境，不附加转发头。模型列表可读不等于能真实调用。
-    </p>
-  </section>
-
-  <!-- ================= 管理与运维 ================= -->
-  <section class="panel" id="p-mgmt">
-    <div class="diagram">
-      <svg viewBox="0 0 1120 320" role="img" aria-label="管理与运维拓扑">
-        <defs>
-          <filter id="sh3" x="-25%" y="-25%" width="150%" height="150%">
-            <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0e1c2b" flood-opacity="0.09"/>
-          </filter>
-          <marker id="gMgmt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="#b7a3d8"/>
-          </marker>
-        </defs>
-        <style>
-          #p-mgmt .n rect { filter: url(#sh3); }
-        </style>
-
-        <g class="n">
-          <rect x="30" y="18" width="250" height="64" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="46" y="44" class="t">Mac</text>
-          <text x="46" y="64" class="s">ssh dmit、~/.ssh/config 别名</text>
-
-          <rect x="620" y="18" width="250" height="64" fill="var(--client-bg)" stroke="var(--client)"/>
-          <text x="636" y="44" class="t">Cloudflare 账号</text>
-          <text x="636" y="64" class="s">三个 zone，DNS 与 Worker</text>
-        </g>
-
-        <g class="n">
-          <rect x="30" y="120" width="250" height="64" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="46" y="146" class="t">Tailscale</text>
-          <text x="46" y="166" class="s">xfinhome 私有网，100.64.0.0/10</text>
-
-          <rect x="320" y="120" width="250" height="64" fill="var(--node-bg)" stroke="var(--node)"/>
-          <text x="336" y="146" class="t">SSH 跳板</text>
-          <text x="336" y="166" class="s">经 ninestep2 到内网机器</text>
-        </g>
-
-        <g class="n">
-          <rect x="30" y="230" width="180" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="44" y="256" class="t">DMIT</text>
-          <text x="44" y="276" class="s">100.120.162.88，root</text>
-
-          <rect x="225" y="230" width="180" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="239" y="256" class="t">RAK</text>
-          <text x="239" y="276" class="s">100.95.87.62:28827</text>
-
-          <rect x="420" y="230" width="180" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="434" y="256" class="t">seed-ser</text>
-          <text x="434" y="276" class="s">100.112.81.111</text>
-
-          <rect x="615" y="230" width="180" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="629" y="256" class="t">willianliu</text>
-          <text x="629" y="276" class="s">100.70.70.3</text>
-
-          <rect x="810" y="230" width="230" height="64" fill="var(--srv-bg)" stroke="var(--srv)"/>
-          <text x="824" y="256" class="t">liuqing 的电脑</text>
-          <text x="824" y="276" class="s">192.168.1.68，只认密码</text>
-        </g>
-
-        <g class="edge mgmt">
-          <path d="M155 82 V120" marker-end="url(#gMgmt)"/>
-          <path d="M280 50 H620" stroke-dasharray="5 4" marker-end="url(#gMgmt)"/>
-          <path d="M280 78 H445 V120" marker-end="url(#gMgmt)"/>
-          <path d="M155 184 V202 H705" marker-end="url(#gMgmt)"/>
-          <path d="M120 202 V230" marker-end="url(#gMgmt)"/>
-          <path d="M315 202 V230" marker-end="url(#gMgmt)"/>
-          <path d="M510 202 V230" marker-end="url(#gMgmt)"/>
-          <path d="M705 202 V230" marker-end="url(#gMgmt)"/>
-          <path d="M445 184 V216 H925 V230" marker-end="url(#gMgmt)"/>
-        </g>
-        <text class="elabel" x="420" y="44">wrangler 与浏览器</text>
-      </svg>
-    </div>
-    <p class="note">
-      公网 TCP 被封后，Tailscale 是管理这些机器的主通道；RAK 的 SSH 端口是 28827，DMIT 走默认端口 22。公网 SSH 走不通不代表机器出问题。
-    </p>
-  </section>
 
   <h2>服务器</h2>
   <div class="grid">
@@ -423,33 +149,34 @@
         <li><span class="tag on">在用</span>Marzban 主控，面板 39721</li>
         <li><span class="tag on">在用</span>Hysteria2（DMIT-HY2，UDP 443）</li>
         <li><span class="tag on">在用</span>Reality 入站改到 127.0.0.1:9444，nginx 按 SNI 分流 443</li>
-        <li><span class="tag on">在用</span>Magpie 主网关 13425 / 13430，渠道 claude-pro 指向 DMIT 本机旧网关，claude-pro-2 经 Tailscale 指向 RAK 的第二个账号</li>
-        <li><span class="tag on">在用</span>new-api 127.0.0.1:13000</li>
-        <li><span class="tag on">在用</span>CLIProxyAPI 8317、CPA Manager Plus 18317</li>
+        <li><span class="tag on">在用</span>Magpie 主网关 13425 / 13430（v0.1.3295），渠道 claude-pro 指向 DMIT 本机旧网关，claude-pro-2 经 Tailscale 指向 RAK 的第二个账号</li>
+        <li><span class="tag on">在用</span>new-api 127.0.0.1:13000（BOM，定制构建 rc.48）</li>
+        <li><span class="tag on">在用</span>CLIProxyAPI 8317（v8.0.60）、CPA Manager Plus 18317</li>
         <li><span class="tag on">在用</span>Claude 隔离环境 A：住宅代理桥 7890 / 7891、网关 3425</li>
         <li><span class="tag on">在用</span>Claude 隔离环境 B（ci-dmit-b）：住宅桥 17890 / 17891、网关 3425</li>
         <li><span class="tag on">在用</span>home-egress 家宽中转：17990 转 RAK 账号家宽，17991 转 B 账号家宽，带认证；监听回环地址与 Tailscale 地址 100.120.162.88，供本机链式节点和手机 Shadowrocket 使用</li>
         <li><span class="tag on">在用</span>browser-hub 面板 28000 / 28443–28446</li>
         <li><span class="tag on">在用</span>nginx 站点 bom / magpie / magpie-api，均 9443；公网 443 按 SNI 分流</li>
         <li><span class="tag on">在用</span>marzban-aws-tunnel，本地 62060 / 62061</li>
-        <li><span class="tag off">已停用</span>老的 xray 服务</li>
+        <li><span class="tag off">已停用</span>老的 xray 服务；claude-rak-gateway（旧账号网关）与 magpie-claude 单元</li>
         <li><span class="tag pri">注意</span>CPA 用量采集已关闭，历史库已清空</li>
       </ul>
     </div>
 
     <div class="card">
-      <h4>RAK（大流量泄洪）</h4>
+      <h4>RAK（账号与家宽所在地）</h4>
       <p class="role">圣何塞共享 VPS，1000G 流量，2027-09-19 到期</p>
       <ul>
         <li><span class="tag on">在用</span>Hysteria2（RAK-HY2，UDP 443），独立部署、自签证书</li>
         <li><span class="tag on">在用</span>Xray + WebSocket（RAK-CDN），经 nginx 反代到 Cloudflare</li>
         <li><span class="tag on">在用</span>nginx 站点，含 rak-cdn 反代；公网 80 / 443 / 9443</li>
-        <li><span class="tag on">在用</span>Claude 隔离运行环境与住宅代理桥 7890 / 7891</li>
-<li><span class="tag on">在用</span>Claude 隔离环境 2（第二个账号）：用户 claude2、命名空间 claude2、住宅桥 17880 / 17881、网关 3425；网关经 127.0.0.1:13438 与 Tailscale 地址 100.95.87.62:13439 供 DMIT 调用；桌面 5901 / 6081 默认不开</li>
+        <li><span class="tag on">在用</span>Claude 隔离环境 A（claude）：住宅代理桥 7890 / 7891、网关 3425；账号已失效，真实推理报 OAuth 过期</li>
+        <li><span class="tag on">在用</span>Claude 隔离环境 2（claude2，第二个账号）：住宅桥 17880 / 17881、网关 3425；账号 pro，在用</li>
+        <li><span class="tag on">在用</span>第二个网关经 127.0.0.1:13438 与 Tailscale 地址 100.95.87.62:13439 供 DMIT 调用，caller key 登记在 claude2 的 magpie 里</li>
         <li><span class="tag off">已停用</span>没有运行中的容器：marzban-node、Magpie、new-api 均已停，restart policy 为 no</li>
         <li><span class="tag off">已停用</span>8 个 magpie 回滚容器仍是 Exited，另有 1 个 New API 容器停在 Created</li>
-        <li><span class="tag off">已停用</span>claude-desktop、magpie-claude 单元；隔离桌面与 noVNC 入口已关</li>
-        <li><span class="tag pri">注意</span>安全组是入站白名单，UDP 443 需要单独放行</li>
+        <li><span class="tag pri">按需</span>隔离桌面与 noVNC：第一个账号 5900 / 6080，第二个账号 5901 / 6081，默认不开</li>
+        <li><span class="tag pri">注意</span>安全组是入站白名单，UDP 443 需要单独放行；云盘故障工单 90180815 未结</li>
       </ul>
     </div>
 
@@ -472,7 +199,7 @@
     </thead>
     <tbody>
       <tr><td>DMIT-LA</td><td class="mono">179.255.119.112</td><td class="mono">VLESS Reality，TCP 443（实际监听 127.0.0.1:9444）</td><td>日常主力，AI 与普通流量</td><td><span class="tag on">在用</span></td></tr>
-      <tr><td>DMIT-HY2</td><td class="mono">179.255.119.112</td><td class="mono">Hysteria2，UDP 443</td><td>TCP 被封时的备用入口</td><td><span class="tag on">在用</span></td></tr>
+      <tr><td>DMIT-HY2</td><td class="mono">179.255.119.112</td><td class="mono">Hysteria2，UDP 443</td><td>TCP 被封时的备用入口，也是家宽链式节点的 dialer-proxy</td><td><span class="tag on">在用</span></td></tr>
       <tr><td>家宽-RAK号 48.46.113.162</td><td class="mono">本机经 DMIT-HY2 到 127.0.0.1:17990；手机经 Tailscale 到 100.120.162.88:17990</td><td class="mono">SOCKS5，落地 48.46.113.162（纽约）</td><td>手动选用，与 RAK 隔离环境账号同一家宽，仅本机脚本注入</td><td><span class="tag on">在用</span></td></tr>
       <tr><td>家宽-DMIT-B号 48.45.131.171</td><td class="mono">本机经 DMIT-HY2 到 127.0.0.1:17991；手机经 Tailscale 到 100.120.162.88:17991</td><td class="mono">SOCKS5，落地 48.45.131.171（纽约）</td><td>手动选用，与 ci-dmit-b 账号同一家宽，仅本机脚本注入</td><td><span class="tag on">在用</span></td></tr>
       <tr><td>RAK-HY2</td><td class="mono">137.175.65.78</td><td class="mono">Hysteria2，UDP 443</td><td>大流量白名单，YouTube、Telegram、Docker</td><td><span class="tag on">在用</span></td></tr>
@@ -488,13 +215,14 @@
       <tr><th>服务</th><th class="mono">位置</th><th>说明</th></tr>
     </thead>
     <tbody>
-      <tr><td>new-api</td><td class="mono">DMIT 127.0.0.1:13000</td><td>BOM 中转站，OpenAI 兼容渠道。数据库来自 RAK 每日备份并通过完整性校验；渠道 claude-5 分组走新账号，对应 Magpie 的 claude-pro-2</td></tr>
+      <tr><td>new-api</td><td class="mono">DMIT 127.0.0.1:13000</td><td>BOM 中转站，OpenAI 兼容渠道，定制构建 v1.0.0-rc.48。分组 claude-2 走渠道 11，对应 Magpie 的 claude-pro-2</td></tr>
       <tr><td>Magpie 主网关</td><td class="mono">DMIT 13425 / 13430</td><td>渠道 claude-pro 指向 DMIT 本机的旧隔离网关（该账号已失效，返回 502）；claude-pro-2 经 Tailscale 指向 RAK 的第二个账号，落地 100.95.87.62:13439</td></tr>
       <tr><td>Claude 订阅网关</td><td class="mono">命名空间内 3425</td><td>隔离环境里的 Claude 账号转成可调用的接口，经 Unix socket 转进命名空间</td></tr>
-      <tr><td>住宅代理桥</td><td class="mono">127.0.0.1:7890 / 7891</td><td>Xray 转发到住宅 SOCKS5 上游，出口为美国 Comcast 住宅 IP</td></tr>
-      <tr><td>CLIProxyAPI</td><td class="mono">127.0.0.1:8317</td><td>本地回环，管理面板在 /management.html</td></tr>
-      <tr><td>CPA Manager Plus</td><td class="mono">127.0.0.1:18317</td><td>用量面板，根路径跳到 /management.html；用量采集已关闭</td></tr>
-      <tr><td>Cloudflare 站点</td><td class="mono">bom / magpie / magpie-api，均 9443</td><td>源站 443 由 nginx 按 SNI 分流，Cloudflare 回源</td></tr>
+      <tr><td>home-egress</td><td class="mono">DMIT 127.0.0.1:17990 / 17991 与 100.120.162.88 同端口</td><td>家宽中转：按入口转到两条家宽上游，带认证，没有直连出站，家宽不可用时直接失败</td></tr>
+      <tr><td>住宅代理桥</td><td class="mono">RAK 7890 / 7891、17880 / 17881；DMIT 17890 / 17891</td><td>Xray 转发到住宅 SOCKS5 上游，出口为美国 Comcast 住宅 IP（纽约）</td></tr>
+      <tr><td>CLIProxyAPI</td><td class="mono">DMIT 127.0.0.1:8317</td><td>本地回环，管理面板在 /management.html，直连官方上游不经 Magpie</td></tr>
+      <tr><td>CPA Manager Plus</td><td class="mono">DMIT 127.0.0.1:18317</td><td>用量面板，根路径跳到 /management.html；用量采集已关闭</td></tr>
+      <tr><td>Cloudflare 站点</td><td class="mono">bom / magpie / magpie-api，均 9443</td><td>源站 443 由 nginx 按 SNI 分流，Cloudflare 回源；架构图本身是 Worker</td></tr>
     </tbody>
   </table>
 
@@ -502,43 +230,327 @@
   <table>
     <thead><tr><th>事项</th><th>说明</th></tr></thead>
     <tbody>
-      <tr><td>公网 TCP 被封</td><td>2026-10-26 起 DMIT、RAK、AWS 三个 IP 的 TCP 从国内不通，回程丢包，UDP 与 ICMP 正常。订阅地址也走 TCP，从国内直接拉会失败</td></tr>
-      <tr><td>RAK 云盘故障</td><td>工单 90180815 等待服务商处理；RAK 上旧模型服务已停用，DMIT 是唯一承载模型服务的机器</td></tr>
+      <tr><td>公网 TCP 被封</td><td>2026-10-26 起 DMIT、RAK、AWS 三个 IP 的 TCP 从国内不通，回程丢包，UDP 与 ICMP 正常。订阅地址也走 TCP，从国内直接拉会失败。2026-11-07 实测 RAK 28827 与 443 已恢复直连</td></tr>
+      <tr><td>旧账号渠道 claude-pro</td><td>账号已变成免费号，OAuth 会话过期；DMIT 本机的 claude-rak 网关服务已停，调用返回 502。续费激活后按方案改指 RAK 的第一个环境</td></tr>
+      <tr><td>RAK 云盘故障</td><td>工单 90180815 等待服务商处理；最近一次异常是 11-03 停机约 21 小时</td></tr>
+      <tr><td>家宽并发</td><td>住宅上游对并发敏感，全局模式把整机流量压上去时单请求要 10 秒，浏览器打开会变慢；只在续费时短时间用</td></tr>
+      <tr><td>无认证的家宽入口</td><td>DMIT 上 127.0.0.1:17891 没有认证，而 DMIT-HY2 没有访问控制规则，推断持有 HY2 凭据的人可以借用 B 号家宽出网（未实测），修复需要给 Hysteria 加规则</td></tr>
       <tr><td>账号层风险</td><td>住宅出口能降低暴露面，但账号注册地区、订阅渠道和客户端特征不在网络层可控范围内</td></tr>
-      <tr><td>未验收项</td><td>DMIT 第二账号尚未开通订阅，双上游路由组未建，DMIT 整机重启后的端到端恢复没有验证</td></tr>
+      <tr><td>未验收项</td><td>磁盘看护与会话备份 timer 还没建；双上游路由组未建；DMIT 整机重启后的端到端恢复没有验证</td></tr>
       <tr><td>AWS 未现场核实</td><td>2026-11-04 从本机直连与经 DMIT 跳板访问 AWS 都失败在公钥认证，页面上的 AWS 描述来自部署记录，不是当天实测</td></tr>
     </tbody>
   </table>
 
   <div class="legend">
     <span><i></i>客户端到策略组</span>
-    <span><i class="auto"></i>组内自动故障转移</span>
+    <span><i class="auto"></i>组内自动故障转移与转发</span>
     <span><i class="pick"></i>手动指定</span>
     <span><i class="mgmt"></i>管理与运维通道</span>
   </div>
 </div>
 
 <footer>
-  数据来自仓库 playbook、交接文档与 2026-11-04 对 DMIT、RAK 的只读核查；AWS 当天未能连接，页面上的 AWS 部分来自部署记录。页面只记录主机、端口、服务名和线路关系，不含任何密码、令牌或密钥。
+  数据来自仓库 playbook、交接文档与 2026-11-08 对 DMIT、RAK 的只读核查。页面只记录主机、端口、服务名和线路关系，不含任何密码、令牌或密钥。
 </footer>
 
 <script>
-  const tabs = document.getElementById('tabs');
-  const panels = document.querySelectorAll('.panel');
+  const NODES = [
+    // ===== 第一带：上网链路 =====
+    { id: 'mac', x: 60, y: 150, w: 260, h: 64, k: 'client', t: 'Mac', l: ['Clash Verge，TUN 7897', '规则模式，线路选择=DMIT'] },
+    { id: 'iphone', x: 60, y: 226, w: 260, h: 64, k: 'client', t: 'iPhone', l: ['Shadowrocket', '经 Tailscale 走家宽节点'] },
+    { id: 'seed', x: 60, y: 302, w: 260, h: 64, k: 'client', t: 'seed-ser', l: ['mihomo，100.112.81.111', 'Mac 的同源备份'] },
+    { id: 'liuqing', x: 60, y: 378, w: 260, h: 64, k: 'client', t: 'liuqing 的电脑', l: ['Clash Verge，192.168.1.68', '只认密码登录'] },
 
-  function show(id, push) {
-    for (const b of tabs.querySelectorAll('button')) b.classList.toggle('on', b.dataset.p === id);
-    for (const p of panels) p.classList.toggle('on', p.id === id);
-    if (push && location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+    { id: 'g-dmit', x: 400, y: 150, w: 250, h: 58, k: 'grp', t: 'DMIT 组（fallback）', l: ['DMIT-LA · DMIT-HY2'] },
+    { id: 'g-rak', x: 400, y: 220, w: 250, h: 58, k: 'grp', t: 'RAK 组（fallback）', l: ['RAK-HY2 · RAK-CDN'] },
+    { id: 'g-ai', x: 400, y: 290, w: 250, h: 58, k: 'grp', t: 'AI / Grok 组', l: ['只放 DMIT 与 AWS 节点', '不进 Auto 测速'] },
+    { id: 'g-home', x: 400, y: 372, w: 250, h: 70, k: 'grp', t: '家宽组（仅全局模式生效）', l: ['家宽-RAK号 / 家宽-DMIT-B号', '规则模式下不生效，需手选'] },
+
+    { id: 'n-dmit-la', x: 720, y: 150, w: 300, h: 58, k: 'node', t: 'DMIT-LA', l: ['VLESS Reality，TCP 443', '实际监听 127.0.0.1:9444'] },
+    { id: 'n-dmit-hy2', x: 720, y: 216, w: 300, h: 58, k: 'node', t: 'DMIT-HY2', l: ['Hysteria2，UDP 443', '也是家宽节点的 dialer-proxy'] },
+    { id: 'n-rak-hy2', x: 720, y: 282, w: 300, h: 58, k: 'node', t: 'RAK-HY2', l: ['Hysteria2，UDP 443', '独立部署，自签证书'] },
+    { id: 'n-rak-cdn', x: 720, y: 348, w: 300, h: 58, k: 'node', t: 'RAK-CDN', l: ['VLESS + WebSocket', '经 Cloudflare 转发'] },
+    { id: 'n-aws', x: 720, y: 414, w: 300, h: 58, k: 'node', t: 'AWS-US-Clean', l: ['VLESS Reality，TCP 443', 'Grok 与容灾用'], badge: '未核实' },
+    { id: 'n-home-rak', x: 720, y: 492, w: 300, h: 70, k: 'node', t: '家宽-RAK号 48.46.113.162', l: ['SOCKS5 链式，dialer-proxy DMIT-HY2', '与 RAK 号同一家宽'] },
+    { id: 'n-home-dmit', x: 720, y: 574, w: 300, h: 70, k: 'node', t: '家宽-DMIT-B号 48.45.131.171', l: ['SOCKS5 链式，dialer-proxy DMIT-HY2', '与 ci-dmit-b 号同一家宽'] },
+
+    { id: 's-dmit', x: 1100, y: 150, w: 280, h: 58, k: 'ext', t: 'DMIT 洛杉矶', l: ['CN2 GIA，每月 1TB 双向'] },
+    { id: 's-rak', x: 1100, y: 220, w: 280, h: 58, k: 'ext', t: 'RAK 圣何塞', l: ['共享 VPS，1000G 流量'] },
+    { id: 's-aws', x: 1100, y: 290, w: 280, h: 58, k: 'ext', t: 'AWS 俄亥俄', l: ['纯净出口与容灾'] },
+    { id: 's-egress', x: 1100, y: 440, w: 280, h: 84, k: 'node', t: 'DMIT home-egress', l: ['127.0.0.1:17990 / 17991', '带认证，也监听 Tailscale 地址'], badge: '在用' },
+
+    { id: 'x-net', x: 1460, y: 150, w: 300, h: 58, k: 'ext', t: '公网出口', l: ['机房 IP 与住宅 IP 均已验证'] },
+    { id: 'x-anthropic', x: 1460, y: 220, w: 300, h: 58, k: 'ext', t: 'Anthropic', l: ['账号订阅，Claude Code 登录'] },
+    { id: 'x-cf', x: 1460, y: 290, w: 300, h: 58, k: 'ext', t: 'Cloudflare', l: ['DNS · Worker 架构图 · 回源'] },
+    { id: 'x-home-a', x: 1460, y: 440, w: 300, h: 70, k: 'ext', t: '家宽出口 A 48.46.113.162', l: ['美国 Comcast，纽约', 'RAK 号（liujianjun）使用'] },
+    { id: 'x-home-b', x: 1460, y: 522, w: 300, h: 70, k: 'ext', t: '家宽出口 B 48.45.131.171', l: ['美国 Comcast，纽约', 'ci-dmit-b 账号使用'] },
+
+    // ===== 第二带：模型与中转链路 =====
+    { id: 'm-cc', x: 60, y: 790, w: 260, h: 70, k: 'client', t: 'Claude Code', l: ['本机经 new-api 渠道调用', '账号登录在隔离环境内完成'] },
+    { id: 'm-cpa', x: 60, y: 872, w: 260, h: 70, k: 'client', t: 'CLIProxyAPI 8317', l: ['直连官方上游', '不经 Magpie'] },
+    { id: 'm-cpam', x: 60, y: 954, w: 260, h: 70, k: 'client', t: 'CPA Manager Plus 18317', l: ['用量面板', '采集已关闭'] },
+
+    { id: 'g-newapi', x: 400, y: 790, w: 280, h: 84, k: 'grp', t: 'new-api 13000', l: ['BOM 中转站，OpenAI 兼容', '分组 claude-2 走渠道 11'] },
+    { id: 'g-magpie', x: 400, y: 886, w: 280, h: 84, k: 'grp', t: 'Magpie 主网关 13425 / 13430', l: ['登记 claude-pro / claude-pro-2 / factory', '用量页按渠道统计'] },
+    { id: 'g-nginx', x: 400, y: 982, w: 280, h: 70, k: 'grp', t: 'nginx 对外站点 9443', l: ['bom / magpie / magpie-api'] },
+
+    { id: 'c-old', x: 760, y: 790, w: 310, h: 84, k: 'off', t: 'claude-pro（旧账号）', l: ['指向 DMIT 本机旧网关', '账号失效，返回 502'], badge: '待改指' },
+    { id: 'c-new', x: 760, y: 886, w: 310, h: 84, k: 'grp', t: 'claude-pro-2（新账号）', l: ['经 Tailscale 到 100.95.87.62:13439', '真实推理 200'], badge: '在用' },
+    { id: 'c-fac', x: 760, y: 982, w: 310, h: 84, k: 'grp', t: 'factory', l: ['Magpie 内建第三方供应商', 'new-api 渠道 6 在用'] },
+
+    { id: 'e-a', x: 1150, y: 790, w: 320, h: 84, k: 'off', t: 'RAK 隔离环境 A（claude）', l: ['住宅桥 7890 / 7891，网关 3425', '账号已失效，OAuth 过期'], badge: '失效' },
+    { id: 'e-2', x: 1150, y: 886, w: 320, h: 84, k: 'node', t: 'RAK 隔离环境 2（claude2）', l: ['住宅桥 17880 / 17881，网关 3425', '新账号 pro，真实推理正常'], badge: '在用' },
+    { id: 'e-b', x: 1150, y: 982, w: 320, h: 84, k: 'node', t: 'DMIT 隔离环境 B（ci-dmit-b）', l: ['住宅桥 17890 / 17891，网关 3425'], badge: '在用' },
+    { id: 'e-old', x: 1150, y: 1078, w: 320, h: 84, k: 'off', t: 'DMIT 旧网关（claude-rak）', l: ['claude-rak-gateway 服务已停', '渠道 claude-pro 的落点'], badge: '停用' },
+
+    { id: 'u-anthropic', x: 1560, y: 790, w: 300, h: 84, k: 'ext', t: 'Anthropic', l: ['账号订阅', '不经过第三方中转'] },
+    { id: 'u-home-a', x: 1560, y: 886, w: 300, h: 84, k: 'ext', t: '住宅 SOCKS5 供应商 A', l: ['落地 48.46.113.162，纽约', 'RAK 号家宽'] },
+    { id: 'u-home-b', x: 1560, y: 982, w: 300, h: 84, k: 'ext', t: '住宅 SOCKS5 供应商 B', l: ['落地 48.45.131.171，纽约', 'ci-dmit-b 家宽'] },
+    { id: 'u-openai', x: 1560, y: 1078, w: 300, h: 84, k: 'ext', t: 'OpenAI / Codex 官方', l: ['CLIProxyAPI 直连'] },
+
+    // ===== 第三带：管理与运维 =====
+    { id: 'o-mac', x: 60, y: 1330, w: 280, h: 70, k: 'client', t: 'Mac（运维入口）', l: ['ssh dmit，~/.ssh/config 别名', '密钥与配置只在本机'] },
+    { id: 'o-cf', x: 60, y: 1412, w: 280, h: 70, k: 'client', t: 'Cloudflare 账号', l: ['三个 zone，DNS 与 Worker', 'wrangler deploy 架构图'] },
+    { id: 'o-novnc', x: 60, y: 1494, w: 280, h: 84, k: 'client', t: 'noVNC 登录桌面', l: ['本机 6080 → SSH 隧道 → RAK 6080', '转命名空间内 noVNC 6080 / VNC 5900'] },
+
+    { id: 'o-ts', x: 400, y: 1330, w: 270, h: 84, k: 'grp', t: 'Tailscale', l: ['100.64.0.0/10', '管理这些机器的主通道'] },
+    { id: 'o-hop', x: 400, y: 1426, w: 270, h: 84, k: 'grp', t: 'SSH 跳板 ninestep2', l: ['经它到内网机器', 'liuqing 的电脑 192.168.1.68'] },
+    { id: 'o-phone', x: 400, y: 1522, w: 270, h: 84, k: 'grp', t: '手机家宽入口', l: ['100.120.162.88:17990 / 17991', '经 Tailscale，带认证'] },
+
+    { id: 'h-dmit', x: 740, y: 1330, w: 300, h: 58, k: 'node', t: 'DMIT', l: ['100.120.162.88，root'] },
+    { id: 'h-rak', x: 740, y: 1400, w: 300, h: 58, k: 'node', t: 'RAK', l: ['100.95.87.62:28827，公网 SSH 备用'] },
+    { id: 'h-seed', x: 740, y: 1470, w: 300, h: 58, k: 'node', t: 'seed-ser', l: ['100.112.81.111'] },
+    { id: 'h-will', x: 740, y: 1540, w: 300, h: 58, k: 'node', t: 'willianliu', l: ['100.70.70.3'] },
+
+    { id: 'p-disk', x: 1160, y: 1330, w: 340, h: 84, k: 'plan', t: '磁盘看护', l: ['内核 I/O error / 容量与 inode 阈值', '尚未建，告警通道未定'], badge: '待建' },
+    { id: 'p-backup', x: 1160, y: 1426, w: 340, h: 84, k: 'plan', t: 'claude-backup.timer', l: ['每日备份 /home/claude 会话，保留 10 份', '尚未启用'], badge: '待建' },
+    { id: 'p-upgrade', x: 1160, y: 1522, w: 340, h: 84, k: 'grp', t: '服务升级备份', l: ['/root/service-upgrade-backups', 'magpie · CLIProxyAPI · UI 三份'], badge: '在用' },
+    { id: 'p-src', x: 1560, y: 1330, w: 300, h: 84, k: 'grp', t: '架构图源文件', l: ['仓库 web/public/index.html', '改网络就改这里并重新部署'] }
+  ];
+
+  const GROUPS = [
+    { x: 40, y: 100, w: 300, h: 360, t: '客户端与家庭设备' },
+    { x: 380, y: 100, w: 290, h: 360, t: 'Clash 策略组' },
+    { x: 700, y: 100, w: 340, h: 560, t: '代理节点' },
+    { x: 1080, y: 100, w: 320, h: 270, t: '服务器与机房' },
+    { x: 1080, y: 400, w: 320, h: 170, t: '家宽中转（DMIT）' },
+    { x: 1440, y: 100, w: 340, h: 270, t: '出口与上游' },
+    { x: 1440, y: 400, w: 340, h: 240, t: '家宽出口' },
+    { x: 40, y: 730, w: 300, h: 320, t: '调用方' },
+    { x: 380, y: 730, w: 320, h: 340, t: '中转与入口' },
+    { x: 740, y: 730, w: 350, h: 360, t: 'Magpie 渠道' },
+    { x: 1130, y: 730, w: 360, h: 450, t: 'Claude 隔离环境（仅回环命名空间）' },
+    { x: 1540, y: 730, w: 340, h: 450, t: '上游与出口' },
+    { x: 40, y: 1270, w: 320, h: 330, t: '运维入口' },
+    { x: 380, y: 1270, w: 310, h: 350, t: '私有网络与跳板' },
+    { x: 720, y: 1270, w: 340, h: 340, t: '受管机器' },
+    { x: 1140, y: 1270, w: 380, h: 350, t: '运维与看护' },
+    { x: 1540, y: 1270, w: 340, h: 150, t: '文档' }
+  ];
+
+  const BANDS = [
+    { x: 40, y: 74, t: '① 上网链路：客户端 → 策略组 → 节点 → 服务器 → 出口' },
+    { x: 40, y: 704, t: '② 模型与中转链路：调用方 → new-api → Magpie 渠道 → 隔离环境 → 上游' },
+    { x: 40, y: 1244, t: '③ 管理与运维：运维入口 → 私有网络 → 受管机器' }
+  ];
+
+  const EDGES = [
+    { from: 'mac', fs: 'r', to: 'g-dmit', ts: 'l', k: 'flow' },
+    { from: 'mac', fs: 'r', to: 'g-rak', ts: 'l', k: 'flow' },
+    { from: 'mac', fs: 'r', to: 'g-ai', ts: 'l', k: 'flow' },
+    { from: 'mac', fs: 'r', to: 'g-home', ts: 'l', k: 'pick' },
+    { from: 'g-dmit', fs: 'r', to: 'n-dmit-la', ts: 'l', k: 'auto' },
+    { from: 'g-dmit', fs: 'r', to: 'n-dmit-hy2', ts: 'l', k: 'auto' },
+    { from: 'g-rak', fs: 'r', to: 'n-rak-hy2', ts: 'l', k: 'auto' },
+    { from: 'g-rak', fs: 'r', to: 'n-rak-cdn', ts: 'l', k: 'auto' },
+    { from: 'g-ai', fs: 'r', to: 'n-aws', ts: 'l', k: 'auto' },
+    { from: 'g-home', fs: 'r', to: 'n-home-rak', ts: 'l', k: 'pick', label: '全局模式手选', lx: 525, ly: 462 },
+    { from: 'g-home', fs: 'r', to: 'n-home-dmit', ts: 'l', k: 'pick' },
+    { from: 'n-dmit-la', fs: 'r', to: 's-dmit', ts: 'l', k: 'auto' },
+    { from: 'n-dmit-hy2', fs: 'r', to: 's-dmit', ts: 'l', k: 'auto' },
+    { from: 'n-rak-hy2', fs: 'r', to: 's-rak', ts: 'l', k: 'auto' },
+    { from: 'n-rak-cdn', fs: 'r', to: 'x-cf', ts: 'l', k: 'pick', via: [[1420, 377], [1420, 319]] },
+    { from: 'n-aws', fs: 'r', to: 's-aws', ts: 'l', k: 'auto' },
+    { from: 'n-home-rak', fs: 'r', to: 's-egress', ts: 'l', k: 'flow', label: '17990', lx: 1050, ly: 520 },
+    { from: 'n-home-dmit', fs: 'r', to: 's-egress', ts: 'l', k: 'flow', label: '17991', lx: 1068, ly: 600 },
+    { from: 's-egress', fs: 'r', to: 'x-home-a', ts: 'l', k: 'auto' },
+    { from: 's-egress', fs: 'r', to: 'x-home-b', ts: 'l', k: 'auto' },
+    { from: 'x-home-a', fs: 'r', to: 'x-anthropic', ts: 'r', k: 'auto', via: [[1876, 475], [1876, 249]] },
+
+    { from: 'm-cc', fs: 'r', to: 'g-newapi', ts: 'l', k: 'flow', label: 'BOM 渠道', lx: 358, ly: 806 },
+    { from: 'g-newapi', fs: 'b', to: 'g-magpie', ts: 't', k: 'flow' },
+    { from: 'g-nginx', fs: 't', to: 'g-newapi', ts: 'b', k: 'flow', label: '反代 13000', lx: 612, ly: 940 },
+    { from: 'm-cpam', fs: 'r', to: 'm-cpa', ts: 'r', k: 'auto', label: '读用量', lx: 358, ly: 980 },
+    { from: 'm-cpa', fs: 'b', to: 'u-openai', ts: 'b', k: 'auto', via: [[190, 1200], [1710, 1200]], label: '直连官方', lx: 900, ly: 1192 },
+    { from: 'g-magpie', fs: 'r', to: 'c-old', ts: 'l', k: 'flow' },
+    { from: 'g-magpie', fs: 'r', to: 'c-new', ts: 'l', k: 'flow' },
+    { from: 'g-magpie', fs: 'r', to: 'c-fac', ts: 'l', k: 'flow' },
+    { from: 'c-old', fs: 'r', to: 'e-old', ts: 'l', k: 'flow' },
+    { from: 'c-new', fs: 'r', to: 'e-2', ts: 'l', k: 'flow', label: 'Tailscale', lx: 1110, ly: 878 },
+    { from: 'e-a', fs: 'r', to: 'u-home-a', ts: 'l', k: 'auto' },
+    { from: 'e-2', fs: 'r', to: 'u-home-a', ts: 'l', k: 'auto' },
+    { from: 'e-b', fs: 'r', to: 'u-home-b', ts: 'l', k: 'auto' },
+    { from: 'u-home-a', fs: 'r', to: 'u-anthropic', ts: 'r', k: 'auto', via: [[1884, 928], [1884, 832]] },
+    { from: 'u-home-b', fs: 'r', to: 'u-anthropic', ts: 'r', k: 'auto', via: [[1900, 1024], [1900, 832]] },
+
+    { from: 'o-mac', fs: 'r', to: 'o-ts', ts: 'l', k: 'mgmt' },
+    { from: 'o-mac', fs: 'r', to: 'o-hop', ts: 'l', k: 'mgmt' },
+    { from: 'o-novnc', fs: 'r', to: 'h-rak', ts: 'l', k: 'mgmt', via: [[700, 1536], [700, 1429]], label: 'SSH 隧道 6080', lx: 762, ly: 1392 },
+    { from: 'o-ts', fs: 'r', to: 'h-dmit', ts: 'l', k: 'mgmt' },
+    { from: 'o-ts', fs: 'r', to: 'h-rak', ts: 'l', k: 'mgmt' },
+    { from: 'o-ts', fs: 'r', to: 'h-seed', ts: 'l', k: 'mgmt' },
+    { from: 'o-ts', fs: 'r', to: 'h-will', ts: 'l', k: 'mgmt' },
+    { from: 'o-phone', fs: 'r', to: 'h-dmit', ts: 'l', k: 'mgmt', via: [[712, 1564], [712, 1359]], label: '17990 / 17991', lx: 762, ly: 1322 }
+  ];
+
+  const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
+
+  function anchor(id, side) {
+    const n = byId[id];
+    if (side === 'r') return { x: n.x + n.w, y: n.y + n.h / 2 };
+    if (side === 'l') return { x: n.x, y: n.y + n.h / 2 };
+    if (side === 't') return { x: n.x + n.w / 2, y: n.y };
+    return { x: n.x + n.w / 2, y: n.y + n.h };
   }
 
-  tabs.addEventListener('click', (event) => {
-    const button = event.target.closest('button');
-    if (button) show(button.dataset.p, true);
+  function route(edge) {
+    const p1 = anchor(edge.from, edge.fs);
+    const p2 = anchor(edge.to, edge.ts);
+    const horiz1 = edge.fs === 'r' || edge.fs === 'l';
+    const horiz2 = edge.ts === 'r' || edge.ts === 'l';
+    let d;
+    if (horiz1 && horiz2) {
+      const mx = (p1.x + p2.x) / 2;
+      d = `M${p1.x} ${p1.y} H${mx} V${p2.y} H${p2.x}`;
+    } else if (!horiz1 && !horiz2) {
+      const my = (p1.y + p2.y) / 2;
+      d = `M${p1.x} ${p1.y} V${my} H${p2.x} V${p2.y}`;
+    } else if (horiz1) {
+      d = `M${p1.x} ${p1.y} H${p2.x} V${p2.y}`;
+    } else {
+      d = `M${p1.x} ${p1.y} V${p2.y} H${p2.x}`;
+    }
+    if (edge.via) {
+      // 折点按“先横后竖”逐段连接，保证线不斜穿方块
+      let x = p1.x, y = p1.y;
+      const parts = [`M${x} ${y}`];
+      for (const corner of edge.via) {
+        parts.push(`H${corner[0]}`, `V${corner[1]}`);
+        x = corner[0]; y = corner[1];
+      }
+      parts.push(`H${p2.x}`, `V${p2.y}`);
+      d = parts.join(' ');
+    }
+    return d;
+  }
+
+  const markerOf = { flow: 'aFlow', auto: 'aAuto', mgmt: 'aMgmt', pick: 'aPick' };
+
+  function badgeText(badge) {
+    const fill = { '在用': '#e4f3ec', '未核实': '#fdf0dc', '停用': '#eef0f3', '失效': '#eef0f3', '待建': '#fdf0dc', '待改指': '#fdf0dc' }[badge] || '#eef0f3';
+    const color = { '在用': '#14663f', '未核实': '#8a5a00', '停用': '#5d6773', '失效': '#5d6773', '待建': '#8a5a00', '待改指': '#8a5a00' }[badge] || '#5d6773';
+    return { fill, color };
+  }
+
+  function render() {
+    const parts = [];
+    for (const band of BANDS) {
+      parts.push(`<text class="band" x="${band.x}" y="${band.y}">${band.t}</text>`);
+    }
+    for (const g of GROUPS) {
+      parts.push(`<g class="grp"><rect class="gbox" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}"/><text class="gt" x="${g.x + 14}" y="${g.y + 20}">${g.t}</text></g>`);
+    }
+    for (const e of EDGES) {
+      parts.push(`<path class="edge ${e.k}" d="${route(e)}" marker-end="url(#${markerOf[e.k]})"/>`);
+      if (e.label) {
+        parts.push(`<text class="elabel" x="${e.lx}" y="${e.ly}" text-anchor="middle">${e.label}</text>`);
+      }
+    }
+    for (const n of NODES) {
+      const lines = (n.l || []).map((line, i) => `<text class="s" x="${n.x + 14}" y="${n.y + 42 + i * 16}">${line}</text>`).join('');
+      let badge = '';
+      if (n.badge) {
+        const b = badgeText(n.badge);
+        const bw = n.badge.length * 11 + 12;
+        badge = `<rect x="${n.x + n.w - bw - 10}" y="${n.y + 10}" width="${bw}" height="18" rx="9" fill="${b.fill}"/><text class="badge" x="${n.x + n.w - bw / 2 - 10}" y="${n.y + 23}" text-anchor="middle" fill="${b.color}">${n.badge}</text>`;
+      }
+      parts.push(`<g class="nd k-${n.k}"><rect class="box" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}"/><text class="t" x="${n.x + 14}" y="${n.y + 25}">${n.t}</text>${lines}${badge}</g>`);
+    }
+    document.getElementById('world').innerHTML = parts.join('');
+  }
+
+  render();
+
+  const scene = document.getElementById('scene');
+  const wrap = document.getElementById('mapwrap');
+  const zoomLabel = document.getElementById('zval');
+  const CW = 1940, CH = 1660;
+  let k = 1, tx = 0, ty = 0;
+
+  function apply() {
+    scene.style.transform = `translate(${tx}px, ${ty}px) scale(${k})`;
+    zoomLabel.textContent = Math.round(k * 100) + '%';
+  }
+
+  function fit() {
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    k = Math.min(w / CW, h / CH) * 0.98;
+    tx = (w - CW * k) / 2;
+    ty = (h - CH * k) / 2;
+    apply();
+  }
+
+  function zoomAt(factor, cx, cy) {
+    const nk = Math.min(8, Math.max(0.25, k * factor));
+    const f = nk / k;
+    tx = cx - (cx - tx) * f;
+    ty = cy - (cy - ty) * f;
+    k = nk;
+    apply();
+  }
+
+  wrap.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    const rect = wrap.getBoundingClientRect();
+    zoomAt(event.deltaY < 0 ? 1.12 : 1 / 1.12, event.clientX - rect.left, event.clientY - rect.top);
+  }, { passive: false });
+
+  let dragging = false, moved = false, startX = 0, startY = 0, baseX = 0, baseY = 0;
+  wrap.addEventListener('pointerdown', (event) => {
+    dragging = true; moved = false;
+    startX = event.clientX; startY = event.clientY;
+    baseX = tx; baseY = ty;
+    wrap.classList.add('drag');
+    wrap.setPointerCapture(event.pointerId);
+  });
+  wrap.addEventListener('pointermove', (event) => {
+    if (!dragging) return;
+    const dx = event.clientX - startX, dy = event.clientY - startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+    tx = baseX + dx; ty = baseY + dy;
+    apply();
+  });
+  const endDrag = () => { dragging = false; wrap.classList.remove('drag'); };
+  wrap.addEventListener('pointerup', endDrag);
+  wrap.addEventListener('pointercancel', endDrag);
+  wrap.addEventListener('dblclick', fit);
+
+  document.getElementById('zin').addEventListener('click', () => {
+    const rect = wrap.getBoundingClientRect();
+    zoomAt(1.25, rect.width / 2, rect.height / 2);
+  });
+  document.getElementById('zout').addEventListener('click', () => {
+    const rect = wrap.getBoundingClientRect();
+    zoomAt(1 / 1.25, rect.width / 2, rect.height / 2);
+  });
+  document.getElementById('zfit').addEventListener('click', fit);
+  document.getElementById('z100').addEventListener('click', () => {
+    const rect = wrap.getBoundingClientRect();
+    zoomAt(1 / k, rect.width / 2, rect.height / 2);
   });
 
-  const wanted = location.hash.replace('#', '');
-  show(document.getElementById(wanted) ? wanted : panels[0].id, false);
+  window.addEventListener('resize', fit);
+  fit();
 </script>
 </body>
 </html>
