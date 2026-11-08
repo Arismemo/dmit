@@ -149,7 +149,7 @@
         <li><span class="tag on">在用</span>Marzban 主控，面板 39721</li>
         <li><span class="tag on">在用</span>Hysteria2（DMIT-HY2，UDP 443）</li>
         <li><span class="tag on">在用</span>Reality 入站改到 127.0.0.1:9444，nginx 按 SNI 分流 443</li>
-        <li><span class="tag on">在用</span>Magpie 主网关 13425 / 13430（v0.1.3295），渠道 claude-pro 指向 DMIT 本机旧网关，claude-pro-2 经 Tailscale 指向 RAK 的第二个账号</li>
+        <li><span class="tag on">在用</span>Magpie 主网关 13425 / 13430（v0.1.3295），claude-pro 与 claude-pro-2 都经 Tailscale 指向 RAK 的两个隔离环境（13440 / 13439），auto 路由组按模型聚合这两个账号</li>
         <li><span class="tag on">在用</span>new-api 127.0.0.1:13000（BOM，定制构建 rc.48）</li>
         <li><span class="tag on">在用</span>CLIProxyAPI 8317（v8.0.60）、CPA Manager Plus 18317</li>
         <li><span class="tag on">在用</span>Claude 隔离环境 A：住宅代理桥 7890 / 7891、网关 3425</li>
@@ -158,7 +158,7 @@
         <li><span class="tag on">在用</span>browser-hub 面板 28000 / 28443–28446</li>
         <li><span class="tag on">在用</span>nginx 站点 bom / magpie / magpie-api，均 9443；公网 443 按 SNI 分流</li>
         <li><span class="tag on">在用</span>marzban-aws-tunnel，本地 62060 / 62061</li>
-        <li><span class="tag off">已停用</span>老的 xray 服务；claude-rak-gateway（旧账号网关）与 magpie-claude 单元</li>
+        <li><span class="tag off">已停用</span>老的 xray 服务；claude-rak-gateway 与 claude-rak 命名空间已删除，账号 1 的凭据副本已清理</li>
         <li><span class="tag pri">注意</span>CPA 用量采集已关闭，历史库已清空</li>
       </ul>
     </div>
@@ -215,8 +215,8 @@
       <tr><th>服务</th><th class="mono">位置</th><th>说明</th></tr>
     </thead>
     <tbody>
-      <tr><td>new-api</td><td class="mono">DMIT 127.0.0.1:13000</td><td>BOM 中转站，OpenAI 兼容渠道，定制构建 v1.0.0-rc.48。分组 claude-2 走渠道 11，对应 Magpie 的 claude-pro-2</td></tr>
-      <tr><td>Magpie 主网关</td><td class="mono">DMIT 13425 / 13430</td><td>渠道 claude-pro 指向 DMIT 本机的旧隔离网关（该账号已失效，返回 502）；claude-pro-2 经 Tailscale 指向 RAK 的第二个账号，落地 100.95.87.62:13439</td></tr>
+      <tr><td>new-api</td><td class="mono">DMIT 127.0.0.1:13000</td><td>BOM 中转站，OpenAI 兼容渠道，定制构建 v1.0.0-rc.48。分组 claude-2 只保留一条 Claude 渠道（id 8），模型映射指向 Magpie 的 auto 路由组，由主网关在两个账号之间分配</td></tr>
+      <tr><td>Magpie 主网关</td><td class="mono">DMIT 13425 / 13430</td><td>claude-pro 经 Tailscale 指向 RAK 环境 A（100.95.87.62:13440，账号 1），claude-pro-2 指向 RAK 环境 2（13439，账号 2）；auto 路由组按模型聚合这两个账号，并发时分流、会话保持</td></tr>
       <tr><td>Claude 订阅网关</td><td class="mono">命名空间内 3425</td><td>隔离环境里的 Claude 账号转成可调用的接口，经 Unix socket 转进命名空间</td></tr>
       <tr><td>home-egress</td><td class="mono">DMIT 127.0.0.1:17990 / 17991 与 100.120.162.88 同端口</td><td>家宽中转：按入口转到两条家宽上游，带认证，没有直连出站，家宽不可用时直接失败</td></tr>
       <tr><td>住宅代理桥</td><td class="mono">RAK 7890 / 7891、17880 / 17881；DMIT 17890 / 17891</td><td>Xray 转发到住宅 SOCKS5 上游，出口为美国 Comcast 住宅 IP（纽约）</td></tr>
@@ -231,7 +231,7 @@
     <thead><tr><th>事项</th><th>说明</th></tr></thead>
     <tbody>
       <tr><td>公网 TCP 被封</td><td>2026-10-26 起 DMIT、RAK、AWS 三个 IP 的 TCP 从国内不通，回程丢包，UDP 与 ICMP 正常。订阅地址也走 TCP，从国内直接拉会失败。2026-11-07 实测 RAK 28827 与 443 已恢复直连</td></tr>
-      <tr><td>旧账号渠道 claude-pro</td><td>账号已变成免费号，OAuth 会话过期；DMIT 本机的 claude-rak 网关服务已停，调用返回 502。续费激活后按方案改指 RAK 的第一个环境</td></tr>
+      <tr><td>Fable 5.1 不可用</td><td>两个账号都没有 usage credits，请求 Fable 5.1 返回 429，Anthropic 侧要求到 claude.ai 设置里开通 credits；Sonnet 与 Opus 正常</td></tr>
       <tr><td>RAK 云盘故障</td><td>工单 90180815 等待服务商处理；最近一次异常是 11-03 停机约 21 小时</td></tr>
       <tr><td>家宽并发</td><td>住宅上游对并发敏感，全局模式把整机流量压上去时单请求要 10 秒，浏览器打开会变慢；只在续费时短时间用</td></tr>
       <tr><td>无认证的家宽入口</td><td>DMIT 上 127.0.0.1:17891 没有认证，而 DMIT-HY2 没有访问控制规则，推断持有 HY2 凭据的人可以借用 B 号家宽出网（未实测），修复需要给 Hysteria 加规则</td></tr>
@@ -290,18 +290,18 @@
     { id: 'm-cpa', x: 60, y: 872, w: 260, h: 70, k: 'client', t: 'CLIProxyAPI 8317', l: ['直连官方上游', '不经 Magpie'] },
     { id: 'm-cpam', x: 60, y: 954, w: 260, h: 70, k: 'client', t: 'CPA Manager Plus 18317', l: ['用量面板', '采集已关闭'] },
 
-    { id: 'g-newapi', x: 400, y: 790, w: 280, h: 84, k: 'grp', t: 'new-api 13000', l: ['BOM 中转站，OpenAI 兼容', '分组 claude-2 走渠道 11'] },
+    { id: 'g-newapi', x: 400, y: 790, w: 280, h: 84, k: 'grp', t: 'new-api 13000', l: ['BOM 中转站，OpenAI 兼容', '分组 claude-2 只留一条 Claude 渠道'] },
     { id: 'g-magpie', x: 400, y: 886, w: 280, h: 84, k: 'grp', t: 'Magpie 主网关 13425 / 13430', l: ['登记 claude-pro / claude-pro-2 / factory', '用量页按渠道统计'] },
     { id: 'g-nginx', x: 400, y: 982, w: 280, h: 70, k: 'grp', t: 'nginx 对外站点 9443', l: ['bom / magpie / magpie-api'] },
 
-    { id: 'c-old', x: 760, y: 790, w: 310, h: 84, k: 'off', t: 'claude-pro（旧账号）', l: ['指向 DMIT 本机旧网关', '账号失效，返回 502'], badge: '待改指' },
-    { id: 'c-new', x: 760, y: 886, w: 310, h: 84, k: 'grp', t: 'claude-pro-2（新账号）', l: ['经 Tailscale 到 100.95.87.62:13439', '真实推理 200'], badge: '在用' },
+    { id: 'c-old', x: 760, y: 790, w: 310, h: 84, k: 'grp', t: 'claude-pro（账号 1）', l: ['经 Tailscale 到 RAK 100.95.87.62:13440', '已续费，真实推理 200'], badge: '在用' },
+    { id: 'c-new', x: 760, y: 886, w: 310, h: 84, k: 'grp', t: 'claude-pro-2（账号 2）', l: ['经 Tailscale 到 RAK 100.95.87.62:13439', '真实推理 200'], badge: '在用' },
     { id: 'c-fac', x: 760, y: 982, w: 310, h: 84, k: 'grp', t: 'factory', l: ['Magpie 内建第三方供应商', 'new-api 渠道 6 在用'] },
+    { id: 'c-auto', x: 760, y: 1078, w: 310, h: 84, k: 'grp', t: 'auto 路由组', l: ['按模型聚合两个账号', '并发时分流，会话保持'], badge: '在用' },
 
-    { id: 'e-a', x: 1150, y: 790, w: 320, h: 84, k: 'off', t: 'RAK 隔离环境 A（claude）', l: ['住宅桥 7890 / 7891，网关 3425', '账号已失效，OAuth 过期'], badge: '失效' },
+    { id: 'e-a', x: 1150, y: 790, w: 320, h: 84, k: 'node', t: 'RAK 隔离环境 A（claude）', l: ['住宅桥 7890 / 7891，网关 3425', '账号 1 已续费并重新登录'], badge: '在用' },
     { id: 'e-2', x: 1150, y: 886, w: 320, h: 84, k: 'node', t: 'RAK 隔离环境 2（claude2）', l: ['住宅桥 17880 / 17881，网关 3425', '新账号 pro，真实推理正常'], badge: '在用' },
-    { id: 'e-b', x: 1150, y: 982, w: 320, h: 84, k: 'node', t: 'DMIT 隔离环境 B（ci-dmit-b）', l: ['住宅桥 17890 / 17891，网关 3425'], badge: '在用' },
-    { id: 'e-old', x: 1150, y: 1078, w: 320, h: 84, k: 'off', t: 'DMIT 旧网关（claude-rak）', l: ['claude-rak-gateway 服务已停', '渠道 claude-pro 的落点'], badge: '停用' },
+    { id: 'e-b2', x: 1150, y: 1078, w: 320, h: 84, k: 'node', t: 'DMIT 隔离环境 B（ci-dmit-b）', l: ['住宅桥 17890 / 17891，第二条家宽', '预留给第三个账号，尚未登录'], badge: '预留' },
 
     { id: 'u-anthropic', x: 1560, y: 790, w: 300, h: 84, k: 'ext', t: 'Anthropic', l: ['账号订阅', '不经过第三方中转'] },
     { id: 'u-home-a', x: 1560, y: 886, w: 300, h: 84, k: 'ext', t: '住宅 SOCKS5 供应商 A', l: ['落地 48.46.113.162，纽约', 'RAK 号家宽'] },
@@ -385,11 +385,13 @@
     { from: 'g-magpie', fs: 'r', to: 'c-old', ts: 'l', k: 'flow' },
     { from: 'g-magpie', fs: 'r', to: 'c-new', ts: 'l', k: 'flow' },
     { from: 'g-magpie', fs: 'r', to: 'c-fac', ts: 'l', k: 'flow' },
-    { from: 'c-old', fs: 'r', to: 'e-old', ts: 'l', k: 'flow' },
+    { from: 'c-old', fs: 'r', to: 'e-a', ts: 'l', k: 'flow', label: 'Tailscale', lx: 1110, ly: 782 },
     { from: 'c-new', fs: 'r', to: 'e-2', ts: 'l', k: 'flow', label: 'Tailscale', lx: 1110, ly: 878 },
     { from: 'e-a', fs: 'r', to: 'u-home-a', ts: 'l', k: 'auto' },
     { from: 'e-2', fs: 'r', to: 'u-home-a', ts: 'l', k: 'auto' },
-    { from: 'e-b', fs: 'r', to: 'u-home-b', ts: 'l', k: 'auto' },
+    { from: 'e-b2', fs: 'r', to: 'u-home-b', ts: 'l', k: 'auto' },
+    { from: 'c-auto', fs: 'r', to: 'e-a', ts: 'l', k: 'auto' },
+    { from: 'c-auto', fs: 'r', to: 'e-2', ts: 'l', k: 'auto' },
     { from: 'u-home-a', fs: 'r', to: 'u-anthropic', ts: 'r', k: 'auto', via: [[1884, 928], [1884, 832]] },
     { from: 'u-home-b', fs: 'r', to: 'u-anthropic', ts: 'r', k: 'auto', via: [[1900, 1024], [1900, 832]] },
 

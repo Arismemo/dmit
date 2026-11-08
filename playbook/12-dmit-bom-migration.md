@@ -215,6 +215,23 @@ systemctl stop iso-claude-rak-novnc.socket iso-claude-rak-novnc.service iso-clau
 
 2026-11-08 实测：new-api 用 claude-2 分组令牌调 claude-sonnet-5-5 与 claude-opus-5-5 均返回 200（约 2.7 到 2.9 秒）；claude-fable-5-1 返回 429，原因是 Anthropic 侧要求该模型有 usage credits，与链路无关。
 
+### 两个账号并联：主网关聚合，new-api 只留一条渠道（2026-11-08）
+
+账号 1（liujianjun）续费后重新登录，账号权威回到 RAK 隔离环境 A。DMIT 主网关两条渠道都指向 RAK：
+
+| 渠道 | 指向 | 账号 |
+|---|---|---|
+| claude-pro | http://100.95.87.62:13440 | RAK 环境 A（账号 1） |
+| claude-pro-2 | http://100.95.87.62:13439 | RAK 环境 2（账号 2） |
+
+Magpie 会按模型自动生成路由组，例如 `auto/claude-sonnet-5-5` 里正好含这两个渠道的同名模型。实测串行请求走 claude-pro，并发 4 个请求时两个账号各服务 2 个（每个渠道 maxConcurrency=1），会话保持不漂。`auto` 组只含这两个 Claude 渠道，不含 factory（factory 暴露的是 `factory/claude-*`，模型名不同）。
+
+new-api 侧因此只保留一条 Claude 渠道：渠道 id 8「claude-2(0.2x)」，分组 claude-2，model_mapping 指向 `auto/claude-sonnet-5-5` 等；今天临时加的渠道 11（claude-pro-2）停用保留可回滚。备份在 DMIT 的 `/root/backups/newapi-pre-single-claude-*.db`。
+
+DMIT 上第一个账号的旧副本同时清理完毕：claude-rak-gateway、iso-claude-rak-*、magpie-claude-access 单元与 netns claude-rak 已删除，nginx 的 172.17.0.1:13435 私有站点停用（备份在 /root/magpie-claude-private.conf.disabled-*），`/home/claude` 整个账号副本家目录归档后删除。账号 1 的凭据现在只存在于 RAK 环境 A。
+
+第三个账号预留在 DMIT 的隔离环境 B（ci-dmit-b，第二条家宽 48.45.131.171），尚未登录。
+
 BOM 账号相关（同一轮处理）：用户 xfinhome@gmail.com 在 users 表里不存在，注册接口要求 Turnstile 令牌且选项 RegisterEnabled=false，因此无法自行注册。已按站点的 Argon2id 参数（v=19, m=19456, t=2, p=1，16 字节盐、32 字节哈希）建号，id 36，group default，quota 取站点默认值 QuotaForNewUser=136986。登录验证：临时关闭 TurnstileCheckEnabled 后调用 /api/user/login 成功签发 access_token，随即恢复，线上状态 turnstile_check=true。
 
 管理员账号核对与恢复（2026-11-08）：查 10-11、10-20、10-28、11-01、11-02 五份快照与线上库，管理员一直是且只有 `liukun`（id 1，role 100）；`root`（id 2）在 10-20 之前已降为普通用户并停用（status=2，登录会被拒）；`xfinhome@gmail.com` 在所有快照里都不存在，说明从没在这套 BOM 注册过，它可能来自 10-11 商业版重建之前那套没留备份的旧库。RAK 上 11-03 那份旧库文件已损坏（sqlite 报 malformed），恢复不出来。

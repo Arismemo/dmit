@@ -157,6 +157,21 @@ AI 组仅保留明确允许的 DMIT/AWS 具体节点，移除对通用 Proxy 组
 - 桌面单元默认不启动，登录用 URL 直接在本机浏览器完成即可，需要隔离浏览器时再开 `claude2-desktop.service` 和两个 socket。
 - 登录流程：先在命名空间内起 `claude auth login --claudeai`，从日志取授权 URL；用户拿授权码后写进 FIFO，由登录进程接收。
 
+### 第一个账号重新登录与对外暴露（2026-11-08）
+
+账号续费后订阅恢复，但本地 OAuth 会话已死（报 OAuth session expired and could not be refreshed），必须重新走一次授权码流程。重新登录前先处理 DMIT 上的旧副本：同一个账号在两处登录会互相作废 refresh token（11-06 就是这么发生的），因此归档并删除了 DMIT 的 `/home/claude/.claude/.credentials.json` 与 `/root/.claude/.credentials.json`，之后又归档并删除了整个 `/home/claude`（账号副本家目录，474MB），备份在 DMIT 的 `/root/backups/dmit-claude-*`。
+
+RAK 环境 A 的网关现在也对外暴露，方式和环境 2 一致：
+
+| 段 | 组件 | 监听 | 作用 |
+|---|---|---|---|
+| RAK 本机 | magpie-claude-access.socket（原来停用，现已启用） | 127.0.0.1:13436 | socket-proxyd 转入 netns claude，连 3425 |
+| RAK 对 tailnet | nginx `magpie-claude-private.conf`（原来监听 172.17.0.1:13435） | 100.95.87.62:13440 | 反代到 13436，清掉 X-Forwarded-For |
+
+DMIT 主网关的 claude-pro 渠道指向 `http://100.95.87.62:13440`，caller key 沿用原来那把（RAK 端 magpie 的 `main-magpie` 条目，sha256 前缀 41eda281efaf，与 DMIT 侧一致），不需要换密钥。2026-11-08 实测：环境 A 订阅类型 pro、真实推理 200，主网关经 claude-pro 调用 200。
+
+登录脚本在 RAK 的 `/root/claude-login-a.sh`：起新的登录进程并打印授权 URL，拿到授权码后 `printf "%s\n" "<码>" > /run/claude-auth.fifo` 喂进去。
+
 2026-11-07 第二个账号已登录成功，凭据里订阅类型是 pro。真实推理和网关调用都验证过：命名空间内 `claude2 -p` 返回正常，magpie 网关 `/v1/models` 有模型列表、`/v1/messages` 返回正常响应。
 
 重新登录的步骤（脚本在 RAK 的 `/root/claude2-login.sh`）：脚本会清掉旧的 FIFO 与登录进程，起新的登录进程并打印授权 URL；拿到授权码后写进 FIFO：
