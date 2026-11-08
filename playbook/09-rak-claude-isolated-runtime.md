@@ -6,7 +6,7 @@
 
 ## 已部署架构
 
-普通 Marzban/Xray 继续使用 RAK 机房出口，TCP 3389 经既有 NAT 规则进入 443。`rak-bulk-port.service` 幂等恢复该条规则。SSH、Tailscale及普通 Xray 不进入 Claude 的网络命名空间。
+普通 Marzban/Xray 继续使用 RAK 机房出口，TCP 8443（兼容 3389）经既有 NAT 规则进入 443。`rak-bulk-port.service` 幂等恢复该条规则。SSH、Tailscale及普通 Xray 不进入 Claude 的网络命名空间。
 
 Claude 与浏览器使用 `claude` 用户，主目录 `/home/claude`，工作目录 `/home/claude/workspace`。名为 `claude` 的网络命名空间只有 lo，没有 veth、外部网卡或默认路由。运行进程没有主机 capabilities，开启 NoNewPrivileges。浏览器恢复 sandbox，使用仅允许该浏览器创建用户命名空间的独立 AppArmor 配置。
 
@@ -59,7 +59,7 @@ root 的全局代理变量已移除，新 SSH 会话默认使用普通主机出�
 - `claude-netns.service`、`claude-proxy-relay.service`、`claude-http-egress.socket`、`claude-socks-egress.socket`：隔离网络与代理连接。
 - `claude-desktop.service`、`claude-novnc.socket`、`claude-vnc.socket`：桌面与 SSH 回环入口。
 - `claude-backup.timer`、`proxy-health-check.timer`：保留原有每日备份及 15 分钟检查。
-- `rak-bulk-port.service`：启动时幂等保证 TCP3389→443，既有普通代理进程不需要重启。
+- `rak-bulk-port.service`：启动时幂等保证 TCP8443/3389→443，既有普通代理进程不需要重启。
 
 代理和桌面服务均有端口就绪检查，systemd 启动成功返回后相应监听已建立。源码副本位于 `configs/server/claude-runtime/`；它是当前部署的源文件集合，不是可直接覆盖所有配置的无人值守重装器。所有可执行脚本安装权限为 0755，配置/units 0644；凭据目录使用更严格权限。
 
@@ -116,7 +116,7 @@ AI 组仅保留明确允许的 DMIT/AWS 具体节点，移除对通用 Proxy 组
 | 备份与独立目录恢复 | 归档验证、权限检查、恢复内容哈希一致 |
 | 脚本失败分支 | 14 项 ops 测试通过，包括坏包、路径穿越、锁、失败回滚及探针异常 |
 | 网络环境重建 | 删除并重建 Claude 命名空间后服务恢复；开机依赖已 enabled |
-| TCP3389 重复恢复 | 只保留一条重定向规则 |
+| TCP8443/3389 重复恢复 | 只保留一条重定向规则 |
 | 普通大流量服务 | 普通 Xray PID 50723 未变，管理隧道连接仍在 |
 | 本机 Clash 热加载 | HTTP204，进程 PID 未变，AI 筛选生效且其他分组保持 |
 
@@ -156,5 +156,15 @@ AI 组仅保留明确允许的 DMIT/AWS 具体节点，移除对通用 Proxy 组
 - 住宅上游凭据由 `/etc/claude-bridge/config.json` 复制生成，两个账号共用同一条家宽；桥里没有直连出站，家宽不可用时直接失败。
 - 桌面单元默认不启动，登录用 URL 直接在本机浏览器完成即可，需要隔离浏览器时再开 `claude2-desktop.service` 和两个 socket。
 - 登录流程：先在命名空间内起 `claude auth login --claudeai`，从日志取授权 URL；用户拿授权码后写进 FIFO，由登录进程接收。
+
+2026-11-07 第二个账号已登录成功，凭据里订阅类型是 pro。真实推理和网关调用都验证过：命名空间内 `claude2 -p` 返回正常，magpie 网关 `/v1/models` 有模型列表、`/v1/messages` 返回正常响应。
+
+重新登录的步骤（脚本在 RAK 的 `/root/claude2-login.sh`）：脚本会清掉旧的 FIFO 与登录进程，起新的登录进程并打印授权 URL；拿到授权码后写进 FIFO：
+
+```bash
+ssh -p 28827 root@100.95.87.62 'printf "%s\n" "<授权码>" > /run/claude2-auth.fifo'
+```
+
+喂码前先测一次到 api.anthropic.com 的连通性。住宅上游偶尔会变慢（请求要 10 秒），这时换取 token 会失败并报 Socket is closed，换个码重试即可，链路本身没问题。
 
 回滚：`systemctl disable --now` 对应的 claude2 单元，删除用户 claude2 及其家目录即可，第一个账号不受影响。
