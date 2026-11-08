@@ -221,4 +221,6 @@ BOM 账号相关（同一轮处理）：用户 xfinhome@gmail.com 在 users 表�
 
 处理结果：`liukun` 密码重置为用户指定口令，同时把 `xfinhome@gmail.com`（id 36）提升为管理员，两者都用站点自己的 Argon2id 参数（v=19, m=19456, t=2, p=1，16 字节盐、32 字节哈希）生成哈希。验证方式是临时关闭 TurnstileCheckEnabled 后调用 /api/user/login，两者都签发了 access_token，随即恢复；线上状态 turnstile_check 已回到 true。改库前备份在 DMIT 的 /root/backups/newapi-pre-usercreate-*.db 与 newapi-pre-adminreset-*.db。
 
+控制台左上角的 logo 来自 options 里的 `Logo`（原值 https://bom.tokenbom.com/landing/brand.svg），由 nginx 的 `/landing/` 目录提供（文件在 /var/www/bom-landing/）。2026-11-08 用户反馈该图标在控制台显示为损坏，服务端排查全部正常：公网取回 200 image/svg+xml、gzip/br/zstd 三种压缩都能正确解出同一份 378 字节内容、页面引用的其他资源也全是 200、headless Chrome 渲染落地页与控制台都正常，判断是浏览器侧缓存。处理方式：复制成新路径 /var/www/bom-landing/brand-logo.svg，在 nginx 里给它单独一条 location 并加 `Cache-Control public, max-age=604800, immutable`（原来 /landing/ 是 no-cache，Cloudflare 每次都要回源校验），options 的 Logo 改为 https://bom.tokenbom.com/landing/brand-logo.svg。改后控制台 DOM 引用新路径，渲染正常。
+
 待定：落地页写着「开放注册」并链接 /sign-up，但选项 RegisterEnabled=false，实际注册是关的；是否打开注册由用户决定。落地页 logo 资源 /landing/brand.svg 从公网取回为 200 image/svg+xml，headless Chrome 渲染落地页与注册页均正常，页面引用的其他资源也都是 200；用户反馈的 logo 不显示尚未复现，需要用户给出具体位置或截图。
