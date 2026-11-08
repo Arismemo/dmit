@@ -217,4 +217,8 @@ systemctl stop iso-claude-rak-novnc.socket iso-claude-rak-novnc.service iso-clau
 
 BOM 账号相关（同一轮处理）：用户 xfinhome@gmail.com 在 users 表里不存在，注册接口要求 Turnstile 令牌且选项 RegisterEnabled=false，因此无法自行注册。已按站点的 Argon2id 参数（v=19, m=19456, t=2, p=1，16 字节盐、32 字节哈希）建号，id 36，group default，quota 取站点默认值 QuotaForNewUser=136986。登录验证：临时关闭 TurnstileCheckEnabled 后调用 /api/user/login 成功签发 access_token，随即恢复，线上状态 turnstile_check=true。
 
+管理员账号核对与恢复（2026-11-08）：查 10-11、10-20、10-28、11-01、11-02 五份快照与线上库，管理员一直是且只有 `liukun`（id 1，role 100）；`root`（id 2）在 10-20 之前已降为普通用户并停用（status=2，登录会被拒）；`xfinhome@gmail.com` 在所有快照里都不存在，说明从没在这套 BOM 注册过，它可能来自 10-11 商业版重建之前那套没留备份的旧库。RAK 上 11-03 那份旧库文件已损坏（sqlite 报 malformed），恢复不出来。
+
+处理结果：`liukun` 密码重置为用户指定口令，同时把 `xfinhome@gmail.com`（id 36）提升为管理员，两者都用站点自己的 Argon2id 参数（v=19, m=19456, t=2, p=1，16 字节盐、32 字节哈希）生成哈希。验证方式是临时关闭 TurnstileCheckEnabled 后调用 /api/user/login，两者都签发了 access_token，随即恢复；线上状态 turnstile_check 已回到 true。改库前备份在 DMIT 的 /root/backups/newapi-pre-usercreate-*.db 与 newapi-pre-adminreset-*.db。
+
 待定：落地页写着「开放注册」并链接 /sign-up，但选项 RegisterEnabled=false，实际注册是关的；是否打开注册由用户决定。落地页 logo 资源 /landing/brand.svg 从公网取回为 200 image/svg+xml，headless Chrome 渲染落地页与注册页均正常，页面引用的其他资源也都是 200；用户反馈的 logo 不显示尚未复现，需要用户给出具体位置或截图。
