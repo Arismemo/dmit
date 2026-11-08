@@ -168,3 +168,25 @@ ssh -p 28827 root@100.95.87.62 'printf "%s\n" "<授权码>" > /run/claude2-auth.
 喂码前先测一次到 api.anthropic.com 的连通性。住宅上游偶尔会变慢（请求要 10 秒），这时换取 token 会失败并报 Socket is closed，换个码重试即可，链路本身没问题。
 
 回滚：`systemctl disable --now` 对应的 claude2 单元，删除用户 claude2 及其家目录即可，第一个账号不受影响。
+
+### 第二个账号接入 DMIT 主网关（2026-11-08）
+
+RAK 上的 claude2 网关要同时供本机（经 DMIT-HY2 链式）和 DMIT（经 Tailscale）使用，暴露分两段：
+
+| 段 | 组件 | 监听 | 作用 |
+|---|---|---|---|
+| RAK 本机 | magpie-claude2-access.socket + .service | 127.0.0.1:13438 | socket-proxyd 转入 netns claude2，连 3425 |
+| RAK 对 tailnet | nginx `magpie-claude2-private.conf` | 100.95.87.62:13439 | 反代到 13438，并清掉 X-Forwarded-For |
+
+Magpie 会拒绝带 X-Forwarded-For 的请求，nginx 里必须写 `proxy_set_header X-Forwarded-For "";`。只绑 Tailscale 地址，不对公网开放。
+
+DMIT 侧：
+
+- 主网关 providers.json 增加渠道 `claude-pro-2`，preset `remote-magpie`，anthropic 指向 `http://100.95.87.62:13439`，key 是登记在 RAK 端 magpie-claude2 的 caller key（文件 `/home/claude2/.config/magpie/caller-keys.json`，条目名 dmit-magpie）。
+- 渠道的 models 必须写远端自己的模型名（`claude/claude-sonnet-5-5` 等）。主网关发布出去的模型名是 `<渠道 id>/<模型名>`，所以对外是 `claude-pro-2/claude/claude-sonnet-5-5`。
+- 远端 magpie 认不带前缀的模型名（`claude-sonnet-5-5` 可用），也认 `claude/` 前缀的；不认 `claude2/` 这种自定义前缀，除非远端 provider 显式加了别名，而别名会被原样转给 Anthropic 导致模型不存在。
+- new-api 侧新增渠道 claude-5（id 11），分组 claude-5，model_mapping 指向上面的 `claude-pro-2/claude/...`，GroupRatio 0.2，UserUsableGroups 显示为「claude-5（2折）」。备份在 DMIT 的 `/root/backups/newapi-pre-claude5-*.db`。
+
+2026-11-08 实测：DMIT 主机经 tailnet 直调 RAK 网关 200；主网关用模型 `claude-pro-2/claude/claude-sonnet-5-5` 返回 200；new-api 用 claude-5 分组的临时令牌调用 `claude-sonnet-5-5` 返回 200（3.1 秒），验证后临时令牌已删除。
+
+目前没有任何令牌被授予 claude-5 分组，要启用得先把分组加到对应令牌上。

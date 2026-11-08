@@ -1,0 +1,14 @@
+[Unit]
+Description=Forward the second Claude account gateway into its namespace
+Requires=magpie-claude2.service
+After=magpie-claude2.service
+[Service]
+User=claude2
+Group=claude2
+NetworkNamespacePath=/run/netns/claude2
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd 127.0.0.1:3425
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_UNIX

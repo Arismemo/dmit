@@ -1,0 +1,6 @@
+[Unit]
+Description=Loopback entry for the second Claude account gateway
+[Socket]
+ListenStream=127.0.0.1:13438
+[Install]
+WantedBy=sockets.target

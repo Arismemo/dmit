@@ -423,7 +423,7 @@
         <li><span class="tag on">在用</span>Marzban 主控，面板 39721</li>
         <li><span class="tag on">在用</span>Hysteria2（DMIT-HY2，UDP 443）</li>
         <li><span class="tag on">在用</span>Reality 入站改到 127.0.0.1:9444，nginx 按 SNI 分流 443</li>
-        <li><span class="tag on">在用</span>Magpie 主网关 13425 / 13430</li>
+        <li><span class="tag on">在用</span>Magpie 主网关 13425 / 13430，渠道 claude-pro 指向 DMIT 本机旧网关，claude-pro-2 经 Tailscale 指向 RAK 的第二个账号</li>
         <li><span class="tag on">在用</span>new-api 127.0.0.1:13000</li>
         <li><span class="tag on">在用</span>CLIProxyAPI 8317、CPA Manager Plus 18317</li>
         <li><span class="tag on">在用</span>Claude 隔离环境 A：住宅代理桥 7890 / 7891、网关 3425</li>
@@ -445,7 +445,7 @@
         <li><span class="tag on">在用</span>Xray + WebSocket（RAK-CDN），经 nginx 反代到 Cloudflare</li>
         <li><span class="tag on">在用</span>nginx 站点，含 rak-cdn 反代；公网 80 / 443 / 9443</li>
         <li><span class="tag on">在用</span>Claude 隔离运行环境与住宅代理桥 7890 / 7891</li>
-<li><span class="tag on">在用</span>Claude 隔离环境 2（第二个账号）：用户 claude2、命名空间 claude2、住宅桥 17880 / 17881、网关 3425；桌面 5901 / 6081 默认不开</li>
+<li><span class="tag on">在用</span>Claude 隔离环境 2（第二个账号）：用户 claude2、命名空间 claude2、住宅桥 17880 / 17881、网关 3425；网关经 127.0.0.1:13438 与 Tailscale 地址 100.95.87.62:13439 供 DMIT 调用；桌面 5901 / 6081 默认不开</li>
         <li><span class="tag off">已停用</span>没有运行中的容器：marzban-node、Magpie、new-api 均已停，restart policy 为 no</li>
         <li><span class="tag off">已停用</span>8 个 magpie 回滚容器仍是 Exited，另有 1 个 New API 容器停在 Created</li>
         <li><span class="tag off">已停用</span>claude-desktop、magpie-claude 单元；隔离桌面与 noVNC 入口已关</li>
@@ -488,8 +488,8 @@
       <tr><th>服务</th><th class="mono">位置</th><th>说明</th></tr>
     </thead>
     <tbody>
-      <tr><td>new-api</td><td class="mono">DMIT 127.0.0.1:13000</td><td>BOM 中转站，OpenAI 兼容渠道。数据库来自 RAK 每日备份并通过完整性校验</td></tr>
-      <tr><td>Magpie 主网关</td><td class="mono">DMIT 13425 / 13430</td><td>登记两个远程子网关：claude-pro（RAK）与 dmit-b（DMIT）</td></tr>
+      <tr><td>new-api</td><td class="mono">DMIT 127.0.0.1:13000</td><td>BOM 中转站，OpenAI 兼容渠道。数据库来自 RAK 每日备份并通过完整性校验；渠道 claude-5 分组走新账号，对应 Magpie 的 claude-pro-2</td></tr>
+      <tr><td>Magpie 主网关</td><td class="mono">DMIT 13425 / 13430</td><td>渠道 claude-pro 指向 DMIT 本机的旧隔离网关（该账号已失效，返回 502）；claude-pro-2 经 Tailscale 指向 RAK 的第二个账号，落地 100.95.87.62:13439</td></tr>
       <tr><td>Claude 订阅网关</td><td class="mono">命名空间内 3425</td><td>隔离环境里的 Claude 账号转成可调用的接口，经 Unix socket 转进命名空间</td></tr>
       <tr><td>住宅代理桥</td><td class="mono">127.0.0.1:7890 / 7891</td><td>Xray 转发到住宅 SOCKS5 上游，出口为美国 Comcast 住宅 IP</td></tr>
       <tr><td>CLIProxyAPI</td><td class="mono">127.0.0.1:8317</td><td>本地回环，管理面板在 /management.html</td></tr>
