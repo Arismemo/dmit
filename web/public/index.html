@@ -217,7 +217,7 @@
       <tr><th>服务</th><th class="mono">位置</th><th>说明</th></tr>
     </thead>
     <tbody>
-      <tr><td>new-api</td><td class="mono">DMIT 127.0.0.1:13000</td><td>BOM 中转站，OpenAI 兼容渠道，定制构建 v1.0.0-rc.48。分组 claude-2 只保留一条 Claude 渠道（id 8），模型映射指向 Magpie 的 auto 路由组，由主网关在两个账号之间分配</td></tr>
+      <tr><td>new-api</td><td class="mono">DMIT 127.0.0.1:13000</td><td>BOM 中转站，OpenAI 兼容渠道，定制构建 v1.0.0-rc.48。分组 claude-2 只保留一条 Claude 渠道（id 8），模型映射指向 Magpie 的 auto 路由组，由主网关在两个账号之间分配；分组 claude-5（0.1x）经渠道 12 直连 derouter.ai（api-direct.derouter.ai/openai，OpenAI 兼容）</td></tr>
       <tr><td>Magpie 主网关</td><td class="mono">DMIT 13425 / 13430</td><td>claude-pro 经 Tailscale 指向 RAK 环境 A（100.95.87.62:13440，账号 1），claude-pro-2 指向 RAK 环境 2（13439，账号 2）；auto 路由组按模型聚合这两个账号，并发时分流、会话保持</td></tr>
       <tr><td>Claude 订阅网关</td><td class="mono">命名空间内 3425</td><td>隔离环境里的 Claude 账号转成可调用的接口，经 Unix socket 转进命名空间</td></tr>
       <tr><td>home-egress</td><td class="mono">DMIT 127.0.0.1:17990 / 17991 与 100.120.162.88 同端口</td><td>家宽中转：按入口转到两条家宽上游，带认证，没有直连出站，家宽不可用时直接失败</td></tr>
@@ -234,6 +234,7 @@
     <tbody>
       <tr><td>公网 TCP 被封</td><td>2026-10-26 起 DMIT、RAK、AWS 三个 IP 的 TCP 从国内不通，回程丢包，UDP 与 ICMP 正常。订阅地址也走 TCP，从国内直接拉会失败。2026-11-07 实测 RAK 28827 与 443 已恢复直连</td></tr>
       <tr><td>Fable 5.1 不可用</td><td>两个账号都没有 usage credits，请求 Fable 5.1 返回 429，Anthropic 侧要求到 claude.ai 设置里开通 credits；Sonnet 与 Opus 正常</td></tr>
+      <tr><td>derouter 渠道无余额</td><td>2026-11-08 建渠道 12（分组 claude-5，0.1x）直连 derouter.ai，渠道类型已改为 OpenAI，路径与鉴权实测通过（上游半秒内应答）；该渠道 key 在 derouter 侧返回 402 剩余额度不足，充值后即可用</td></tr>
       <tr><td>RAK 云盘故障</td><td>工单 90180815 等待服务商处理；最近一次异常是 11-03 停机约 21 小时</td></tr>
       <tr><td>家宽并发</td><td>住宅上游对并发敏感，全局模式把整机流量压上去时单请求要 10 秒，浏览器打开会变慢；只在续费时短时间用</td></tr>
       <tr><td>无认证的家宽入口</td><td>DMIT 上 127.0.0.1:17891 没有认证，而 DMIT-HY2 没有访问控制规则，推断持有 HY2 凭据的人可以借用 B 号家宽出网（未实测），修复需要给 Hysteria 加规则</td></tr>
@@ -292,7 +293,7 @@
     { id: 'm-cpa', x: 60, y: 872, w: 260, h: 70, k: 'client', t: 'CLIProxyAPI 8317', l: ['直连官方上游', '不经 Magpie'] },
     { id: 'm-cpam', x: 60, y: 954, w: 260, h: 70, k: 'client', t: 'CPA Manager Plus 18317', l: ['用量面板', '采集已关闭'] },
 
-    { id: 'g-newapi', x: 400, y: 790, w: 280, h: 84, k: 'grp', t: 'new-api 13000', l: ['BOM 中转站，OpenAI 兼容', '分组 claude-2 只留一条 Claude 渠道'] },
+    { id: 'g-newapi', x: 400, y: 790, w: 280, h: 84, k: 'grp', t: 'new-api 13000', l: ['BOM 中转站，OpenAI 兼容', 'claude-2 组走 Magpie auto', 'claude-5 组经渠道 12 直连 derouter'] },
     { id: 'g-magpie', x: 400, y: 886, w: 280, h: 84, k: 'grp', t: 'Magpie 主网关 13425 / 13430', l: ['登记 claude-pro / claude-pro-2 / factory', '用量页按渠道统计'] },
     { id: 'g-nginx', x: 400, y: 982, w: 280, h: 70, k: 'grp', t: 'nginx 对外站点 9443', l: ['bom / magpie / magpie-api'] },
 
@@ -306,9 +307,10 @@
     { id: 'e-b2', x: 1150, y: 1078, w: 320, h: 84, k: 'node', t: 'DMIT 隔离环境 B（ci-dmit-b）', l: ['住宅桥 17890 / 17891，第二条家宽', '预留给第三个账号，尚未登录'], badge: '预留' },
 
     { id: 'u-anthropic', x: 1560, y: 790, w: 300, h: 84, k: 'ext', t: 'Anthropic', l: ['账号订阅', '不经过第三方中转'] },
-    { id: 'u-home-a', x: 1560, y: 886, w: 300, h: 84, k: 'ext', t: '住宅 SOCKS5 供应商 A', l: ['落地 48.46.113.162，纽约', 'RAK 号家宽'] },
-    { id: 'u-home-b', x: 1560, y: 982, w: 300, h: 84, k: 'ext', t: '住宅 SOCKS5 供应商 B', l: ['落地 48.45.131.171，纽约', 'ci-dmit-b 家宽'] },
-    { id: 'u-openai', x: 1560, y: 1078, w: 300, h: 84, k: 'ext', t: 'OpenAI / Codex 官方', l: ['CLIProxyAPI 直连'] },
+    { id: 'u-home-a', x: 1560, y: 886, w: 300, h: 70, k: 'ext', t: '住宅 SOCKS5 供应商 A', l: ['落地 48.46.113.162，纽约', 'RAK 号家宽'] },
+    { id: 'u-home-b', x: 1560, y: 964, w: 300, h: 70, k: 'ext', t: '住宅 SOCKS5 供应商 B', l: ['落地 48.45.131.171，纽约', 'ci-dmit-b 家宽'] },
+    { id: 'u-openai', x: 1560, y: 1042, w: 300, h: 58, k: 'ext', t: 'OpenAI / Codex 官方', l: ['CLIProxyAPI 直连'] },
+    { id: 'u-derouter', x: 1560, y: 1108, w: 300, h: 70, k: 'ext', t: 'DeRouter 上游', l: ['api-direct.derouter.ai/openai', '渠道 12 · 分组 claude-5（0.1x）'], badge: '未核实' },
 
     // ===== 第三带：管理与运维 =====
     { id: 'o-mac', x: 60, y: 1330, w: 280, h: 70, k: 'client', t: 'Mac（运维入口）', l: ['ssh dmit，~/.ssh/config 别名', '密钥与配置只在本机'] },
@@ -382,8 +384,9 @@
     { from: 'm-cc', fs: 'r', to: 'g-newapi', ts: 'l', k: 'flow', label: 'BOM 渠道', lx: 358, ly: 806 },
     { from: 'g-newapi', fs: 'b', to: 'g-magpie', ts: 't', k: 'flow' },
     { from: 'g-nginx', fs: 't', to: 'g-newapi', ts: 'b', k: 'flow', label: '反代 13000', lx: 612, ly: 940 },
+    { from: 'g-newapi', fs: 'r', to: 'u-derouter', ts: 'l', k: 'flow', via: [[720, 832], [720, 1200], [1520, 1200], [1520, 1143]], label: 'claude-5 直连', lx: 1120, ly: 1192 },
     { from: 'm-cpam', fs: 'r', to: 'm-cpa', ts: 'r', k: 'auto', label: '读用量', lx: 358, ly: 980 },
-    { from: 'm-cpa', fs: 'b', to: 'u-openai', ts: 'b', k: 'auto', via: [[190, 1200], [1710, 1200]], label: '直连官方', lx: 900, ly: 1192 },
+    { from: 'm-cpa', fs: 'b', to: 'u-openai', ts: 'l', k: 'auto', via: [[190, 1216], [1500, 1216], [1500, 1071]], label: '直连官方', lx: 900, ly: 1210 },
     { from: 'g-magpie', fs: 'r', to: 'c-old', ts: 'l', k: 'flow' },
     { from: 'g-magpie', fs: 'r', to: 'c-new', ts: 'l', k: 'flow' },
     { from: 'g-magpie', fs: 'r', to: 'c-fac', ts: 'l', k: 'flow' },
