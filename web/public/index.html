@@ -233,7 +233,7 @@
     <thead><tr><th>事项</th><th>说明</th></tr></thead>
     <tbody>
       <tr><td>公网 TCP 被封</td><td>2026-10-26 起 DMIT、RAK、AWS 三个 IP 的 TCP 从国内不通，回程丢包，UDP 与 ICMP 正常。订阅地址也走 TCP，从国内直接拉会失败。2026-11-07 实测 RAK 28827 与 443 已恢复直连</td></tr>
-      <tr><td>Fable 5.1 不可用</td><td>两个账号都没有 usage credits，请求 Fable 5.1 返回 429，Anthropic 侧要求到 claude.ai 设置里开通 credits；Sonnet 与 Opus 正常</td></tr>
+      <tr><td>Fable 5.1 不可用</td><td>两个账号都没有 usage credits，请求 Fable 5.1 返回 429，Anthropic 侧要求到 claude.ai 设置里开通 credits；Sonnet 与 Opus 正常。2026-11-10 起 claude-2 分组改提供 Fable 5.2（渠道 8 映射到 Magpie 的 auto/claude-fable-5-2），经 new-api 调用两种接口均返回 200</td></tr>
       <tr><td>derouter 渠道无余额</td><td>2026-11-08 建渠道 12（分组 claude-5，0.1x）直连 derouter.ai，渠道类型已改为 OpenAI，路径与鉴权实测通过（上游半秒内应答）；该渠道 key 在 derouter 侧返回 402 剩余额度不足，充值后即可用</td></tr>
       <tr><td>RAK 云盘故障</td><td>工单 90180815 等待服务商处理；最近一次异常是 11-03 停机约 21 小时</td></tr>
       <tr><td>家宽并发</td><td>住宅上游对并发敏感，全局模式把整机流量压上去时单请求要 10 秒，浏览器打开会变慢；只在续费时短时间用</td></tr>
