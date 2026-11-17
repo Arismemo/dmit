@@ -23,19 +23,30 @@ const context = vm.createContext({});
 vm.runInContext(source, context);
 const generated = JSON.parse(JSON.stringify(context.main({ proxies: [], 'proxy-groups': [], rules: [] }, 'portable')));
 const names = ['DMIT-HY2', 'RAK-HY2', 'RAK-CDN'];
-const health = { type: 'fallback', url: 'https://www.gstatic.com/generate_204', interval: 300, timeout: 5000, lazy: false };
-// DMIT-LA 是 Marzban 按用户下发的 VLESS Reality 节点，UUID 各用户不同，不能写死在共享模板里，
-// 由 Marzban 渲染时从 conf.proxies 取出。主机记录的端口是 Xray 的回环端口 9444，对外入口是
-// nginx 的 TCP 443（按 SNI 分流），所以这里强制改写端口。用户没有可用节点时整段省略。
-// 它和 DMIT-HY2 一起放进 DMIT 故障转移组：UDP 被运营商阻断时走 TCP，TCP 被封时走 UDP。
-const dmitRealityName = 'DMIT-LA';
-const jinjaIfReality = "{% if conf.proxies %}";
-const jinjaEndIf = "{% endif %}";
-const realityProxyMarker = '"__DMIT_LA_PROXY__"';
-const realityMemberMarker = '"__DMIT_LA_MEMBER__"';
+// 每 60 秒检测一次，实际连接连续失败 2 次立即重测，节点被封后约 1 分钟内切走。
+const health = { type: 'fallback', url: 'https://www.gstatic.com/generate_204', interval: 60, timeout: 5000, lazy: false, 'max-failed-times': 2 };
+// DMIT-LA（VLESS Reality，TCP）和 DMIT-CDN（VLESS WebSocket，经 Cloudflare 转发）由 Marzban 按用户下发，
+// UUID 各用户不同，不能写死在共享模板里，渲染时按名称从 conf.proxies 取出；用户没有对应节点时整段省略。
+// DMIT-LA 的主机记录虽已改为 443，这里仍强制写 443：Xray 实际监听回环端口 9444，对外入口是 nginx 的 TCP 443。
+// DMIT 故障转移顺序：DMIT-LA → DMIT-HY2 → DMIT-CDN。TCP 与 UDP 互为备用，两者都被封时走 CDN。
+const marzbanNodes = [
+  { name: 'DMIT-LA', overrides: 'port=443, ' },
+  { name: 'DMIT-CDN', overrides: '' }
+];
+const jinjaVar = name => 'node_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+const jinjaHeader = marzbanNodes
+  .map(node => `{% set ${jinjaVar(node.name)} = conf.proxies | selectattr('name', 'equalto', '${node.name}') | first %}`)
+  .join('\n') + '\n';
+const proxyMarker = name => `__PROXY_${name}__`;
+const memberMarker = name => `__MEMBER_${name}__`;
 // conf.proxies 里的 uuid 是 UUID 对象，tojson 不能直接序列化，先转成字符串。
-const realityProxyJinja = jinjaIfReality + "{{ dict(conf.proxies[0], name='" + dmitRealityName + "', port=443, uuid=conf.proxies[0].uuid | string) | tojson }}," + jinjaEndIf;
-const realityMemberJinja = jinjaIfReality + JSON.stringify(dmitRealityName) + "," + jinjaEndIf;
+const replacements = marzbanNodes.flatMap(node => {
+  const v = jinjaVar(node.name);
+  return [
+    [proxyMarker(node.name), `{{ dict(${v}, ${node.overrides}uuid=${v}.uuid | string) | tojson }}`, v],
+    [memberMarker(node.name), JSON.stringify(node.name), v]
+  ];
+});
 const config = {
   'mixed-port': 7897, 'allow-lan': false, mode: 'rule', 'log-level': 'info', ipv6: false,
   profile: { 'store-selected': true },
@@ -46,14 +57,14 @@ const config = {
     nameserver: ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
     'proxy-server-nameserver': ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query']
   },
-  proxies: ['__DMIT_LA_PROXY__'].concat(names.map(name => {
+  proxies: [proxyMarker('DMIT-LA'), proxyMarker('DMIT-CDN')].concat(names.map(name => {
     const proxy = generated.proxies.find(p => p.name === name);
     if (!proxy) throw new Error('缺少节点 ' + name);
     return proxy;
   })),
   'proxy-groups': [
     { name: '线路选择', type: 'select', proxies: ['DMIT', 'RAK', 'RAK-CDN'] },
-    { name: 'DMIT', ...health, proxies: ['__DMIT_LA_MEMBER__', 'DMIT-HY2'] },
+    { name: 'DMIT', ...health, proxies: [memberMarker('DMIT-LA'), 'DMIT-HY2', memberMarker('DMIT-CDN')] },
     { name: 'RAK', ...health, proxies: ['RAK-HY2', 'RAK-CDN'] },
     { name: 'Bulk-Traffic', type: 'select', proxies: ['RAK', '线路选择'] }
   ],
@@ -65,13 +76,23 @@ const config = {
   ]
 };
 // 输出是 Marzban 的 Jinja2 模板：先按 JSON 序列化，再把占位符换成 Jinja 片段。
-let output = JSON.stringify(config, null, 2) + '\n';
-for (const [marker, jinja] of [[realityProxyMarker, realityProxyJinja], [realityMemberMarker, realityMemberJinja]]) {
-  const pattern = new RegExp(marker + ',(\\s*)', 'g');
-  const count = (output.match(pattern) || []).length;
-  if (count !== 1) throw new Error('模板占位符 ' + marker + ' 出现 ' + count + ' 次');
-  output = output.replace(pattern, (_, space) => jinja + space);
+// 占位符后面有逗号时，逗号随片段一起放进条件块；位于数组末尾时，前面的逗号放进条件块，
+// 这样节点缺失时生成的 JSON 仍然合法。
+let output = jinjaHeader + JSON.stringify(config, null, 2) + '\n';
+for (const [marker, jinja, v] of replacements) {
+  const quoted = JSON.stringify(marker);
+  const trailing = new RegExp(quoted + ',(\\s*)', 'g');
+  const leading = new RegExp(',(\\s*)' + quoted, 'g');
+  const nTrailing = (output.match(trailing) || []).length;
+  const nLeading = (output.match(leading) || []).length;
+  if (nTrailing === 1) {
+    output = output.replace(trailing, (_, space) => `{% if ${v} %}${jinja},{% endif %}${space}`);
+  } else if (nTrailing === 0 && nLeading === 1) {
+    output = output.replace(leading, (_, space) => `{% if ${v} %},${space}${jinja}{% endif %}`);
+  } else {
+    throw new Error('模板占位符 ' + marker + ' 的位置不符合预期');
+  }
 }
 fs.writeFileSync(target, output, { mode: 0o600 });
 fs.chmodSync(target, 0o600);
-console.log('已生成通用订阅模板：DMIT-LA（按用户渲染）+ 3 个共享节点，无设备专属 SSH 配置');
+console.log('已生成通用订阅模板：DMIT-LA、DMIT-CDN（按用户渲染）+ 3 个共享节点，无设备专属 SSH 配置');

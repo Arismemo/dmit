@@ -86,6 +86,15 @@ for (const path of sources) {
     ["DMIT-LA", "DMIT-HY2"],
     "DMIT line prefers Reality and falls back to Hysteria2"
   );
+  // 订阅带 DMIT-CDN 时，它排在两个直连节点之后，作为 IP 被封时的兜底
+  const cdnFixture = structuredClone(fixture);
+  cdnFixture.proxies.push({ name: "DMIT-CDN", type: "vless", network: "ws" });
+  const cdnGroups = Object.fromEntries(transform(source, cdnFixture)["proxy-groups"].map(group => [group.name, group]));
+  assert.deepEqual(cdnGroups.DMIT.proxies, ["DMIT-LA", "DMIT-HY2", "DMIT-CDN"], "DMIT-CDN is the last resort of the DMIT line");
+  for (const name of ["DMIT", "RAK"]) {
+    assert.equal(cdnGroups[name].interval, 60, `${name} health check runs every 60 seconds`);
+    assert.equal(cdnGroups[name]["max-failed-times"], 2, `${name} rechecks after 2 failed connections`);
+  }
   assert.equal(output["proxy-groups"].find(group => group.name === "Proxy").proxies[0], "线路选择", "Proxy defaults to the line selector");
   const known = new Set([
     "DIRECT", "REJECT",

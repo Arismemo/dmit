@@ -249,18 +249,22 @@ function main(config, profileName) {
   // =========================================================================
   // DMIT 与 RAK 是互不共用凭据的两条线路：组内按可用性自动故障转移，组间在“线路选择”中手动切换
   // “线路选择”里的第三项 AWS-US-Clean 是手动容灾节点：它不进 Auto 测速组，也不参与线路间的自动故障转移
+  // 每 60 秒检测一次；实际连接连续失败 2 次就立即重测，不等下一个周期，节点被封后约 1 分钟内切走
   const lineHealthCheck = {
     url: "https://www.gstatic.com/generate_204",
-    interval: 300,
+    interval: 60,
     timeout: 5000,
     lazy: false,
+    "max-failed-times": 2,
     "expected-status": "204"
   };
   const proxyNames = new Set(config.proxies.map(proxy => proxy.name));
+  // DMIT-LA（TCP）与 DMIT-HY2（UDP）互为备用；两者同时被封时走 DMIT-CDN，经 Cloudflare 转发，不暴露服务器 IP。
+  // DMIT-LA 与 DMIT-CDN 来自 Marzban 订阅（每个用户凭据不同），订阅里没有时自动跳过
   const dmitGroup = Object.assign({
     name: "DMIT",
     type: "fallback",
-    proxies: ["DMIT-LA", hy2Proxy.name].filter(name => proxyNames.has(name))
+    proxies: ["DMIT-LA", hy2Proxy.name, "DMIT-CDN"].filter(name => proxyNames.has(name))
   }, lineHealthCheck);
   const rakGroup = Object.assign({
     name: "RAK",

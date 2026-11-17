@@ -215,3 +215,29 @@ RAK 侧：
 2. `scripts/render-shadowrocket.sh` 在生成配置的同时，从 `secrets.env` 生成 RAK-HY2 与 RAK-CDN 的导入链接，写到配置文件旁的 `*-rak-nodes.txt`，权限 0600，导入后应删除。
 3. 未在手机上验证，尤其是 Shadowrocket 对 Hysteria2 链接中 `pinSHA256` 参数的支持。
 
+
+### 2026-11-17：DMIT 加固（更换 Reality 密钥、新增 CDN 线路、缩短故障转移时间）
+
+背景：当天上海电信网络对海外 UDP 回程整片丢包，DMIT-HY2 与 RAK-HY2 同时不可用；同时实测 DMIT 的 TCP 443 已恢复。原定的 5.3（更换 IP）没有执行，这次在不换 IP 的前提下做了三件事。改动前的 nginx 目录、SNI 分流配置、Xray 配置和订阅模板备份在 DMIT 的 `/var/backups/dmit-hardening-20261117T080004Z/`。
+
+1. 更换 Reality 密钥与伪装目标。经 Marzban 接口重新生成 x25519 密钥对和 3 个 shortId；伪装目标从 www.apple.com 改为本机 nginx 上的 `<DOMAIN_NAME>` 站点（`127.0.0.1:9443`，Let's Encrypt 证书，所有路径返回 404）。apple.com 不可能部署在 DMIT 的 IP 上，换成本机域名后，探测方看到的 IP、域名和证书是一致的。Marzban 主机记录与订阅中的 SNI 随之变为 `<DOMAIN_NAME>`。证书续期后由新增的 `/etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh` 平滑重载 nginx。
+2. 新增 DMIT-CDN 线路。Xray 新增入站 `DMIT-CDN`（VLESS + WebSocket，只监听 `127.0.0.1:23771`），nginx 新增 `static.230254.xyz` 站点（自签证书，只把指定路径上的 WebSocket 请求转给该入站，其他请求返回 404），并在 443 的 SNI 分流表中把 `static.230254.xyz` 指向 9443。Cloudflare 上 `static.230254.xyz` 开启代理并指向 DMIT。该节点由 Marzban 按用户下发，计入用户流量，面板停用用户即失效；路由沿用 Marzban 的屏蔽规则（私有网段、BT、广告）。
+3. 缩短故障转移时间。订阅模板、本机客户端脚本与手机配置中 DMIT、RAK 两个分组的检测间隔从 300 秒改为 60 秒；Mihomo 另加 `max-failed-times: 2`，实际连接连续失败 2 次立即重测。DMIT 分组的顺序为 DMIT-LA、DMIT-HY2、DMIT-CDN。
+
+为避免改 Xray 时切断本机正在使用的连接，施工前先把本机“线路选择”临时切到 RAK（当时 RAK-HY2 不通，实际走 RAK-CDN），客户端刷新订阅后再切回 DMIT。
+
+验收（施工当天）：
+
+| 检查项 | 结果 |
+|---|---|
+| 用 SNI `<DOMAIN_NAME>` 探测 443 | 证书校验通过，HTTP/2，返回 404 |
+| 新密钥的 DMIT-LA，本机物理网卡直连 | generate_204 连续 3 次返回 204，出口为 DMIT |
+| DMIT-CDN 的源站链路（绕过 Cloudflare 直连 443） | generate_204 连续 3 次返回 204，出口为 DMIT |
+| DMIT-CDN 经 Cloudflare 端到端 | 服务器经 Cloudflare 发起 WebSocket 握手返回 101；本机 Clash 测速 3 次分别为 199、203、191 毫秒 |
+| 本机刷新订阅后 | DMIT 分组为 DMIT-LA、DMIT-HY2、DMIT-CDN，当前使用 DMIT-LA（183 毫秒），出口为 DMIT，Google 返回 204；DMIT-HY2 因当天本机网络的 UDP 问题仍不可用 |
+| 6 个用户的订阅渲染 | 均含 DMIT-LA 与 DMIT-CDN，DMIT 分组顺序正确；Mihomo 校验通过 |
+| 原有业务 | bom 经 443 返回 200，magpie 9443 返回 401，Xray 与 nginx 均为平滑更新，nginx 主进程未变 |
+
+注意：所有用户（包括手机）需要刷新订阅，否则 DMIT-LA 因密钥变更无法连接，DMIT 分组会退到 DMIT-HY2。手机的 Shadowrocket 配置改了检测间隔，需要更新一次远程配置。
+
+踩坑：DNS 记录建好之前，如果客户端已经查询过这个域名，Mihomo 会把空结果缓存到 Cloudflare 给出的负缓存时间（约 30 分钟），期间 DMIT-CDN 测速一直报错。可以等缓存过期，也可以调用控制接口 `POST /cache/dns/flush` 立即清除。用 curl 经 Cloudflare 测试 WebSocket 时要加 `--http1.1`，否则走 HTTP/2，请求到达源站时不带 Upgrade 头，会被 nginx 当成普通请求返回 404。

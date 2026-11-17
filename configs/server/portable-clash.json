@@ -41,11 +41,29 @@
       "tls": true,
       "udp": true,
       "flow": "xtls-rprx-vision",
-      "servername": "<REALITY_SNI>",
+      "servername": "<DOMAIN_NAME>",
       "client-fingerprint": "chrome",
       "reality-opts": {
         "public-key": "<REALITY_PUBLIC_KEY>",
         "short-id": "<REALITY_SHORT_ID>"
+      }
+    },
+    {
+      "name": "DMIT-CDN",
+      "type": "vless",
+      "server": "<DMIT_CDN_DOMAIN>",
+      "port": 443,
+      "uuid": "<MARZBAN_USER_UUID>",
+      "udp": true,
+      "tls": true,
+      "servername": "<DMIT_CDN_DOMAIN>",
+      "client-fingerprint": "chrome",
+      "network": "ws",
+      "ws-opts": {
+        "path": "<DMIT_CDN_PATH>",
+        "headers": {
+          "Host": "<DMIT_CDN_DOMAIN>"
+        }
       }
     },
     {
@@ -100,25 +118,28 @@
       "name": "DMIT",
       "type": "fallback",
       "url": "https://www.gstatic.com/generate_204",
-      "interval": 300,
+      "interval": 60,
       "timeout": 5000,
       "lazy": false,
       "proxies": [
         "DMIT-LA",
-        "DMIT-HY2"
-      ]
+        "DMIT-HY2",
+        "DMIT-CDN"
+      ],
+      "max-failed-times": 2
     },
     {
       "name": "RAK",
       "type": "fallback",
       "url": "https://www.gstatic.com/generate_204",
-      "interval": 300,
+      "interval": 60,
       "timeout": 5000,
       "lazy": false,
       "proxies": [
         "RAK-HY2",
         "RAK-CDN"
-      ]
+      ],
+      "max-failed-times": 2
     },
     {
       "name": "Bulk-Traffic",

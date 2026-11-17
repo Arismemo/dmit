@@ -6,16 +6,16 @@
 
 ## 当前行为
 
-- 订阅包含线路选择、DMIT、RAK、Bulk-Traffic 分组。DMIT 分组的成员依次是 DMIT-LA 和 DMIT-HY2：UDP 被阻断时走 TCP，TCP 被封时走 UDP。
+- 订阅包含线路选择、DMIT、RAK、Bulk-Traffic 分组。DMIT 分组的成员依次是 DMIT-LA、DMIT-HY2 和 DMIT-CDN：UDP 被阻断时走 TCP，TCP 被封时走 UDP，两者都不通时经 Cloudflare 走 CDN（2026-11-17 加入，见 [10-independent-nodes.md](10-independent-nodes.md) 的施工记录）。DMIT 与 RAK 两个分组每 60 秒检测一次，实际连接连续失败 2 次立即重测。
 - 不包含旧 RAK Reality、AWS 节点、本机 SSH 私钥路径或公司专属配置。
 - DMIT 和 RAK 的独立服务继续运行；RAK 的旧 Marzban 节点保持 disabled。
 - 本次更新的是 Clash 模板，未改其他客户端格式的模板。
-- DMIT-LA 由 Marzban 按用户渲染，UUID 各用户不同，计入该用户的流量和限额，面板停用用户后随之失效。另外三个节点使用共享凭据，Marzban 只提供订阅入口，不负责它们的逐用户流量统计、限额和停用联动；已获取共享凭据的用户不会因为面板禁用而立即失去访问能力。
+- DMIT-LA 与 DMIT-CDN 由 Marzban 按用户渲染，UUID 各用户不同，计入该用户的流量和限额，面板停用用户后随之失效。另外三个节点使用共享凭据，Marzban 只提供订阅入口，不负责它们的逐用户流量统计、限额和停用联动；已获取共享凭据的用户不会因为面板禁用而立即失去访问能力。
 - Xray 的 Reality 入站实际监听 127.0.0.1:9444，由 nginx 在 TCP 443 按 SNI 分流过去。Marzban 主机记录 DMIT-LA 的端口已改为 443（原先为空，默认取入站端口 9444，v2ray 格式和手机端拿到的链接都连不上）；Clash 模板里也把端口写死为 443，不依赖主机记录。
 
 ## 维护
 
-通用配置由 `scripts/render-portable-subscription.js` 从本机 `secrets.env` 和客户端脚本生成。输出是 Marzban 的 Jinja2 模板：DMIT-LA 一段由 `conf.proxies[0]` 渲染，用户没有可用节点时整段省略。`configs/server/portable-clash.json` 是按单个用户渲染后的脱敏结构快照；旧 `configs/server/custom-clash.yml` 仍有其他工作中的改动，本次未覆盖，不能直接重新部署旧模板。
+通用配置由 `scripts/render-portable-subscription.js` 从本机 `secrets.env` 和客户端脚本生成。输出是 Marzban 的 Jinja2 模板：DMIT-LA 与 DMIT-CDN 按名称从 `conf.proxies` 取出，用户没有对应节点时整段省略。`configs/server/portable-clash.json` 是按单个用户渲染后的脱敏结构快照；旧 `configs/server/custom-clash.yml` 仍有其他工作中的改动，本次未覆盖，不能直接重新部署旧模板。
 
 生成配置：
 
