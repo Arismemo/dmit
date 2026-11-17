@@ -24,6 +24,18 @@ vm.runInContext(source, context);
 const generated = JSON.parse(JSON.stringify(context.main({ proxies: [], 'proxy-groups': [], rules: [] }, 'portable')));
 const names = ['DMIT-HY2', 'RAK-HY2', 'RAK-CDN'];
 const health = { type: 'fallback', url: 'https://www.gstatic.com/generate_204', interval: 300, timeout: 5000, lazy: false };
+// DMIT-LA 是 Marzban 按用户下发的 VLESS Reality 节点，UUID 各用户不同，不能写死在共享模板里，
+// 由 Marzban 渲染时从 conf.proxies 取出。主机记录的端口是 Xray 的回环端口 9444，对外入口是
+// nginx 的 TCP 443（按 SNI 分流），所以这里强制改写端口。用户没有可用节点时整段省略。
+// 它和 DMIT-HY2 一起放进 DMIT 故障转移组：UDP 被运营商阻断时走 TCP，TCP 被封时走 UDP。
+const dmitRealityName = 'DMIT-LA';
+const jinjaIfReality = "{% if conf.proxies %}";
+const jinjaEndIf = "{% endif %}";
+const realityProxyMarker = '"__DMIT_LA_PROXY__"';
+const realityMemberMarker = '"__DMIT_LA_MEMBER__"';
+// conf.proxies 里的 uuid 是 UUID 对象，tojson 不能直接序列化，先转成字符串。
+const realityProxyJinja = jinjaIfReality + "{{ dict(conf.proxies[0], name='" + dmitRealityName + "', port=443, uuid=conf.proxies[0].uuid | string) | tojson }}," + jinjaEndIf;
+const realityMemberJinja = jinjaIfReality + JSON.stringify(dmitRealityName) + "," + jinjaEndIf;
 const config = {
   'mixed-port': 7897, 'allow-lan': false, mode: 'rule', 'log-level': 'info', ipv6: false,
   profile: { 'store-selected': true },
@@ -34,14 +46,14 @@ const config = {
     nameserver: ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
     'proxy-server-nameserver': ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query']
   },
-  proxies: names.map(name => {
+  proxies: ['__DMIT_LA_PROXY__'].concat(names.map(name => {
     const proxy = generated.proxies.find(p => p.name === name);
     if (!proxy) throw new Error('缺少节点 ' + name);
     return proxy;
-  }),
+  })),
   'proxy-groups': [
     { name: '线路选择', type: 'select', proxies: ['DMIT', 'RAK', 'RAK-CDN'] },
-    { name: 'DMIT', ...health, proxies: ['DMIT-HY2'] },
+    { name: 'DMIT', ...health, proxies: ['__DMIT_LA_MEMBER__', 'DMIT-HY2'] },
     { name: 'RAK', ...health, proxies: ['RAK-HY2', 'RAK-CDN'] },
     { name: 'Bulk-Traffic', type: 'select', proxies: ['RAK', '线路选择'] }
   ],
@@ -52,6 +64,14 @@ const config = {
     'GEOSITE,CN,DIRECT', 'GEOIP,CN,DIRECT', 'MATCH,线路选择'
   ]
 };
-fs.writeFileSync(target, JSON.stringify(config, null, 2) + '\n', { mode: 0o600 });
+// 输出是 Marzban 的 Jinja2 模板：先按 JSON 序列化，再把占位符换成 Jinja 片段。
+let output = JSON.stringify(config, null, 2) + '\n';
+for (const [marker, jinja] of [[realityProxyMarker, realityProxyJinja], [realityMemberMarker, realityMemberJinja]]) {
+  const pattern = new RegExp(marker + ',(\\s*)', 'g');
+  const count = (output.match(pattern) || []).length;
+  if (count !== 1) throw new Error('模板占位符 ' + marker + ' 出现 ' + count + ' 次');
+  output = output.replace(pattern, (_, space) => jinja + space);
+}
+fs.writeFileSync(target, output, { mode: 0o600 });
 fs.chmodSync(target, 0o600);
-console.log('已生成通用订阅：3 个节点，无设备专属 SSH 配置');
+console.log('已生成通用订阅模板：DMIT-LA（按用户渲染）+ 3 个共享节点，无设备专属 SSH 配置');

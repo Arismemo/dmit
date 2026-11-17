@@ -32,6 +32,23 @@
   },
   "proxies": [
     {
+      "name": "DMIT-LA",
+      "type": "vless",
+      "server": "<SERVER_IP>",
+      "port": 443,
+      "uuid": "<MARZBAN_USER_UUID>",
+      "network": "tcp",
+      "tls": true,
+      "udp": true,
+      "flow": "xtls-rprx-vision",
+      "servername": "<REALITY_SNI>",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "<REALITY_PUBLIC_KEY>",
+        "short-id": "<REALITY_SHORT_ID>"
+      }
+    },
+    {
       "name": "DMIT-HY2",
       "type": "hysteria2",
       "server": "<SERVER_IP>",
@@ -87,6 +104,7 @@
       "timeout": 5000,
       "lazy": false,
       "proxies": [
+        "DMIT-LA",
         "DMIT-HY2"
       ]
     },

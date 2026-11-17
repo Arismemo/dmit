@@ -2,17 +2,20 @@
 
 2026-10-27：恢复使用 Marzban 的原有用户订阅地址，统一下发 DMIT-HY2、RAK-HY2、RAK-CDN。已用 liukun 的原地址和 Clash.Meta User-Agent 实际下载，Mihomo 配置校验通过。
 
+2026-11-17：订阅加回 DMIT-LA（VLESS Reality，TCP 443），DMIT 分组改为 DMIT-LA、DMIT-HY2 依次故障转移。起因是本机所在的上海电信网络（出口 180.167.226.69）在 06:16 UTC 之后收不到海外 UDP 回包：服务器上抓包，客户端的 Hysteria2 握手包能到达，服务器也有回包，但客户端一直在重发首包；把临时的 UDP 跳跃端口 20000 到 20049 转到 443 也一样，另一台服务器上的 RAK-HY2 同时失效。DMIT 分组原先只有 DMIT-HY2，没有可切换的节点，所以整条线路不可用。同一时间，从本机物理网卡直连 DMIT 的 TCP 443 Reality，连续 3 次返回 204，出口为 DMIT。替换前的线上模板备份在 `custom.yml.bak-unified-20261117T072117Z`；临时跳跃端口规则测完已删除。
+
 ## 当前行为
 
-- 订阅包含线路选择、DMIT、RAK、Bulk-Traffic 分组。
+- 订阅包含线路选择、DMIT、RAK、Bulk-Traffic 分组。DMIT 分组的成员依次是 DMIT-LA 和 DMIT-HY2：UDP 被阻断时走 TCP，TCP 被封时走 UDP。
 - 不包含旧 RAK Reality、AWS 节点、本机 SSH 私钥路径或公司专属配置。
 - DMIT 和 RAK 的独立服务继续运行；RAK 的旧 Marzban 节点保持 disabled。
 - 本次更新的是 Clash 模板，未改其他客户端格式的模板。
-- 三个节点使用共享凭据。Marzban 提供订阅入口，不负责它们的逐用户流量统计、限额和停用联动；已获取节点凭据的用户不会因为面板禁用而立即失去访问能力。
+- DMIT-LA 由 Marzban 按用户渲染，UUID 各用户不同，计入该用户的流量和限额，面板停用用户后随之失效。另外三个节点使用共享凭据，Marzban 只提供订阅入口，不负责它们的逐用户流量统计、限额和停用联动；已获取共享凭据的用户不会因为面板禁用而立即失去访问能力。
+- Xray 的 Reality 入站实际监听 127.0.0.1:9444，由 nginx 在 TCP 443 按 SNI 分流过去。Marzban 主机记录 DMIT-LA 的端口已改为 443（原先为空，默认取入站端口 9444，v2ray 格式和手机端拿到的链接都连不上）；Clash 模板里也把端口写死为 443，不依赖主机记录。
 
 ## 维护
 
-通用配置由 `scripts/render-portable-subscription.js` 从本机 `secrets.env` 和客户端脚本生成。`configs/server/portable-clash.json` 是脱敏结构快照；旧 `configs/server/custom-clash.yml` 仍有其他工作中的改动，本次未覆盖，不能直接重新部署旧模板。
+通用配置由 `scripts/render-portable-subscription.js` 从本机 `secrets.env` 和客户端脚本生成。输出是 Marzban 的 Jinja2 模板：DMIT-LA 一段由 `conf.proxies[0]` 渲染，用户没有可用节点时整段省略。`configs/server/portable-clash.json` 是按单个用户渲染后的脱敏结构快照；旧 `configs/server/custom-clash.yml` 仍有其他工作中的改动，本次未覆盖，不能直接重新部署旧模板。
 
 生成配置：
 
@@ -20,7 +23,7 @@
 node scripts/render-portable-subscription.js /tmp/portable-clash.yaml
 ```
 
-生成文件含凭据，权限应保持 0600。核对三条节点和路由、使用 Mihomo 校验后，备份并替换 DMIT 的 `/var/lib/marzban/templates/clash/custom.yml`。Marzban 的 Jinja2 文件加载器会重新读取模板，无需重启代理。然后用现有用户订阅地址和 Clash.Meta User-Agent 验证实际响应。
+生成文件含凭据，权限应保持 0600。核对节点和路由后，先把文件放进 Marzban 容器的临时模板目录，按全部用户渲染一遍，确认 DMIT-LA 的端口为 443、DMIT 分组成员正确，再备份并替换 DMIT 的 `/var/lib/marzban/templates/clash/custom.yml`。Marzban 的 Jinja2 文件加载器会重新读取模板，无需重启代理。然后用现有用户订阅地址和 Clash.Meta User-Agent 拉取实际响应，用 Mihomo 的 `-t` 校验。
 
 线上模板备份命名为 `custom.yml.bak-unified-*`。回滚时恢复该备份并再次验证订阅。
 
