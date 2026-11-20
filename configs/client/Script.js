@@ -109,10 +109,14 @@ function main(config, profileName) {
   };
   const retiredProxyNames = ["RAK-Bulk-1T"];
 
-  // 家宽链式节点 (按需启用)：先经 DMIT-HY2 到 DMIT，再由 DMIT 本机的 home-egress 转到两个 Claude 账号各自的家宽出口。
+  // 家宽链式节点 (按需启用)：先经 DMIT 到家宽入口所在机器，再由该机器本机的 home-egress 转到两个 Claude 账号各自的家宽出口。
   // 入口只监听 DMIT 回环地址并要求认证；不进 AI/Proxy 等自动分流组，需要时在全局模式下手动选择。
+  // 拨号链路优先走 DMIT-LA（TCP Reality）：UDP 线路在部分国内运营商链路上回程会被丢弃，UDP 不可用时家宽会整条失效。
   const enableHomeEgress = false; // 若需启用家宽链式节点，将其置为 true
   const homeGroupName = "家宽（仅全局模式生效）";
+  const homeDialerName = (config.proxies || []).some(proxy => proxy && proxy.name === "DMIT-LA")
+    ? "DMIT-LA"
+    : hy2Proxy.name;
   const createHomeProxy = (name, port, password) => ({
     name,
     type: "socks5",
@@ -121,7 +125,7 @@ function main(config, profileName) {
     username: "<HOME_SOCKS_USER>",
     password,
     udp: false,
-    "dialer-proxy": hy2Proxy.name
+    "dialer-proxy": homeDialerName
   });
   const homeProxies = enableHomeEgress
     ? [createHomeProxy("家宽-RAK号 48.46.113.162", 17990, "<HOME_RAK_SOCKS_PASS>"), createHomeProxy("家宽-DMIT-B号 48.45.131.171", 17991, "<HOME_DMIT_SOCKS_PASS>")]
@@ -202,6 +206,7 @@ function main(config, profileName) {
       "IP-CIDR,<TAILSCALE_IP_2>/32,DIRECT,no-resolve",
       "IP-CIDR,<INTERNAL_SUBNET_1>," + groupName + ",no-resolve",
       "IP-CIDR,<INTERNAL_SUBNET_2>," + groupName + ",no-resolve",
+      "IP-CIDR,<INTERNAL_SUBNET_3>," + groupName + ",no-resolve",
       "DOMAIN-SUFFIX,<INTERNAL_DOMAIN>," + groupName
     ]);
   }
@@ -269,7 +274,8 @@ function main(config, profileName) {
   const rakGroup = Object.assign({
     name: "RAK",
     type: "fallback",
-    proxies: [rakProxy.name, rakCdnProxy.name]
+    // RAK-CDN（TCP 经 Cloudflare）在前：UDP 线路在国内链路上回程常被丢弃，顺序反了会一直卡在不可用的节点上
+    proxies: [rakCdnProxy.name, rakProxy.name]
   }, lineHealthCheck);
   const lineGroupName = "线路选择";
   const lineGroup = {

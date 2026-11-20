@@ -1,6 +1,6 @@
 # 工程交接：多节点代理与 Claude 隔离运行环境
 
-更新日期：2026-11-04。Claude 隔离运行环境、Magpie 主网关和 new-api 已迁至 DMIT，见 [Step 12](playbook/12-dmit-bom-migration.md)；RAK 只保留代理线路和共享业务，云盘故障尚未修复，其旧的模型服务已停用。本次没有执行整机重启验收。
+更新日期：2026-11-17。Magpie 主网关、CLIProxyAPI 和 new-api 在 DMIT，两个在用的 Claude 订阅账号已回到 RAK 隔离环境，由主网关经 Tailscale 调用。DMIT 主服务已更新至 Magpie v0.1.3847、CLIProxyAPI v8.0.67、new-api 定制构建 v1.0.0-rc.49；详细验证与回滚记录见 [Step 12](playbook/12-dmit-bom-migration.md)。2026-11-18 Magpie 全线更新至 v0.1.4457（主网关 DMIT + 两个子网关 RAK）；本次没有执行整机重启验收。2026-11-17 住宅上游供应商轮换了两个家宽账号的用户名与密码，RAK 两个桥与 DMIT 的 home-egress、ci-dmit-b 预留桥已同步更换并恢复端到端可用，处理与验证记录见 [Step 8](playbook/08-rak-claude-residential-proxy.md)。
 
 ## 1. 从这里开始
 
@@ -18,9 +18,9 @@
 
 | 对象 | 当前职责与路径 |
 |---|---|
-| DMIT | 主控与本机日常/AI 出口；本机 AI 分组验收时选择 DMIT-LA。同时承载 Claude 隔离环境、Magpie 主网关和 new-api |
+| DMIT | 主控与本机日常/AI 出口；本机 AI 分组验收时选择 DMIT-LA。同时承载 Magpie 主网关、new-api、CLIProxyAPI 与 CPA Manager Plus；隔离环境 B 留作账号预留 |
 | RAK 代理线路 | 2026-10-27 起独立部署，不再接入 Marzban：主用 Hysteria2（UDP443，`hysteria-rak.service`），备用 VLESS+WebSocket 经 Cloudflare 转发（`xray-rak.service` 只监听回环，由 nginx 的 `rak-cdn` 站点反代）。原 Reality（TCP8443，marzban-node 容器）因 IP 的 TCP 被封锁已停用，容器暂留。见 [Step 10](playbook/10-independent-nodes.md) |
-| RAK Claude 与浏览器 | 2026-11-01 起 Cloud 盘反复 I/O 故障，new-api、Magpie 与 Claude Pro 账号迁至 DMIT。2026-11-04 恢复后，RAK 上的旧 Magpie、new-api、Claude 订阅网关和浏览器桌面已停用并关闭自启，容器重启策略为 `no`，避免与 DMIT 上的同一账号争抢凭据刷新；数据、配置和备份保留。RAK 的 Hysteria2、Xray 和 Nginx 继续运行 |
+| RAK Claude 与浏览器 | 2026-11-08 起两个订阅账号已回到 RAK，`magpie-claude.service` 与 `magpie-claude2.service` 在各自命名空间运行，经 Tailscale 的 13440 / 13439 供 DMIT 主网关调用。2026-11-12 用户确认磁盘故障已解决，两个子 Magpie 均已更新至 v0.1.3850，原生 Claude Code 保持 2.1.311；原用户、家目录、网络命名空间与住宅出口均保留。旧 Docker Magpie 与 new-api 不承载业务，Hysteria2、Xray 和 Nginx 继续运行 |
 | AWS | 本机 Grok 与备用节点；本次保持其分组策略 |
 | 管理链路 | 现有 SSH28827、SSH 本地转发、Marzban62050/62051 与 Tailscale；DMIT 管理入口是本机 `~/.ssh/config` 里的 `dmit` 别名（Tailscale 100.120.162.88） |
 
@@ -28,7 +28,7 @@ RAK 是共享业务节点。不要为 Claude 修改全机默认 DROP、限制整
 
 ## 3. 使用与数据位置
 
-本节以 RAK 为例。Claude 隔离环境已迁至 DMIT，DMIT 上的对应组件、端口和备份位置见 [Step 12](playbook/12-dmit-bom-migration.md)。
+本节以 RAK 为例。当前两个在用账号位于 RAK 隔离环境，主网关位于 DMIT；迁移历史、当前组件、端口和备份位置见 [Step 12](playbook/12-dmit-bom-migration.md)。
 
 仍通过原 SSH 登录：
 
@@ -91,3 +91,5 @@ systemctl list-timers claude-backup.timer proxy-health-check.timer
 待验证：登录后的真实模型请求、真实OAuth凭据恢复、整机重启后的端到端恢复。住宅供应商仍使用原有SOCKS5协议，供应商加密接入与主机整体升级不是本次已完成的项目。
 
 迁移到 DMIT 之后新增的未验证项：DMIT 第二个隔离环境的真实模型调用、主网关双上游路由组的故障切换、DMIT 磁盘清理后 CPA 链路的真实请求，以及 DMIT 整机重启后的端到端恢复（开机依赖已修配置，但没有再重启验证）。详细清单见 [Step 12](playbook/12-dmit-bom-migration.md) 第 3、5 节和 [会话沉淀](SESSION-SUMMARY-2026-11-04.md) 第 3、5 节。
+
+2026-11-20 跨境链路实测：本地运营商对境外 UDP 回程整片丢包（客户端 QUIC 包能到 DMIT、服务端回包客户端收不到；国内 CDN 的 QUIC 与所有 TCP 正常；RAK→DMIT 的 hysteria 客户端 204/0.137s 正常），判定为链路侧丢弃，不是服务端或凭据问题。已把 DMIT / RAK 组与手机订阅里的 TCP 线路排到 UDP 前面，并把家宽链式节点的 `dialer-proxy` 由 `DMIT-HY2` 改为 `DMIT-LA`；手机 Auto 组只测 TCP 节点。AWS 节点仍待修：`marzban-node` 容器自 9-20 未同步主控配置，还在跑 11-17 之前的旧 Reality 身份（short-id `abcd1234`、伪装目标 `www.apple.com`），从国内 TCP 回程被丢弃；恢复需让它重新同步入站配置并对外监听 443。

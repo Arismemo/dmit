@@ -80,6 +80,14 @@ AI 必须按序执行 `playbook/` 下的各阶段剧本：
 ### 3. Vision 协议无法握手
 - **排查**：严禁在 `xtls-rprx-vision` 上启用 `mux`（多路复用）。确保客户端配置中没有 `mux: true`。
 
+### 4. “跨境很慢”或节点握手卡死：先分清 UDP 回程丢包与 TCP 被封
+- **症状**：Hysteria2 节点延迟测试超时，服务端日志出现 `TCP error … timeout: no recent network activity`；同一时间 Reality / Cloudflare WS 等 TCP 线路正常。
+- **判别步骤**：
+  1. 服务端 `tcpdump -ni any "udp and host <客户端公网 IP>"`：客户端 QUIC 包能到、服务端也回了包，客户端却收不到 → 回程被丢。
+  2. 反向验证：让另一台境外机器当客户端连本机 Hysteria2，能正常出网 → 服务端与凭据无问题。
+  3. 对照组：国内 CDN 的 QUIC 与所有 TCP 是否正常；国内正常、境外丢包 → 链路侧丢弃，与客户端配置无关。
+- **对策**：UDP 回程被丢属于链路侧行为，改配置救不回来。策略组把 TCP 线路排在 UDP 前面（DMIT 组 `DMIT-LA` 优先，RAK 组 `RAK-CDN` 优先），家宽链式节点的 `dialer-proxy` 不要指向 HY2，改指 `DMIT-LA`。
+
 ---
 
 ## 5. 一句话指令调用示例

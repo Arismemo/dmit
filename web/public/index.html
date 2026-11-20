@@ -99,7 +99,7 @@
 <header>
   <h1>自建网络架构图</h1>
   <p class="sub">
-    更新日期 2026-11-17。一张大图覆盖三台海外服务器（DMIT、RAK、AWS）、本机与家庭设备、代理节点、模型中转链路、Claude 隔离环境、家宽出口以及管理与运维通道。
+    更新日期 2026-11-20。一张大图覆盖三台海外服务器（DMIT、RAK、AWS）、本机与家庭设备、代理节点、模型中转链路、Claude 隔离环境、家宽出口以及管理与运维通道。
     按住 ⌘/Ctrl 滚轮或双指捏合缩放，按住拖动平移，右上角滑杆可直接调比例。
     源文件在仓库 <code>/Users/liukun/j/dmit/web/public/index.html</code>，网络有变更时必须同步改这个文件并重新部署。
   </p>
@@ -152,11 +152,12 @@
         <li><span class="tag on">在用</span>Hysteria2（DMIT-HY2，UDP 443）</li>
         <li><span class="tag on">在用</span>Reality 入站改到 127.0.0.1:9444，nginx 按 SNI 分流 443；2026-11-17 更换密钥，伪装目标改为本机主域名站点</li>
         <li><span class="tag on">在用</span>Xray + WebSocket（DMIT-CDN）127.0.0.1:23771，Cloudflare 经 static.230254.xyz 回源</li>
-        <li><span class="tag on">在用</span>Magpie 主网关 13425 / 13430（v0.1.3295），claude-pro 与 claude-pro-2 都经 Tailscale 指向 RAK 的两个隔离环境（13440 / 13439），auto 路由组按模型聚合这两个账号</li>
-        <li><span class="tag on">在用</span>new-api 127.0.0.1:13000（BOM，定制构建 rc.48）</li>
-        <li><span class="tag on">在用</span>CLIProxyAPI 8317（v8.0.60）、CPA Manager Plus 18317</li>
-        <li><span class="tag on">在用</span>Claude 隔离环境 A：住宅代理桥 7890 / 7891、网关 3425</li>
-        <li><span class="tag on">在用</span>Claude 隔离环境 B（ci-dmit-b）：住宅桥 17890 / 17891、网关 3425</li>
+        <li><span class="tag on">在用</span>手机订阅与远程配置：static.230254.xyz 的随机路径下发布，dmit-phone-sub.timer 每 10 分钟从 Marzban 同步 DMIT-LA、DMIT-CDN 并拼上三个共享节点</li>
+        <li><span class="tag on">在用</span>Magpie 主网关 13425 / 13430（v0.1.4457），claude-pro 与 claude-pro-2 都经 Tailscale 指向 RAK 的两个隔离环境（13440 / 13439），auto 路由组按模型聚合这两个账号</li>
+        <li><span class="tag on">在用</span>new-api 127.0.0.1:13000（BOM，定制构建 rc.49）</li>
+        <li><span class="tag on">在用</span>CLIProxyAPI 8317（v8.0.67）、CPA Manager Plus 18317（v1.14.10）</li>
+        <li><span class="tag off">已移除</span>原 Claude 隔离环境 A 已删除，账号 1 由 RAK 环境 A 承载</li>
+        <li><span class="tag pri">预留</span>Claude 隔离环境 B（ci-dmit-b）：住宅桥 17890 / 17891、网关 3425（v0.1.1710），未接入主网关</li>
         <li><span class="tag on">在用</span>home-egress 家宽中转：17990 转 RAK 账号家宽，17991 转 B 账号家宽，带认证；监听回环地址与 Tailscale 地址 100.120.162.88，供本机链式节点和手机 Shadowrocket 使用</li>
         <li><span class="tag on">在用</span>browser-hub 面板 28000 / 28443–28446</li>
         <li><span class="tag on">在用</span>nginx 站点 bom / magpie / magpie-api / mz（Reality 伪装目标）/ static（CDN 回源），均 9443；公网 443 按 SNI 分流</li>
@@ -173,13 +174,13 @@
         <li><span class="tag on">在用</span>Hysteria2（RAK-HY2，UDP 443），独立部署、自签证书</li>
         <li><span class="tag on">在用</span>Xray + WebSocket（RAK-CDN），经 nginx 反代到 Cloudflare</li>
         <li><span class="tag on">在用</span>nginx 站点，含 rak-cdn 反代；公网 80 / 443 / 9443</li>
-        <li><span class="tag on">在用</span>Claude 隔离环境 A（claude）：住宅代理桥 7890 / 7891、网关 3425；账号已失效，真实推理报 OAuth 过期</li>
-        <li><span class="tag on">在用</span>Claude 隔离环境 2（claude2，第二个账号）：住宅桥 17880 / 17881、网关 3425；账号 pro，在用</li>
+        <li><span class="tag on">在用</span>Claude 隔离环境 A（claude）：住宅代理桥 7890 / 7891、子 Magpie v0.1.4457 监听 3425，经 Tailscale 13440 供 DMIT 调用；原生 Claude Code 保持 2.1.311</li>
+        <li><span class="tag on">在用</span>Claude 隔离环境 2（claude2，第二个账号）：住宅桥 17880 / 17881、子 Magpie v0.1.4457 监听 3425；独立用户、家目录与网络命名空间保持不变</li>
         <li><span class="tag on">在用</span>第二个网关经 127.0.0.1:13438 与 Tailscale 地址 100.95.87.62:13439 供 DMIT 调用，caller key 登记在 claude2 的 magpie 里</li>
         <li><span class="tag off">已停用</span>没有运行中的容器：marzban-node、Magpie、new-api 均已停，restart policy 为 no</li>
         <li><span class="tag off">已停用</span>8 个 magpie 回滚容器仍是 Exited，另有 1 个 New API 容器停在 Created</li>
         <li><span class="tag pri">按需</span>隔离桌面与 noVNC：第一个账号 5900 / 6080，第二个账号 5901 / 6081，默认不开</li>
-        <li><span class="tag pri">注意</span>安全组是入站白名单，UDP 443 需要单独放行；云盘故障工单 90180815 未结</li>
+        <li><span class="tag pri">注意</span>安全组是入站白名单，UDP 443 需要单独放行；2026-11-12 用户确认云盘故障已解决</li>
       </ul>
     </div>
 
@@ -202,13 +203,13 @@
     </thead>
     <tbody>
       <tr><td>DMIT-LA</td><td class="mono">179.255.119.112</td><td class="mono">VLESS Reality，TCP 443（实际监听 127.0.0.1:9444），伪装目标为本机主域名</td><td>日常主力，AI 与普通流量；DMIT 组第一顺位，每个用户的 UUID 不同</td><td><span class="tag on">在用</span></td></tr>
-      <tr><td>DMIT-HY2</td><td class="mono">179.255.119.112</td><td class="mono">Hysteria2，UDP 443</td><td>DMIT 组第二顺位，TCP 被封时接替；也是家宽链式节点的 dialer-proxy</td><td><span class="tag on">在用</span></td></tr>
+      <tr><td>DMIT-HY2</td><td class="mono">179.255.119.112</td><td class="mono">Hysteria2，UDP 443</td><td>DMIT 组第二顺位；本地运营商丢境外 UDP 回程时握手卡死不可用，家宽链式节点已改走 DMIT-LA</td><td><span class="tag pri">UDP 被丢弃</span></td></tr>
       <tr><td>DMIT-CDN</td><td class="mono">static.230254.xyz</td><td class="mono">VLESS + WebSocket，经 Cloudflare 回源 DMIT</td><td>DMIT 组第三顺位，服务器 IP 的 TCP 与 UDP 都不通时兜底</td><td><span class="tag on">在用</span></td></tr>
-      <tr><td>家宽-RAK号 48.46.113.162</td><td class="mono">本机经 DMIT-HY2 到 127.0.0.1:17990；手机经 Tailscale 到 100.120.162.88:17990</td><td class="mono">SOCKS5，落地 48.46.113.162（纽约）</td><td>手动选用，与 RAK 隔离环境账号同一家宽，仅本机脚本注入</td><td><span class="tag on">在用</span></td></tr>
-      <tr><td>家宽-DMIT-B号 48.45.131.171</td><td class="mono">本机经 DMIT-HY2 到 127.0.0.1:17991；手机经 Tailscale 到 100.120.162.88:17991</td><td class="mono">SOCKS5，落地 48.45.131.171（纽约）</td><td>手动选用，与 ci-dmit-b 账号同一家宽，仅本机脚本注入</td><td><span class="tag on">在用</span></td></tr>
-      <tr><td>RAK-HY2</td><td class="mono">137.175.65.78</td><td class="mono">Hysteria2，UDP 443</td><td>大流量白名单，YouTube、Telegram、Docker</td><td><span class="tag on">在用</span></td></tr>
-      <tr><td>RAK-CDN</td><td class="mono">assets.230254.xyz</td><td class="mono">VLESS + WebSocket，经 Cloudflare</td><td>UDP 被限速或被封时的兜底</td><td><span class="tag on">在用</span></td></tr>
-      <tr><td>AWS-US-Clean</td><td class="mono">18.188.243.223</td><td class="mono">VLESS Reality，TCP 443</td><td>Grok/xAI 解锁与容灾</td><td><span class="tag pri">未核实</span></td></tr>
+      <tr><td>家宽-RAK号 48.46.113.162</td><td class="mono">本机经 DMIT-LA 到 127.0.0.1:17990；手机经 Tailscale 到 100.120.162.88:17990</td><td class="mono">SOCKS5，落地 48.46.113.162（纽约）</td><td>手动选用，与 RAK 隔离环境账号同一家宽，仅本机脚本注入</td><td><span class="tag on">在用</span></td></tr>
+      <tr><td>家宽-DMIT-B号 48.45.131.171</td><td class="mono">本机经 DMIT-LA 到 127.0.0.1:17991；手机经 Tailscale 到 100.120.162.88:17991</td><td class="mono">SOCKS5，落地 48.45.131.171（纽约）</td><td>手动选用，与 ci-dmit-b 账号同一家宽，仅本机脚本注入</td><td><span class="tag on">在用</span></td></tr>
+      <tr><td>RAK-HY2</td><td class="mono">137.175.65.78</td><td class="mono">Hysteria2，UDP 443</td><td>RAK 组第二顺位，大流量白名单（YouTube、Telegram、Docker）；UDP 回程被丢弃时不可用</td><td><span class="tag pri">UDP 被丢弃</span></td></tr>
+      <tr><td>RAK-CDN</td><td class="mono">assets.230254.xyz</td><td class="mono">VLESS + WebSocket，经 Cloudflare</td><td>RAK 组第一顺位，UDP 不可用时的稳定线路</td><td><span class="tag on">在用</span></td></tr>
+      <tr><td>AWS-US-Clean</td><td class="mono">18.188.243.223</td><td class="mono">VLESS Reality，TCP 443</td><td>Grok/xAI 解锁与容灾；节点仍在跑 11-17 之前的旧 Reality 身份，国内 TCP 回程被丢弃</td><td><span class="tag pri">国内不可用</span></td></tr>
       <tr><td>RAK-Bulk-1T</td><td class="mono">137.175.65.78</td><td class="mono">VLESS Reality，TCP 8443</td><td>旧 Marzban 节点，客户端已清除</td><td><span class="tag off">已停用</span></td></tr>
     </tbody>
   </table>
@@ -219,14 +220,14 @@
       <tr><th>服务</th><th class="mono">位置</th><th>说明</th></tr>
     </thead>
     <tbody>
-      <tr><td>new-api</td><td class="mono">DMIT 127.0.0.1:13000</td><td>BOM 中转站，OpenAI 兼容渠道，定制构建 v1.0.0-rc.48。分组 claude-2 只保留一条 Claude 渠道（id 8），模型映射指向 Magpie 的 auto 路由组，由主网关在两个账号之间分配；分组 claude-5（0.1x）经渠道 12 直连 derouter.ai（api-direct.derouter.ai/openai，OpenAI 兼容）</td></tr>
-      <tr><td>Magpie 主网关</td><td class="mono">DMIT 13425 / 13430</td><td>claude-pro 经 Tailscale 指向 RAK 环境 A（100.95.87.62:13440，账号 1），claude-pro-2 指向 RAK 环境 2（13439，账号 2）；auto 路由组按模型聚合这两个账号，并发时分流、会话保持</td></tr>
+      <tr><td>new-api</td><td class="mono">DMIT 127.0.0.1:13000</td><td>BOM 中转站，OpenAI 兼容渠道，定制构建 v1.0.0-rc.49。分组 claude-2 只保留一条 Claude 渠道（id 8），模型映射指向 Magpie 的 auto 路由组，由主网关在两个账号之间分配；分组 claude-5（0.1x）经渠道 12 直连 derouter.ai（api-direct.derouter.ai/openai，OpenAI 兼容）</td></tr>
+      <tr><td>Magpie 主网关</td><td class="mono">DMIT 13425 / 13430</td><td>claude-pro 经 Tailscale 指向 RAK 环境 A（100.95.87.62:13440，账号 1），claude-pro-2 指向 RAK 环境 2（13439，账号 2）；auto 路由组按模型聚合这两个账号，并发时分流、会话保持。调用密钥两把：“1”给 new-api，“mac-local”给本机 Magpie 的 dmit-magpie 上游（经 magpie-api.709970.xyz 公网入口，只开放四个 auto 路由组），两者用量分开统计</td></tr>
       <tr><td>Claude 订阅网关</td><td class="mono">命名空间内 3425</td><td>隔离环境里的 Claude 账号转成可调用的接口，经 Unix socket 转进命名空间</td></tr>
       <tr><td>home-egress</td><td class="mono">DMIT 127.0.0.1:17990 / 17991 与 100.120.162.88 同端口</td><td>家宽中转：按入口转到两条家宽上游，带认证，没有直连出站，家宽不可用时直接失败</td></tr>
       <tr><td>住宅代理桥</td><td class="mono">RAK 7890 / 7891、17880 / 17881；DMIT 17890 / 17891</td><td>Xray 转发到住宅 SOCKS5 上游，出口为美国 Comcast 住宅 IP（纽约）</td></tr>
       <tr><td>CLIProxyAPI</td><td class="mono">DMIT 127.0.0.1:8317</td><td>本地回环，管理面板在 /management.html，直连官方上游不经 Magpie</td></tr>
       <tr><td>CPA Manager Plus</td><td class="mono">DMIT 127.0.0.1:18317</td><td>用量面板，根路径跳到 /management.html；用量采集已关闭</td></tr>
-      <tr><td>Cloudflare 站点</td><td class="mono">bom / magpie / magpie-api / static，均 9443</td><td>源站 443 由 nginx 按 SNI 分流，Cloudflare 回源；static.230254.xyz 是 DMIT-CDN 的回源入口；架构图本身是 Worker</td></tr>
+      <tr><td>Cloudflare 站点</td><td class="mono">bom / magpie / magpie-api / static，均 9443</td><td>源站 443 由 nginx 按 SNI 分流，Cloudflare 回源；static.230254.xyz 是 DMIT-CDN 的回源入口，也托管手机的订阅与远程配置；架构图本身是 Worker</td></tr>
     </tbody>
   </table>
 
@@ -234,14 +235,17 @@
   <table>
     <thead><tr><th>事项</th><th>说明</th></tr></thead>
     <tbody>
+      <tr><td>DNS 防泄露</td><td>电脑与统一订阅：海外域名经代理用 1.1.1.1 / 8.8.8.8 的 DoH 解析（respect-rules），国内域名用 doh.pub / alidns；手机：IP 类规则全部 no-resolve，国内网站按 static 路径下的国内域名列表直连，海外域名交给代理节点解析。2026-11-18 实测本机、seed-ser、ninestep2 查询 o-o.myaddr.l.google.com 时，Google 看到的解析器为 Cloudflare / Google，附带网段为 DMIT 的 179.255.119.0/24；手机端未在设备上验证</td></tr>
       <tr><td>公网 TCP 被封</td><td>2026-10-26 起 DMIT、RAK、AWS 三个 IP 的 TCP 从国内不通，回程丢包，UDP 与 ICMP 正常。订阅地址也走 TCP，从国内直接拉会失败。2026-11-07 实测 RAK 28827 与 443 已恢复直连。2026-11-17 实测 DMIT 的 TCP 443 已恢复；同日上海电信网络对海外 UDP 回程整片丢包，DMIT-HY2 与 RAK-HY2 同时不可用</td></tr>
+      <tr><td>境外 UDP 回程被丢</td><td>2026-11-20 复测：客户端 QUIC 包能到 DMIT（tcpdump 可见），服务端也回了包，客户端收不到；普通 UDP 更是发不出去；国内 CDN 的 QUIC 与全部 TCP 正常。服务端与凭据无问题（RAK→DMIT hysteria 客户端 204/0.137s），另一联通出口同样丢包，判定为本地运营商链路侧丢弃。对策：DMIT/RAK 组与手机订阅把 TCP 线路排到 UDP 前面，家宽链式节点的 dialer-proxy 由 DMIT-HY2 改为 DMIT-LA</td></tr>
+      <tr><td>AWS 节点配置陈旧</td><td>2026-11-20 实测 AWS-US-Clean 从 DMIT 出发用同一组 Reality 参数可正常出网（204/0.42s），服务端与客户端参数都对；但 AWS 节点的 marzban-node 容器自 9-20 起就没同步主控配置，仍在跑 11-17 轮换前的旧 Reality 身份（short-id abcd1234、伪装目标 www.apple.com），从国内 TCP 回程被丢弃。恢复需要让该节点重新同步入站配置并改回对外监听 443</td></tr>
       <tr><td>Fable 5.1 不可用</td><td>两个账号都没有 usage credits，请求 Fable 5.1 返回 429，Anthropic 侧要求到 claude.ai 设置里开通 credits；Sonnet 与 Opus 正常。2026-11-10 起 claude-2 分组改提供 Fable 5.2（渠道 8 映射到 Magpie 的 auto/claude-fable-5-2），经 new-api 调用两种接口均返回 200</td></tr>
       <tr><td>derouter 渠道无余额</td><td>2026-11-08 建渠道 12（分组 claude-5，0.1x）直连 derouter.ai，渠道类型已改为 OpenAI，路径与鉴权实测通过（上游半秒内应答）；该渠道 key 在 derouter 侧返回 402 剩余额度不足，充值后即可用</td></tr>
-      <tr><td>RAK 云盘故障</td><td>工单 90180815 等待服务商处理；最近一次异常是 11-03 停机约 21 小时</td></tr>
+      <tr><td>RAK 云盘故障已解决</td><td>2026-11-12 用户确认磁盘问题已经解决；两个订阅账号继续保留在 RAK 各自的隔离环境中</td></tr>
       <tr><td>家宽并发</td><td>住宅上游对并发敏感，全局模式把整机流量压上去时单请求要 10 秒，浏览器打开会变慢；只在续费时短时间用</td></tr>
       <tr><td>无认证的家宽入口</td><td>DMIT 上 127.0.0.1:17891 没有认证，而 DMIT-HY2 没有访问控制规则，推断持有 HY2 凭据的人可以借用 B 号家宽出网（未实测），修复需要给 Hysteria 加规则</td></tr>
       <tr><td>账号层风险</td><td>住宅出口能降低暴露面，但账号注册地区、订阅渠道和客户端特征不在网络层可控范围内</td></tr>
-      <tr><td>未验收项</td><td>磁盘看护与会话备份 timer 还没建；双上游路由组未建；DMIT 整机重启后的端到端恢复没有验证</td></tr>
+      <tr><td>未验收项</td><td>磁盘看护和会话备份的当前运行效果仍需单独核实；双上游 auto 路由组已在用，整机故障切换及 DMIT 整机重启后的端到端恢复未验证</td></tr>
       <tr><td>AWS 未现场核实</td><td>2026-11-04 从本机直连与经 DMIT 跳板访问 AWS 都失败在公钥认证，页面上的 AWS 描述来自部署记录，不是当天实测</td></tr>
     </tbody>
   </table>
@@ -262,23 +266,23 @@
   const NODES = [
     // ===== 第一带：上网链路 =====
     { id: 'mac', x: 60, y: 150, w: 260, h: 64, k: 'client', t: 'Mac', l: ['Clash Verge，TUN 7897', '规则模式，线路选择=DMIT'] },
-    { id: 'iphone', x: 60, y: 226, w: 260, h: 64, k: 'client', t: 'iPhone', l: ['Shadowrocket', '经 Tailscale 走家宽节点'] },
+    { id: 'iphone', x: 60, y: 226, w: 260, h: 64, k: 'client', t: 'iPhone', l: ['Shadowrocket，订阅与配置各一个链接', '经 Tailscale 走家宽节点'] },
     { id: 'seed', x: 60, y: 302, w: 260, h: 64, k: 'client', t: 'seed-ser', l: ['mihomo，100.112.81.111', 'Mac 的同源备份'] },
     { id: 'liuqing', x: 60, y: 378, w: 260, h: 64, k: 'client', t: 'liuqing 的电脑', l: ['Clash Verge，192.168.1.68', '只认密码登录'] },
 
     { id: 'g-dmit', x: 400, y: 150, w: 250, h: 58, k: 'grp', t: 'DMIT 组（fallback）', l: ['DMIT-LA · DMIT-HY2 · DMIT-CDN', '60 秒检测，失败 2 次立即重测'] },
-    { id: 'g-rak', x: 400, y: 220, w: 250, h: 58, k: 'grp', t: 'RAK 组（fallback）', l: ['RAK-HY2 · RAK-CDN'] },
+    { id: 'g-rak', x: 400, y: 220, w: 250, h: 58, k: 'grp', t: 'RAK 组（fallback）', l: ['RAK-CDN · RAK-HY2', 'UDP 不可用时首选 TCP'] },
     { id: 'g-ai', x: 400, y: 290, w: 250, h: 58, k: 'grp', t: 'AI / Grok 组', l: ['只放 DMIT 与 AWS 节点', '不进 Auto 测速'] },
     { id: 'g-home', x: 400, y: 372, w: 250, h: 70, k: 'grp', t: '家宽组（仅全局模式生效）', l: ['家宽-RAK号 / 家宽-DMIT-B号', '规则模式下不生效，需手选'] },
 
     { id: 'n-dmit-la', x: 720, y: 150, w: 300, h: 56, k: 'node', t: 'DMIT-LA', l: ['VLESS Reality，TCP 443 → 127.0.0.1:9444', '伪装为本机主域名站点'] },
-    { id: 'n-dmit-hy2', x: 720, y: 212, w: 300, h: 56, k: 'node', t: 'DMIT-HY2', l: ['Hysteria2，UDP 443', '也是家宽节点的 dialer-proxy'] },
+    { id: 'n-dmit-hy2', x: 720, y: 212, w: 300, h: 56, k: 'node', t: 'DMIT-HY2', l: ['Hysteria2，UDP 443', 'UDP 回程被丢弃时不可用'], badge: 'UDP 丢包' },
     { id: 'n-dmit-cdn', x: 720, y: 274, w: 300, h: 56, k: 'node', t: 'DMIT-CDN', l: ['VLESS + WebSocket，static.230254.xyz', '经 Cloudflare 回源，IP 被封时兜底'] },
-    { id: 'n-rak-hy2', x: 720, y: 336, w: 300, h: 56, k: 'node', t: 'RAK-HY2', l: ['Hysteria2，UDP 443', '独立部署，自签证书'] },
+    { id: 'n-rak-hy2', x: 720, y: 336, w: 300, h: 56, k: 'node', t: 'RAK-HY2', l: ['Hysteria2，UDP 443', '独立部署，自签证书'], badge: 'UDP 丢包' },
     { id: 'n-rak-cdn', x: 720, y: 398, w: 300, h: 56, k: 'node', t: 'RAK-CDN', l: ['VLESS + WebSocket', '经 Cloudflare 转发'] },
-    { id: 'n-aws', x: 720, y: 460, w: 300, h: 56, k: 'node', t: 'AWS-US-Clean', l: ['VLESS Reality，TCP 443', 'Grok 与容灾用'], badge: '未核实' },
-    { id: 'n-home-rak', x: 720, y: 526, w: 300, h: 58, k: 'node', t: '家宽-RAK号 48.46.113.162', l: ['SOCKS5 链式，dialer-proxy DMIT-HY2', '与 RAK 号同一家宽'] },
-    { id: 'n-home-dmit', x: 720, y: 594, w: 300, h: 58, k: 'node', t: '家宽-DMIT-B号 48.45.131.171', l: ['SOCKS5 链式，dialer-proxy DMIT-HY2', '与 ci-dmit-b 号同一家宽'] },
+    { id: 'n-aws', x: 720, y: 460, w: 300, h: 56, k: 'node', t: 'AWS-US-Clean', l: ['VLESS Reality，TCP 443', 'Grok 与容灾用'], badge: '国内不可用' },
+    { id: 'n-home-rak', x: 720, y: 526, w: 300, h: 58, k: 'node', t: '家宽-RAK号 48.46.113.162', l: ['SOCKS5 链式，dialer-proxy DMIT-LA', '与 RAK 号同一家宽'] },
+    { id: 'n-home-dmit', x: 720, y: 594, w: 300, h: 58, k: 'node', t: '家宽-DMIT-B号 48.45.131.171', l: ['SOCKS5 链式，dialer-proxy DMIT-LA', '与 ci-dmit-b 号同一家宽'] },
 
     { id: 's-dmit', x: 1100, y: 150, w: 280, h: 58, k: 'ext', t: 'DMIT 洛杉矶', l: ['CN2 GIA，每月 1TB 双向'] },
     { id: 's-rak', x: 1100, y: 220, w: 280, h: 58, k: 'ext', t: 'RAK 圣何塞', l: ['共享 VPS，1000G 流量'] },
@@ -292,7 +296,7 @@
     { id: 'x-home-b', x: 1460, y: 522, w: 300, h: 70, k: 'ext', t: '家宽出口 B 48.45.131.171', l: ['美国 Comcast，纽约', 'ci-dmit-b 账号使用'] },
 
     // ===== 第二带：模型与中转链路 =====
-    { id: 'm-cc', x: 60, y: 790, w: 260, h: 70, k: 'client', t: 'Claude Code', l: ['本机经 new-api 渠道调用', '账号登录在隔离环境内完成'] },
+    { id: 'm-cc', x: 60, y: 790, w: 260, h: 70, k: 'client', t: 'Claude Code', l: ['本机 Magpie：my-new-api 经 BOM 渠道', 'dmit-magpie 直连主网关'] },
     { id: 'm-cpa', x: 60, y: 872, w: 260, h: 70, k: 'client', t: 'CLIProxyAPI 8317', l: ['直连官方上游', '不经 Magpie'] },
     { id: 'm-cpam', x: 60, y: 954, w: 260, h: 70, k: 'client', t: 'CPA Manager Plus 18317', l: ['用量面板', '采集已关闭'] },
 
@@ -387,6 +391,7 @@
     { from: 'x-home-a', fs: 'r', to: 'x-anthropic', ts: 'r', k: 'auto', via: [[1876, 475], [1876, 249]] },
 
     { from: 'm-cc', fs: 'r', to: 'g-newapi', ts: 'l', k: 'flow', label: 'BOM 渠道', lx: 358, ly: 806 },
+    { from: 'm-cc', fs: 'r', to: 'g-magpie', ts: 'l', k: 'flow', via: [[360, 825], [360, 928]], label: '直连', lx: 364, ly: 900 },
     { from: 'g-newapi', fs: 'b', to: 'g-magpie', ts: 't', k: 'flow' },
     { from: 'g-nginx', fs: 't', to: 'g-newapi', ts: 'b', k: 'flow', label: '反代 13000', lx: 612, ly: 940 },
     { from: 'g-newapi', fs: 'r', to: 'u-derouter', ts: 'l', k: 'flow', via: [[720, 832], [720, 1200], [1520, 1200], [1520, 1143]], label: 'claude-5 直连', lx: 1120, ly: 1192 },

@@ -31,6 +31,14 @@ for (const path of sources) {
     rules: ["DOMAIN,example.test,DIRECT", "MATCH,Proxy"]
   };
   const output = transform(source, fixture);
+  // 家宽链式节点的拨号链路必须走 DMIT-LA（TCP）：UDP 线路在国内链路常被丢弃，改用 DMIT-HY2 会让家宽整条失效
+  const homeSource = source.includes("const enableHomeEgress = false;")
+    ? source.replace("const enableHomeEgress = false;", "const enableHomeEgress = true;")
+    : source;
+  const homeOut = transform(homeSource, fixture);
+  for (const proxy of homeOut.proxies.filter(proxy => proxy.name.startsWith("家宽-"))) {
+    assert.equal(proxy["dialer-proxy"], "DMIT-LA", "家宽节点必须经 DMIT-LA 拨号");
+  }
   const ai = output["proxy-groups"].find(group => group.name === "AI");
   assert.deepEqual(ai.proxies, ["DMIT-LA", "AWS-US-Clean", "DMIT-HY2"]);
   for (const key of ["use", "include-all", "include-all-proxies", "include-all-providers"]) assert.equal(key in ai, false);
@@ -69,7 +77,7 @@ for (const path of sources) {
   for (const result of [output, bare]) {
     const groups = Object.fromEntries(result["proxy-groups"].map(group => [group.name, group]));
     assert.deepEqual(groups["线路选择"].proxies, ["DMIT", "RAK", "AWS-US-Clean"]);
-    assert.deepEqual(groups.RAK.proxies, ["RAK-HY2", "RAK-CDN"], "RAK line must not reference DMIT nodes");
+    assert.deepEqual(groups.RAK.proxies, ["RAK-CDN", "RAK-HY2"], "RAK line must not reference DMIT nodes");
     assert.ok(groups.DMIT.proxies.length && groups.DMIT.proxies.every(name => /^DMIT-/.test(name)), "DMIT line must not reference RAK nodes");
     assert.equal(groups["Bulk-Traffic"].proxies[0], "RAK", "bulk traffic defaults to the RAK line");
     assert.ok(!result.proxies.some(proxy => proxy.name === "RAK-Bulk-1T"), "retired RAK Reality node removed");

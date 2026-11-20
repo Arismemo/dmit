@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# 生成手机 Shadowrocket 用的订阅文件与国内域名列表，发布到 nginx 静态目录。
+# 节点 = Marzban 按用户下发的 DMIT-LA、DMIT-CDN（随密钥变更自动同步）
+#      + 共享凭据的 DMIT-HY2、RAK-HY2、RAK-CDN（来自 shared-links.txt，变更时由本机渲染后上传）。
+# 国内域名列表供手机规则判断直连，代替会触发本地 DNS 解析的 GEOIP 规则，每天最多更新一次。
+# 由 dmit-phone-sub.timer 每 10 分钟执行；任何一项拉取失败都保留上一次的文件，不发布空内容。
+set -euo pipefail
+
+conf_dir=/etc/dmit-phone-sub
+# shellcheck source=/dev/null
+. "$conf_dir/env"   # MARZBAN_SUB_URL、PUBLISH_DIR
+
+china_url="https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/ChinaMax/ChinaMax_Domain.list"
+china_min_lines=50000
+
+publish() {  # 原子替换：先写同目录临时文件，校验通过后改名
+  local target="$1" tmp="$2"
+  chmod 644 "$tmp"
+  mv -f "$tmp" "$target"
+}
+
+# ---------- 国内域名列表（不影响节点订阅的发布）----------
+china_out="$PUBLISH_DIR/china-domains.list"
+if [[ ! -s "$china_out" ]] || [[ -n "$(find "$china_out" -mmin +1440 2>/dev/null)" ]]; then
+  china_tmp="$(mktemp "$PUBLISH_DIR/.china.XXXXXX")"
+  if curl -fsS -m 60 -o "$china_tmp" "$china_url" \
+     && (( $(grep -cv '^\s*\(#\|$\)' "$china_tmp") >= china_min_lines )); then
+    publish "$china_out" "$china_tmp"
+    echo "国内域名列表已更新：$(grep -cv '^\s*\(#\|$\)' "$china_out") 条"
+  else
+    rm -f "$china_tmp"
+    echo "国内域名列表更新失败，保留旧文件" >&2
+  fi
+fi
+
+# ---------- 节点订阅 ----------
+shared="$conf_dir/shared-links.txt"
+out="$PUBLISH_DIR/sub"
+tmp="$(mktemp "$PUBLISH_DIR/.sub.XXXXXX")"
+trap 'rm -f "$tmp"' EXIT
+
+# Marzban 对无法识别的 User-Agent 返回 base64 编码的 v2ray 分享链接
+marzban_links="$(curl -fsS -m 20 -k -A "dmit-phone-sub" "$MARZBAN_SUB_URL" | base64 -d)"
+grep -q '^vless://.*#DMIT-LA$' <<<"$marzban_links" || { echo "Marzban 订阅里没有 DMIT-LA，保留旧文件" >&2; exit 1; }
+[[ -s "$shared" ]] || { echo "缺少 $shared" >&2; exit 1; }
+
+{ printf '%s\n' "$marzban_links"; grep -v '^\s*\(#\|$\)' "$shared"; } | base64 -w0 > "$tmp"
+publish "$out" "$tmp"
+trap - EXIT
+echo "已发布 $(printf '%s\n' "$marzban_links" | grep -c '://') 个 Marzban 节点 + $(grep -cv '^\s*\(#\|$\)' "$shared") 个共享节点"

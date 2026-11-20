@@ -1,0 +1,7 @@
+[Unit]
+Description=生成手机 Shadowrocket 订阅（Marzban 节点 + 共享节点）
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/dmit-phone-sub-render

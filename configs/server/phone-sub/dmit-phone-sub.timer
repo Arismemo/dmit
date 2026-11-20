@@ -1,0 +1,9 @@
+[Unit]
+Description=每 10 分钟刷新手机 Shadowrocket 订阅
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+
+[Install]
+WantedBy=timers.target

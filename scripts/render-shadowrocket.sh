@@ -12,12 +12,21 @@ target="${1:-$HOME/Downloads/shadowrocket-dmit.conf}"
 [[ -f "$secrets" ]] || { echo "找不到 $secrets，请先复制 secrets.example.env 并填入真实值" >&2; exit 1; }
 
 gitlab_domain="$(sed -nE 's/^[[:space:]]*GITLAB_DOMAIN[[:space:]]*=[[:space:]]*["'\'']?([^"'\'']*)["'\'']?[[:space:]]*$/\1/p' "$secrets" | tail -n1)"
+phone_sub_path="$(sed -nE 's/^[[:space:]]*PHONE_SUB_PATH[[:space:]]*=[[:space:]]*["'\'']?([^"'\'']*)["'\'']?[[:space:]]*$/\1/p' "$secrets" | tail -n1)"
 
 if [[ -n "$gitlab_domain" ]]; then
   output="$(sed "s|<GITLAB_DOMAIN>|$gitlab_domain|g" "$template")"
 else
   # 没配私有 GitLab 时去掉这条规则，避免留下无效占位符
   output="$(grep -v '<GITLAB_DOMAIN>' "$template")"
+fi
+
+if [[ -n "$phone_sub_path" ]]; then
+  output="$(sed "s|<PHONE_SUB_PATH>|$phone_sub_path|g" <<<"$output")"
+else
+  # 没有发布路径时国内域名列表不可用，去掉这条规则；国内网站会退回走代理
+  echo "secrets.env 缺少 PHONE_SUB_PATH，生成的配置不含国内域名列表" >&2
+  output="$(grep -v '<PHONE_SUB_PATH>' <<<"$output")"
 fi
 
 leftover="$(grep -oE '<[A-Z][A-Z0-9_]{2,}>' <<<"$output" | sort -u || true)"
