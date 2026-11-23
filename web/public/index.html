@@ -99,7 +99,7 @@
 <header>
   <h1>自建网络架构图</h1>
   <p class="sub">
-    更新日期 2026-11-20。一张大图覆盖三台海外服务器（DMIT、RAK、AWS）、本机与家庭设备、代理节点、模型中转链路、Claude 隔离环境、家宽出口以及管理与运维通道。
+    更新日期 2026-11-23。一张大图覆盖三台海外服务器（DMIT、RAK、AWS）、本机与家庭设备、代理节点、模型中转链路、Claude 隔离环境、家宽出口以及管理与运维通道。
     按住 ⌘/Ctrl 滚轮或双指捏合缩放，按住拖动平移，右上角滑杆可直接调比例。
     源文件在仓库 <code>/Users/liukun/j/dmit/web/public/index.html</code>，网络有变更时必须同步改这个文件并重新部署。
   </p>
@@ -227,7 +227,7 @@
       <tr><td>住宅代理桥</td><td class="mono">RAK 7890 / 7891、17880 / 17881；DMIT 17890 / 17891</td><td>Xray 转发到住宅 SOCKS5 上游，出口为美国 Comcast 住宅 IP（纽约）</td></tr>
       <tr><td>CLIProxyAPI</td><td class="mono">DMIT 127.0.0.1:8317</td><td>本地回环，管理面板在 /management.html，直连官方上游不经 Magpie</td></tr>
       <tr><td>CPA Manager Plus</td><td class="mono">DMIT 127.0.0.1:18317</td><td>用量面板，根路径跳到 /management.html；用量采集已关闭</td></tr>
-      <tr><td>Cloudflare 站点</td><td class="mono">bom / magpie / magpie-api / static，均 9443</td><td>源站 443 由 nginx 按 SNI 分流，Cloudflare 回源；static.230254.xyz 是 DMIT-CDN 的回源入口，也托管手机的订阅与远程配置；架构图本身是 Worker</td></tr>
+      <tr><td>Cloudflare 站点</td><td class="mono">bom / magpie / magpie-api / static，均 9443</td><td>源站 443 由 nginx 按 SNI 分流，Cloudflare 回源；static.230254.xyz 是 DMIT-CDN 的回源入口，也托管手机的订阅与远程配置（国内版 shadowrocket.conf、海外版 shadowrocket-overseas.conf）；架构图本身是 Worker</td></tr>
     </tbody>
   </table>
 
@@ -235,6 +235,7 @@
   <table>
     <thead><tr><th>事项</th><th>说明</th></tr></thead>
     <tbody>
+      <tr><td>所在地模式</td><td>人在境外时切到海外模式：其余网站与大流量改走「海外出口」组（默认直连，可临时切回线路选择），AI 服务（Anthropic、OpenAI、Gemini）仍走线路选择，Grok 仍走 AWS，DNS 直接查询 1.1.1.1 / 8.8.8.8 不再经代理。电脑：Clash Verge 里同一订阅导入两份，名称含「海外」的那份由全局脚本切到海外模式；手机：Shadowrocket 在国内版与海外版两份远程配置之间切换。其他设备的统一订阅只有国内模式</td></tr>
       <tr><td>DNS 防泄露</td><td>电脑与统一订阅：海外域名经代理用 1.1.1.1 / 8.8.8.8 的 DoH 解析（respect-rules），国内域名用 doh.pub / alidns；手机：IP 类规则全部 no-resolve，国内网站按 static 路径下的国内域名列表直连，海外域名交给代理节点解析。2026-11-18 实测本机、seed-ser、ninestep2 查询 o-o.myaddr.l.google.com 时，Google 看到的解析器为 Cloudflare / Google，附带网段为 DMIT 的 179.255.119.0/24；手机端未在设备上验证</td></tr>
       <tr><td>公网 TCP 被封</td><td>2026-10-26 起 DMIT、RAK、AWS 三个 IP 的 TCP 从国内不通，回程丢包，UDP 与 ICMP 正常。订阅地址也走 TCP，从国内直接拉会失败。2026-11-07 实测 RAK 28827 与 443 已恢复直连。2026-11-17 实测 DMIT 的 TCP 443 已恢复；同日上海电信网络对海外 UDP 回程整片丢包，DMIT-HY2 与 RAK-HY2 同时不可用</td></tr>
       <tr><td>境外 UDP 回程被丢</td><td>2026-11-20 复测：客户端 QUIC 包能到 DMIT（tcpdump 可见），服务端也回了包，客户端收不到；普通 UDP 更是发不出去；国内 CDN 的 QUIC 与全部 TCP 正常。服务端与凭据无问题（RAK→DMIT hysteria 客户端 204/0.137s），另一联通出口同样丢包，判定为本地运营商链路侧丢弃。对策：DMIT/RAK 组与手机订阅把 TCP 线路排到 UDP 前面，家宽链式节点的 dialer-proxy 由 DMIT-HY2 改为 DMIT-LA</td></tr>
@@ -265,8 +266,8 @@
 <script>
   const NODES = [
     // ===== 第一带：上网链路 =====
-    { id: 'mac', x: 60, y: 150, w: 260, h: 64, k: 'client', t: 'Mac', l: ['Clash Verge，TUN 7897', '规则模式，线路选择=DMIT'] },
-    { id: 'iphone', x: 60, y: 226, w: 260, h: 64, k: 'client', t: 'iPhone', l: ['Shadowrocket，订阅与配置各一个链接', '经 Tailscale 走家宽节点'] },
+    { id: 'mac', x: 60, y: 150, w: 260, h: 64, k: 'client', t: 'Mac', l: ['Clash Verge，TUN 7897', '国内/海外两份订阅，线路选择=DMIT'] },
+    { id: 'iphone', x: 60, y: 226, w: 260, h: 64, k: 'client', t: 'iPhone', l: ['Shadowrocket，国内/海外两份配置', '经 Tailscale 走家宽节点'] },
     { id: 'seed', x: 60, y: 302, w: 260, h: 64, k: 'client', t: 'seed-ser', l: ['mihomo，100.112.81.111', 'Mac 的同源备份'] },
     { id: 'liuqing', x: 60, y: 378, w: 260, h: 64, k: 'client', t: 'liuqing 的电脑', l: ['Clash Verge，192.168.1.68', '只认密码登录'] },
 
