@@ -75,6 +75,7 @@ flowchart TD
 ├── AGENTS.md                          # AI 施工队最高指令、准则与防自断机制
 ├── README.md                          # 面向人类开发者的使用说明与架构全景
 ├── HANDOFF.md                         # 当前部署状态、日常命令与验收边界
+├── CLIENT-GUIDE.md                    # 电脑与手机客户端的配置和国内/海外切换
 ├── secrets.example.env                # 敏感配置模板（公钥、域名、密码）
 ├── configs/
 │   ├── client/
