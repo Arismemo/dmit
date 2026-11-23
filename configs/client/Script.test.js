@@ -165,3 +165,40 @@ for (const path of sources) {
 
   console.log("PASS:", path, "explicit AI nodes, alias/provider/chain rejection, fail closed, idempotency, non-AI regression, bare profile, overseas mode");
 }
+
+// 新电脑用的独立海外脚本（overseas-mode.js）必须与 Script.js 的海外模式一致：AI 规则、DNS、兜底与大流量改向都相同
+{
+  const standalone = fs.readFileSync(__dirname + "/overseas-mode.js", "utf8");
+  const full = fs.readFileSync(__dirname + "/Script.js", "utf8");
+  // 结构与统一订阅相同：线路选择、DMIT、RAK、Bulk-Traffic 四个组，局域网直连在前，兜底走线路选择
+  const portable = {
+    proxies: [{ name: "DMIT-LA", type: "vless" }, { name: "DMIT-HY2", type: "hysteria2" }, { name: "RAK-HY2", type: "hysteria2" }, { name: "RAK-CDN", type: "vless" }],
+    "proxy-groups": [
+      { name: "线路选择", type: "select", proxies: ["DMIT", "RAK", "RAK-CDN"] },
+      { name: "DMIT", type: "fallback", proxies: ["DMIT-LA", "DMIT-HY2"] },
+      { name: "RAK", type: "fallback", proxies: ["RAK-HY2", "RAK-CDN"] },
+      { name: "Bulk-Traffic", type: "select", proxies: ["RAK", "线路选择"] }
+    ],
+    dns: { enable: true, "respect-rules": true, nameserver: ["https://1.1.1.1/dns-query"], "default-nameserver": ["223.5.5.5"] },
+    rules: ["IP-CIDR,192.168.0.0/16,DIRECT,no-resolve", "DOMAIN-SUFFIX,youtube.com,Bulk-Traffic", "GEOIP,telegram,Bulk-Traffic,no-resolve", "GEOSITE,CN,DIRECT", "GEOIP,CN,DIRECT", "MATCH,线路选择"]
+  };
+  assert.deepEqual(transform(standalone, portable, "liukun"), portable, "domestic profile is returned unchanged");
+  const a = transform(standalone, portable, "海外");
+  const b = transform(full, portable, "海外");
+  assert.deepEqual(transform(standalone, a, "海外"), a, "standalone overseas transform must be idempotent");
+  const aiOf = result => result.rules.filter(rule => rule.endsWith(",线路选择")).sort();
+  assert.deepEqual(aiOf(a), aiOf(b), "AI rules match Script.js");
+  assert.equal(aiOf(a).length, 11);
+  for (const key of ["respect-rules", "default-nameserver", "nameserver", "proxy-server-nameserver"]) {
+    assert.deepEqual(a.dns[key], b.dns[key], `dns ${key} matches Script.js`);
+  }
+  for (const rule of ["DOMAIN-SUFFIX,youtube.com,海外出口", "GEOIP,telegram,海外出口,no-resolve", "IP-CIDR,192.168.0.0/16,DIRECT,no-resolve", "GEOSITE,CN,DIRECT"]) {
+    assert.ok(a.rules.includes(rule) && b.rules.includes(rule), `both modes contain ${rule}`);
+  }
+  assert.equal(a.rules[a.rules.length - 1], "MATCH,海外出口");
+  assert.ok(!a.rules.some(rule => /,Bulk-Traffic(,no-resolve)?$/.test(rule)));
+  assert.deepEqual(a["proxy-groups"][0], { name: "海外出口", type: "select", proxies: ["DIRECT", "线路选择"] });
+  const foreign = { "proxy-groups": [{ name: "YKKCLOUD", type: "select", proxies: ["DIRECT"] }], rules: ["MATCH,YKKCLOUD"] };
+  assert.deepEqual(transform(standalone, foreign, "海外"), foreign, "other subscriptions are left alone");
+  console.log("PASS: overseas-mode.js matches Script.js overseas mode");
+}
