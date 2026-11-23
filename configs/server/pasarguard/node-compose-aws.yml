@@ -1,0 +1,21 @@
+# AWS 上的 PasarGuard 节点。面板经 DMIT 的 marzban-aws-tunnel（DMIT 62060 -> AWS 127.0.0.1:62050）连接。
+# Xray 固定 25.12.8：26.x 的 Reality 要求客户端支持 X25519MLKEM768，旧版 mihomo 会握手失败。
+services:
+  node:
+    image: pasarguard/node:v0.5.7
+    restart: always
+    network_mode: host
+    env_file: node.env
+    environment:
+      NODE_HOST: "127.0.0.1"
+      SERVICE_PORT: 62050
+      SERVICE_PROTOCOL: "grpc"
+      PG_NODE_WG_HOST_ROUTING: "0"
+      SSL_CERT_FILE: "/var/lib/pg-node/certs/ssl_cert.pem"
+      SSL_KEY_FILE: "/var/lib/pg-node/certs/ssl_key.pem"
+      GENERATED_CONFIG_PATH: "/var/lib/pg-node/generated"
+      # 沿用 Marzban 镜像里的 geoip/geosite（Xray 官方发布版），节点镜像自带的规则库分类更宽，会改变拦截结果
+      XRAY_ASSETS_PATH: "/var/lib/pg-node/geo"
+      XRAY_EXECUTABLE_PATH: "/var/lib/pg-node/xray-v25.12.8/xray"
+    volumes:
+      - /var/lib/pg-node:/var/lib/pg-node

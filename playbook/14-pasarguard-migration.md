@@ -11,22 +11,35 @@
 | 面板 | 容器 `pasarguard-panel-1`，`/opt/pasarguard/docker-compose.yml`，HTTPS 39721（与 Marzban 相同的地址和证书），管理页在 `/dashboard/`，管理员账号与口令沿用 Marzban |
 | 数据 | `/var/lib/pasarguard`（SQLite），由迁移时的 `/var/lib/marzban` 复制而来 |
 | 本机节点 | 容器 `pasarguard-node-1`，gRPC 只监听 `127.0.0.1:62070`，API key 在 `/opt/pasarguard/node.env`，证书在 `/var/lib/pg-node/certs` |
-| Xray | 固定为 v25.12.8（`/var/lib/pg-node/xray-v25.12.8/xray`），原因见下文 |
+| Xray | 承载 Reality 的节点固定为 v25.12.8（`/var/lib/pg-node/xray-v25.12.8/xray`），原因见下文；只有 Hysteria2 与 WebSocket 的节点用镜像自带的 26.x |
 | 入站 | DMIT-LA（VLESS Reality，127.0.0.1:9444，由 nginx 443 按 SNI 转入）和 DMIT-CDN（VLESS WebSocket，127.0.0.1:23771），配置与迁移前相同 |
 | 订阅模板 | 存在面板数据库里，改模板用 `configs/server/pasarguard/pg-set-clash-template.sh`，写 `templates` 目录下的文件不再生效 |
 | 访问日志 | 仍写到 `/var/lib/marzban/xray-access-observe.log`，采样脚本不用改 |
 
 仓库里的部署文件和脚本在 `configs/server/pasarguard/`，DMIT 上的副本在 `/opt/pasarguard/tools/`。
 
-## 没有纳入面板的部分
+## 全部线路纳入面板（2026-11-23）
 
-| 线路 | 现状 | 原因 |
-|---|---|---|
-| DMIT-HY2、RAK-HY2 | 仍是独立的 hysteria 服务，共享口令 | Xray 25.12.8 不支持 Hysteria2 入站；要纳入面板需要另起一个跑 Xray 26 的节点，同时改 Mac 脚本、统一订阅和手机订阅里共享节点的下发方式 |
-| RAK-CDN | 仍由 RAK 独立运行 | RAK 是共享业务节点，节点程序要用宿主网络运行，影响面较大 |
-| AWS-US-Clean | AWS 上仍是旧的 marzban-node，按 9 月的配置运行，面板里的旧节点记录处于 error 状态 | 旧节点程序与 PasarGuard 协议不兼容；从境外访问正常（2026-11-23 实测 249ms）。要纳入面板需要在 AWS 上换装 PasarGuard 节点并为它单独建一份核心配置（AWS 需要对外监听 443，不能沿用 DMIT 的回环地址） |
+迁移当天随后把 AWS、DMIT-HY2、RAK-HY2、RAK-CDN 也换成 PasarGuard 节点，六条线路都由面板统一管理用户、凭据和流量。
 
-`scripts/analyze_24h.py` 等分析脚本读的是 `/var/lib/marzban/db.sqlite3`，迁移后那里的数据停在 2026-11-23，不再更新。
+| 节点 | 所在机器与部署 | 面板如何连接 | Xray | 承载的入站 |
+|---|---|---|---|---|
+| DMIT | DMIT `/opt/pasarguard` 的 `node` 服务 | 127.0.0.1:62070 | 固定 v25.12.8 | DMIT-LA、DMIT-CDN |
+| DMIT-HY2 | DMIT `/opt/pasarguard` 的 `node-hy2` 服务，数据在 `/var/lib/pg-node-hy2` | 127.0.0.1:62071 | 镜像自带 v26.10.31 | DMIT-HY2（UDP 443，Let's Encrypt 证书，拒绝不匹配的 SNI） |
+| AWS-US-Clean | AWS `/opt/pasarguard-node` | DMIT 的 `marzban-aws-tunnel`：DMIT 62060 转 AWS 127.0.0.1:62050 | 固定 v25.12.8 | AWS-US-Clean（Reality，对外 443，沿用 9 月以来的密钥、short-id 和伪装目标） |
+| RAK | RAK `/opt/pasarguard-node` | Tailscale 100.95.87.62:62072 | 镜像自带 v26.10.31 | RAK-HY2（UDP 443，原自签证书，伪装成 bing）、RAK-CDN（127.0.0.1:24207） |
+
+几处安排的原因：
+
+- **两个 DMIT 节点。** Reality 必须用 Xray 25，Hysteria2 入站又要 Xray 26，一个节点只能跑一个版本，所以 DMIT 分成两个节点。RAK 没有 Reality，直接用 Xray 26。
+- **共享凭据用户。** Mac 的 `Script.js` 和统一订阅模板仍下发 DMIT-HY2、RAK-HY2、RAK-CDN 的共享凭据。面板里建了 `shared-dmit`（DMIT-HY2 口令）和 `shared-rak`（RAK-HY2 口令、RAK-CDN 的 UUID）两个用户，凭据就是原来的共享值，所以这些配置不用改，流量也计入面板。6 个原有用户在 `group1` 里，可以用各自的凭据走全部六条线路。
+- **手机订阅。** 现在直接下发面板里 liukun 的六条按用户凭据线路。`shared-links.txt` 只补面板没有的线路，同名时以面板为准。
+- **RAK 的访问控制。** 原 hysteria-rak 的 ACL 和 xray-rak 的路由规则合并成一条 Xray 路由规则，拒绝本机回环、本机公网 IP、内网、Tailscale 网段和国内地址。2026-11-23 实测，经 RAK-HY2 与 RAK-CDN 访问 RAK 的 SSH、Tailscale 管理端口、Claude 网关、本机公网 IP、内网和国内网站都不可达。
+- **规则库。** 四个节点都用 `XRAY_ASSETS_PATH` 指向迁移前的 geoip/geosite：DMIT、AWS 用 Marzban 镜像里的文件，RAK 用原 xray-rak 的文件。节点镜像自带的规则库把 gstatic 等能在国内直连的 Google 域名归入 `geosite:cn`，RAK 的“拦截国内”规则会因此挡掉客户端的健康检查。
+- **证书续期。** 续期钩子由 `restart-marzban.sh` 换成 `restart-pasarguard.sh`，续期后重启面板和 `node-hy2`。原钩子在迁移后已经失效，面板不会加载新证书。
+- **原服务保留。** DMIT 的 `hysteria-server`、RAK 的 `hysteria-rak` 和 `xray-rak`、AWS 的 `marzban-node` 都已停用，但没有删除，用于回滚。
+
+部署文件和脚本在 `configs/server/pasarguard/`：节点 compose（`node-compose-aws.yml`、`node-compose-rak.yml`），面板设置（`build-lines-spec.py` 生成配置说明，`pg-setup-lines.py` 写入核心配置、主机、分组和共享用户），`pg-node-upsert.py` 登记节点，`cutover-dmit-hy2.sh` 切换 DMIT-HY2。
 
 ## 迁移中遇到的问题
 
@@ -34,7 +47,9 @@
 2. **Vision 流控丢失。** Marzban 按用户保存 `flow`，PasarGuard 改为读取入站的 `settings.flow`。`pg-import-core.py` 给 Reality 入站补上 `xtls-rprx-vision`，节点会用它覆盖每个用户的流控。
 3. **主机地址变了。** DMIT-LA 主机地址原来是占位符 `{SERVER_IP}`，PasarGuard 解析结果不同，已改成固定 IP。
 4. **Xray 26 的 Reality 拒绝旧客户端。** 节点镜像自带 Xray 26.10.31，用它时 mihomo 1.19.33 默认配置报 `REALITY authentication failed`，打开 `support-x25519mlkem768` 才能连上；官方 Xray 客户端正常。为了不改任何客户端，节点改用 Xray v25.12.8，mihomo 默认配置恢复正常。面板里的“更新核心”按钮依赖另装的节点服务管理程序，Docker 部署下不可用，换版本要改 compose 里的 `XRAY_EXECUTABLE_PATH`。
-5. **旧节点记录改不了。** Marzban 时代的节点记录没有 API key，修改时整条记录会被校验拒绝，所以 AWS 和 RAK-Bulk-1T 两条记录保持原样。
+5. **旧节点记录不能只改一个字段。** Marzban 时代的节点记录没有 API key，只提交 `status` 等单个字段会被整条校验拒绝。带上地址、证书、API key 等完整字段更新就能通过，AWS 那条记录就是这样复用的。已停用的 RAK-Bulk-1T 记录已删除。
+6. **面板会检查证书文件。** 建核心配置时，面板在自己所在的机器上检查 `certificateFile` 路径。RAK 的证书不在 DMIT，所以 RAK 核心配置直接内嵌证书内容。
+7. **规则库分类不同。** 见上一节“规则库”，表现为 RAK 两条线路在 gstatic 上超时，google.com 却正常。
 
 ## 验收记录（2026-11-23）
 
@@ -47,6 +62,11 @@
 | 管理员登录、管理页 | 200 |
 | 本机 Claude 请求 | 经线路选择 → DMIT → DMIT-LA，出口洛杉矶 |
 | 内存 | 面板约 285MB，节点约 46MB，整机可用约 690MB |
+| 六条线路（Mac 现有配置，共享凭据与 liukun 的 UUID） | 延迟 111 到 177ms；DMIT-HY2 下载 4.0MB/s，RAK-HY2 6.3MB/s，RAK-CDN 5.5MB/s；AWS 出口 18.188.x.x，grok.com 200 |
+| 六条线路（手机订阅里 liukun 的按用户凭据） | 全部通过健康检查 |
+| 错误口令、错误 SNI、错误证书指纹 | DMIT-HY2 与 RAK-HY2 均拒绝 |
+| 其他用户的 Clash 订阅 | 节点和分组与迁移前相同 |
+| 流量统计 | 四个节点与 shared-dmit、shared-rak 均有计数 |
 
 ## 回滚
 
@@ -61,6 +81,14 @@ cd /opt/pasarguard && docker compose down
 ```bash
 cd /opt/marzban && docker compose up -d
 ```
+
+单条线路回滚：
+
+| 线路 | 回滚 |
+|---|---|
+| DMIT-HY2 | DMIT 上 `cd /opt/pasarguard && docker compose rm -sf node-hy2`，再 `systemctl enable --now hysteria-server` |
+| RAK | RAK 上 `cd /opt/pasarguard-node && docker compose down`，再 `systemctl enable --now hysteria-rak xray-rak` |
+| AWS | AWS 上 `cd /opt/pasarguard-node && sudo docker compose down`，再 `sudo docker update --restart=always marzban-node && sudo docker start marzban-node` |
 
 迁移后在 PasarGuard 里新增的用户和用量不会带回 Marzban。`/usr/local/bin/marzban` 命令行还在，不要在 PasarGuard 运行时用它启动 Marzban，两者会争用 39721、9444 和 23771 端口。
 

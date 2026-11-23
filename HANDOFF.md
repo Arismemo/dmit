@@ -20,10 +20,10 @@
 | 对象 | 当前职责与路径 |
 |---|---|
 | DMIT | 主控（2026-11-23 起为 PasarGuard 面板与本机节点，见 [Step 14](playbook/14-pasarguard-migration.md)）与本机日常/AI 出口；本机 AI 分组验收时选择 DMIT-LA。同时承载 Magpie 主网关、new-api、CLIProxyAPI 与 CPA Manager Plus；隔离环境 B 留作账号预留 |
-| RAK 代理线路 | 2026-10-27 起独立部署，不再接入 Marzban：主用 Hysteria2（UDP443，`hysteria-rak.service`），备用 VLESS+WebSocket 经 Cloudflare 转发（`xray-rak.service` 只监听回环，由 nginx 的 `rak-cdn` 站点反代）。原 Reality（TCP8443，marzban-node 容器）因 IP 的 TCP 被封锁已停用，容器暂留。见 [Step 10](playbook/10-independent-nodes.md) |
+| RAK 代理线路 | 2026-11-23 起由 PasarGuard 节点（`/opt/pasarguard-node`，经 Tailscale 100.95.87.62:62072 接受 DMIT 面板连接）承载：主用 Hysteria2（UDP443），备用 VLESS+WebSocket 经 Cloudflare 转发（127.0.0.1:24207，由 nginx 的 `rak-cdn` 站点反代）。原 `hysteria-rak.service` 与 `xray-rak.service` 已停用但保留，回滚见 [Step 14](playbook/14-pasarguard-migration.md)。原 Reality（TCP8443，marzban-node 容器）因 IP 的 TCP 被封锁已停用，容器暂留。见 [Step 10](playbook/10-independent-nodes.md) |
 | RAK Claude 与浏览器 | 2026-11-08 起两个订阅账号已回到 RAK，`magpie-claude.service` 与 `magpie-claude2.service` 在各自命名空间运行，经 Tailscale 的 13440 / 13439 供 DMIT 主网关调用。2026-11-12 用户确认磁盘故障已解决，两个子 Magpie 均已更新至 v0.1.3850，原生 Claude Code 保持 2.1.311；原用户、家目录、网络命名空间与住宅出口均保留。旧 Docker Magpie 与 new-api 不承载业务，Hysteria2、Xray 和 Nginx 继续运行 |
-| AWS | 本机 Grok 与备用节点；本次保持其分组策略。AWS 上仍是旧的 marzban-node，PasarGuard 面板不管理它，按 9 月的配置继续运行 |
-| 管理链路 | 现有 SSH28827、SSH 本地转发（DMIT 本机 62060/62061 到 AWS 的旧 marzban-node）、PasarGuard 本机节点 127.0.0.1:62070 与 Tailscale；DMIT 管理入口是本机 `~/.ssh/config` 里的 `dmit` 别名（Tailscale 100.120.162.88） |
+| AWS | 本机 Grok 与备用节点；本次保持其分组策略。2026-11-23 起由 PasarGuard 节点承载（`/opt/pasarguard-node`，Xray 固定 v25.12.8），Reality 身份不变；旧 marzban-node 容器已停用保留 |
+| 管理链路 | 现有 SSH28827、SSH 本地转发（DMIT 本机 62060 到 AWS 节点 127.0.0.1:62050）、PasarGuard 节点（DMIT 127.0.0.1:62070 与 62071、RAK Tailscale 62072）与 Tailscale；DMIT 管理入口是本机 `~/.ssh/config` 里的 `dmit` 别名（Tailscale 100.120.162.88） |
 
 RAK 是共享业务节点。不要为 Claude 修改全机默认 DROP、限制整个 root 用户出站、移除普通 Xray 的正常出站或全局禁用 UDP。
 

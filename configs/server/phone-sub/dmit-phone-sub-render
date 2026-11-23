@@ -39,12 +39,15 @@ out="$PUBLISH_DIR/sub"
 tmp="$(mktemp "$PUBLISH_DIR/.sub.XXXXXX")"
 trap 'rm -f "$tmp"' EXIT
 
-# Marzban 对无法识别的 User-Agent 返回 base64 编码的 v2ray 分享链接
+# 面板（PasarGuard，2026-11-23 前为 Marzban）对无法识别的 User-Agent 返回 base64 编码的分享链接
 marzban_links="$(curl -fsS -m 20 -k -A "dmit-phone-sub" "$MARZBAN_SUB_URL" | base64 -d)"
-grep -q '^vless://.*#DMIT-LA$' <<<"$marzban_links" || { echo "Marzban 订阅里没有 DMIT-LA，保留旧文件" >&2; exit 1; }
-[[ -s "$shared" ]] || { echo "缺少 $shared" >&2; exit 1; }
+grep -q '^vless://.*#DMIT-LA$' <<<"$marzban_links" || { echo "面板订阅里没有 DMIT-LA，保留旧文件" >&2; exit 1; }
+[[ -f "$shared" ]] || { echo "缺少 $shared" >&2; exit 1; }
 
-{ printf '%s\n' "$marzban_links"; grep -v '^\s*\(#\|$\)' "$shared"; } | base64 -w0 > "$tmp"
+# 共享凭据节点只补面板没有提供的线路；同名时用面板下发的按用户凭据，避免手机上出现重名节点
+panel_names="$(sed -n 's/.*#//p' <<<"$marzban_links")"
+extra="$(grep -v '^\s*\(#\|$\)' "$shared" | while IFS= read -r line; do grep -qxF "${line##*#}" <<<"$panel_names" || printf '%s\n' "$line"; done)"
+{ printf '%s\n' "$marzban_links"; if [[ -n "$extra" ]]; then printf '%s\n' "$extra"; fi; } | base64 -w0 > "$tmp"
 publish "$out" "$tmp"
 trap - EXIT
-echo "已发布 $(printf '%s\n' "$marzban_links" | grep -c '://') 个 Marzban 节点 + $(grep -cv '^\s*\(#\|$\)' "$shared") 个共享节点"
+echo "已发布 $(printf '%s\n' "$marzban_links" | grep -c '://') 个面板节点 + $(grep -c '://' <<<"$extra" || true) 个共享节点"

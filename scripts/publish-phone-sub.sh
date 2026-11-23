@@ -3,8 +3,8 @@
 # 用法: scripts/publish-phone-sub.sh
 #
 # 发布两样东西到 DMIT 的 /var/www/phone-sub/：
-#   sub                 节点订阅：DMIT 上的定时器每 10 分钟从 PasarGuard 面板拉 DMIT-LA、DMIT-CDN，
-#                       再拼上本脚本上传的共享节点（DMIT-HY2、RAK-HY2、RAK-CDN）
+#   sub                 节点订阅：DMIT 上的定时器每 10 分钟从 PasarGuard 面板拉全部线路（按用户凭据），
+#                       本脚本上传的共享节点（DMIT-HY2、RAK-HY2、RAK-CDN）只补面板没有提供的线路
 #   shadowrocket.conf   远程配置：DNS、策略组与分流规则，由 render-shadowrocket.sh 渲染
 #   shadowrocket-overseas.conf  海外版远程配置：其余网站与大流量直连，AI 仍走代理；人在境外时在手机上切到这份
 # 共享节点的凭据或规则有变化时重新运行本脚本；面板下发的节点（换密钥等）无需重跑。

@@ -1,0 +1,22 @@
+# RAK 上的 PasarGuard 节点，承载 RAK-HY2（UDP 443）与 RAK-CDN（127.0.0.1:24207，nginx 的 rak-cdn 站点反代）。
+# 面板经 Tailscale 直连节点；节点只监听本机的 Tailscale 地址。RAK 没有 Reality 入站，用镜像自带的 Xray 26。
+# 不让节点改宿主机的转发和 nftables：RAK 还运行着 Claude 隔离环境。
+services:
+  node:
+    image: pasarguard/node:v0.5.7
+    restart: always
+    network_mode: host
+    env_file: node.env
+    environment:
+      NODE_HOST: "100.95.87.62"
+      SERVICE_PORT: 62072
+      SERVICE_PROTOCOL: "grpc"
+      PG_NODE_WG_HOST_ROUTING: "0"
+      SSL_CERT_FILE: "/var/lib/pg-node/certs/ssl_cert.pem"
+      SSL_KEY_FILE: "/var/lib/pg-node/certs/ssl_key.pem"
+      GENERATED_CONFIG_PATH: "/var/lib/pg-node/generated"
+      # 沿用原 xray-rak 的 geoip/geosite（Xray 官方发布版）。镜像自带的规则库把 gstatic 等可在国内直连的
+      # Google 域名归入 geosite:cn，会被 RAK 的“拦截国内”规则挡掉，客户端的健康检查随之失败。
+      XRAY_ASSETS_PATH: "/var/lib/pg-node/geo"
+    volumes:
+      - /var/lib/pg-node:/var/lib/pg-node
