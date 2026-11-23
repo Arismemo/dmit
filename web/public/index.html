@@ -148,11 +148,11 @@
       <h4>DMIT（主控）</h4>
       <p class="role">洛杉矶 CN2 GIA，1 核 2GB，Pro TINY 套餐每月 1TB 双向</p>
       <ul>
-        <li><span class="tag on">在用</span>Marzban 主控，面板 39721</li>
+        <li><span class="tag on">在用</span>PasarGuard 主控（2026-11-23 由 Marzban 原地迁移），面板 39721；本机节点 pasarguard-node 只监听 127.0.0.1:62070，Xray 固定 v25.12.8</li>
         <li><span class="tag on">在用</span>Hysteria2（DMIT-HY2，UDP 443）</li>
         <li><span class="tag on">在用</span>Reality 入站改到 127.0.0.1:9444，nginx 按 SNI 分流 443；2026-11-17 更换密钥，伪装目标改为本机主域名站点</li>
         <li><span class="tag on">在用</span>Xray + WebSocket（DMIT-CDN）127.0.0.1:23771，Cloudflare 经 static.230254.xyz 回源</li>
-        <li><span class="tag on">在用</span>手机订阅与远程配置：static.230254.xyz 的随机路径下发布，dmit-phone-sub.timer 每 10 分钟从 Marzban 同步 DMIT-LA、DMIT-CDN 并拼上三个共享节点</li>
+        <li><span class="tag on">在用</span>手机订阅与远程配置：static.230254.xyz 的随机路径下发布，dmit-phone-sub.timer 每 10 分钟从 PasarGuard 同步 DMIT-LA、DMIT-CDN 并拼上三个共享节点</li>
         <li><span class="tag on">在用</span>Magpie 主网关 13425 / 13430（v0.1.4457），claude-pro 与 claude-pro-2 都经 Tailscale 指向 RAK 的两个隔离环境（13440 / 13439），auto 路由组按模型聚合这两个账号</li>
         <li><span class="tag on">在用</span>new-api 127.0.0.1:13000（BOM，定制构建 rc.49）</li>
         <li><span class="tag on">在用</span>CLIProxyAPI 8317（v8.0.67）、CPA Manager Plus 18317（v1.14.10）</li>
@@ -161,7 +161,7 @@
         <li><span class="tag on">在用</span>home-egress 家宽中转：17990 转 RAK 账号家宽，17991 转 B 账号家宽，带认证；监听回环地址与 Tailscale 地址 100.120.162.88，供本机链式节点和手机 Shadowrocket 使用</li>
         <li><span class="tag on">在用</span>browser-hub 面板 28000 / 28443–28446</li>
         <li><span class="tag on">在用</span>nginx 站点 bom / magpie / magpie-api / mz（Reality 伪装目标）/ static（CDN 回源），均 9443；公网 443 按 SNI 分流</li>
-        <li><span class="tag on">在用</span>marzban-aws-tunnel，本地 62060 / 62061</li>
+        <li><span class="tag on">在用</span>marzban-aws-tunnel，本地 62060 / 62061（通向 AWS 的旧 marzban-node，PasarGuard 不再管理）</li>
         <li><span class="tag off">已停用</span>老的 xray 服务；claude-rak-gateway 与 claude-rak 命名空间已删除，账号 1 的凭据副本已清理</li>
         <li><span class="tag pri">注意</span>CPA 用量采集已关闭，历史库已清空</li>
       </ul>
@@ -239,6 +239,7 @@
       <tr><td>DNS 防泄露</td><td>电脑与统一订阅：海外域名经代理用 1.1.1.1 / 8.8.8.8 的 DoH 解析（respect-rules），国内域名用 doh.pub / alidns；手机：IP 类规则全部 no-resolve，国内网站按 static 路径下的国内域名列表直连，海外域名交给代理节点解析。2026-11-18 实测本机、seed-ser、ninestep2 查询 o-o.myaddr.l.google.com 时，Google 看到的解析器为 Cloudflare / Google，附带网段为 DMIT 的 179.255.119.0/24；手机端未在设备上验证</td></tr>
       <tr><td>公网 TCP 被封</td><td>2026-10-26 起 DMIT、RAK、AWS 三个 IP 的 TCP 从国内不通，回程丢包，UDP 与 ICMP 正常。订阅地址也走 TCP，从国内直接拉会失败。2026-11-07 实测 RAK 28827 与 443 已恢复直连。2026-11-17 实测 DMIT 的 TCP 443 已恢复；同日上海电信网络对海外 UDP 回程整片丢包，DMIT-HY2 与 RAK-HY2 同时不可用</td></tr>
       <tr><td>境外 UDP 回程被丢</td><td>2026-11-20 复测：客户端 QUIC 包能到 DMIT（tcpdump 可见），服务端也回了包，客户端收不到；普通 UDP 更是发不出去；国内 CDN 的 QUIC 与全部 TCP 正常。服务端与凭据无问题（RAK→DMIT hysteria 客户端 204/0.137s），另一联通出口同样丢包，判定为本地运营商链路侧丢弃。对策：DMIT/RAK 组与手机订阅把 TCP 线路排到 UDP 前面，家宽链式节点的 dialer-proxy 由 DMIT-HY2 改为 DMIT-LA</td></tr>
+      <tr><td>Xray 版本固定</td><td>2026-11-23 迁移到 PasarGuard 后，节点镜像自带的 Xray 26.10.31 让 mihomo 1.19.33 默认配置的 Reality 握手失败（REALITY authentication failed，打开 support-x25519mlkem768 才通）；节点改用 Xray v25.12.8 后恢复。Xray 25 不支持 Hysteria2 入站，所以 DMIT-HY2、RAK-HY2 仍是独立的 hysteria 服务，没有纳入面板</td></tr>
       <tr><td>AWS 节点配置陈旧</td><td>2026-11-20 实测 AWS-US-Clean 从 DMIT 出发用同一组 Reality 参数可正常出网（204/0.42s），服务端与客户端参数都对；但 AWS 节点的 marzban-node 容器自 9-20 起就没同步主控配置，仍在跑 11-17 轮换前的旧 Reality 身份（short-id abcd1234、伪装目标 www.apple.com），从国内 TCP 回程被丢弃。恢复需要让该节点重新同步入站配置并改回对外监听 443</td></tr>
       <tr><td>Fable 5.1 不可用</td><td>两个账号都没有 usage credits，请求 Fable 5.1 返回 429，Anthropic 侧要求到 claude.ai 设置里开通 credits；Sonnet 与 Opus 正常。2026-11-10 起 claude-2 分组改提供 Fable 5.2（渠道 8 映射到 Magpie 的 auto/claude-fable-5-2），经 new-api 调用两种接口均返回 200</td></tr>
       <tr><td>derouter 渠道无余额</td><td>2026-11-08 建渠道 12（分组 claude-5，0.1x）直连 derouter.ai，渠道类型已改为 OpenAI，路径与鉴权实测通过（上游半秒内应答）；该渠道 key 在 derouter 侧返回 402 剩余额度不足，充值后即可用</td></tr>
