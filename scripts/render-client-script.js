@@ -152,6 +152,12 @@ if (fs.existsSync(targetPath)) {
   const backup = `${targetPath}.bak-${stamp}-pre-render`;
   fs.copyFileSync(targetPath, backup);
   console.log("📦 已备份旧脚本: " + backup);
+  // 只清理本脚本生成的备份，保留最近 5 份；手工命名的备份不动
+  const dir = path.dirname(targetPath);
+  const pattern = new RegExp("^" + path.basename(targetPath).replace(/\./g, "\\.") + "\\.bak-\\d{14}-pre-render$");
+  const stale = fs.readdirSync(dir).filter(name => pattern.test(name)).sort().slice(0, -5);
+  stale.forEach(name => fs.rmSync(path.join(dir, name)));
+  if (stale.length) console.log(`🧹 已清理 ${stale.length} 份较早的自动备份`);
 }
 fs.mkdirSync(path.dirname(targetPath), { recursive: true });
 fs.writeFileSync(targetPath, output);
