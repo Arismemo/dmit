@@ -11,12 +11,12 @@
 
 | 设备 | 需要的链接 | 去哪拿 |
 |---|---|---|
-| 电脑 | 订阅链接 | Marzban 管理面板里打开该用户，复制订阅链接；每个用户一条，流量记在该用户名下 |
+| 电脑 | 订阅链接 | PasarGuard 管理面板里打开该用户，复制订阅链接；每个用户一条，流量记在该用户名下。迁移前从 Marzban 复制的旧链接仍然有效 |
 | 手机 | 节点订阅 `https://static.230254.xyz/<发布路径>/sub` | 发布路径是 `secrets.env` 里的 `PHONE_SUB_PATH` |
 | 手机 | 国内配置 `https://static.230254.xyz/<发布路径>/shadowrocket.conf` | 同上 |
 | 手机 | 海外配置 `https://static.230254.xyz/<发布路径>/shadowrocket-overseas.conf` | 同上 |
 
-手机这几条链接里带的是管理员本人的凭据，只给自己的手机用，不要转发给别人。别人的手机请在 Marzban 里另建用户，用电脑那种订阅链接导入 Clash 类客户端。
+手机这几条链接里带的是管理员本人的凭据，只给自己的手机用，不要转发给别人。别人的手机请在 PasarGuard 面板里另建用户，用电脑那种订阅链接导入 Clash 类客户端。
 
 ## 电脑（macOS / Windows，Clash Verge Rev）
 

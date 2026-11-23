@@ -1,0 +1,32 @@
+# PasarGuard 主控与本机节点。数据目录 /var/lib/pasarguard 由 Marzban 的 /var/lib/marzban 复制并迁移而来，
+# 原目录保留不动，回滚时停掉本服务、在 /opt/marzban 里 docker compose up -d 即可。
+services:
+  panel:
+    image: pasarguard/panel:v5.6.0
+    restart: always
+    env_file: .env
+    network_mode: host
+    volumes:
+      - /var/lib/pasarguard:/var/lib/pasarguard
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+
+  node:
+    image: pasarguard/node:v0.5.7
+    restart: always
+    network_mode: host
+    env_file: node.env
+    environment:
+      NODE_HOST: "127.0.0.1"
+      SERVICE_PORT: 62070
+      SERVICE_PROTOCOL: "grpc"
+      # 不让节点改宿主机的转发和 nftables，本机没有 WireGuard 入站
+      PG_NODE_WG_HOST_ROUTING: "0"
+      SSL_CERT_FILE: "/var/lib/pg-node/certs/ssl_cert.pem"
+      SSL_KEY_FILE: "/var/lib/pg-node/certs/ssl_key.pem"
+      GENERATED_CONFIG_PATH: "/var/lib/pg-node/generated"
+      # 固定 Xray 版本：26.x 的 Reality 要求客户端支持 X25519MLKEM768，旧版 mihomo 与部分手机客户端会握手失败
+      XRAY_EXECUTABLE_PATH: "/var/lib/pg-node/xray-v25.12.8/xray"
+    volumes:
+      - /var/lib/pg-node:/var/lib/pg-node
+      # Xray 访问日志沿用原路径，采样脚本不用改
+      - /var/lib/marzban:/var/lib/marzban

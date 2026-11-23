@@ -3,11 +3,11 @@
 # 用法: scripts/publish-phone-sub.sh
 #
 # 发布两样东西到 DMIT 的 /var/www/phone-sub/：
-#   sub                 节点订阅：DMIT 上的定时器每 10 分钟从 Marzban 拉 DMIT-LA、DMIT-CDN，
+#   sub                 节点订阅：DMIT 上的定时器每 10 分钟从 PasarGuard 面板拉 DMIT-LA、DMIT-CDN，
 #                       再拼上本脚本上传的共享节点（DMIT-HY2、RAK-HY2、RAK-CDN）
 #   shadowrocket.conf   远程配置：DNS、策略组与分流规则，由 render-shadowrocket.sh 渲染
 #   shadowrocket-overseas.conf  海外版远程配置：其余网站与大流量直连，AI 仍走代理；人在境外时在手机上切到这份
-# 共享节点的凭据或规则有变化时重新运行本脚本；Marzban 节点（换密钥等）无需重跑。
+# 共享节点的凭据或规则有变化时重新运行本脚本；面板下发的节点（换密钥等）无需重跑。
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -44,6 +44,7 @@ scp -q "$work/shared-links.txt" "$work/shadowrocket.conf" "$work/shadowrocket-ov
   "$root/configs/server/phone-sub/dmit-phone-sub-render" \
   "$root/configs/server/phone-sub/dmit-phone-sub.service" \
   "$root/configs/server/phone-sub/dmit-phone-sub.timer" \
+  "$root/configs/server/pasarguard/pg-api.py" \
   "$host:/tmp/"
 
 ssh "$host" PUB_PATH="$pub_path" MARZBAN_USER="$marzban_user" 'bash -s' <<'REMOTE'
@@ -57,16 +58,10 @@ install -m 755 /tmp/dmit-phone-sub-render /usr/local/bin/dmit-phone-sub-render
 install -m 644 /tmp/dmit-phone-sub.service /tmp/dmit-phone-sub.timer /etc/systemd/system/
 rm -f /tmp/shared-links.txt /tmp/shadowrocket.conf /tmp/shadowrocket-overseas.conf /tmp/dmit-phone-sub-render /tmp/dmit-phone-sub.service /tmp/dmit-phone-sub.timer
 
-# Marzban 用户的订阅地址改走本机回环，不依赖公网
-sub_path="$(docker exec marzban-marzban-1 python3 -c "
-import json,ssl,urllib.request,sqlite3,sys
-from app.utils.jwt import create_admin_token
-c=sqlite3.connect('/var/lib/marzban/db.sqlite3')
-admin=c.execute('select username from admins where is_sudo=1 limit 1').fetchone()[0]
-r=urllib.request.Request('https://127.0.0.1:39721/api/user/'+sys.argv[1],headers={'Authorization':'Bearer '+create_admin_token(admin,is_sudo=True)})
-u=json.load(urllib.request.urlopen(r,context=ssl._create_unverified_context(),timeout=20))
-print('/sub/'+u['subscription_url'].split('/sub/')[-1])
-" "$MARZBAN_USER")"
+# 面板用户的订阅地址改走本机回环，不依赖公网（2026-11-23 起面板是 PasarGuard，订阅路径沿用 Marzban 时的地址）
+docker cp /tmp/pg-api.py pasarguard-panel-1:/tmp/pg-api.py && rm -f /tmp/pg-api.py
+sub_path="$(docker exec pasarguard-panel-1 python /tmp/pg-api.py GET "/user/$MARZBAN_USER" \
+  | python3 -c "import json,sys;print('/sub/'+json.load(sys.stdin)['subscription_url'].split('/sub/')[-1])")"
 umask 077
 printf 'MARZBAN_SUB_URL=%s\nPUBLISH_DIR=/var/www/phone-sub\n' "https://127.0.0.1:39721${sub_path}" > /etc/dmit-phone-sub/env
 

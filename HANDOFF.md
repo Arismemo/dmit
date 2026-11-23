@@ -8,6 +8,7 @@
 - [住宅代理网桥](playbook/08-rak-claude-residential-proxy.md)：维护上游接入、集中出口配置和健康探针。
 - [多节点集群](playbook/07-multi-node-cluster.md)：DMIT、RAK、AWS 的职责与管理隧道背景。
 - [DMIT 承接 BOM 与 Claude Pro](playbook/12-dmit-bom-migration.md)：RAK 磁盘故障后的迁移结果、验证证据、迁移后的运维记录与待办。
+- [Marzban 迁移到 PasarGuard](playbook/14-pasarguard-migration.md)：2026-11-23 起 DMIT 的管理面板是 PasarGuard，订阅模板存在面板数据库里；Xray 固定 v25.12.8 的原因、回滚方法与日常操作。
 - [其它会话沉淀（2026-11-04）](SESSION-SUMMARY-2026-11-04.md)：已归档会话的结论、证据与去向，以及仍未处理的待办。
 - [网络架构图](web/public/index.html)：三台海外服务器、本机代理链路、模型服务链路与管理通道的现状图，部署在 `arch.230254.xyz`。网络有变更时必须先改这个文件再重新部署，见 [web/README.md](web/README.md)。
 - [运行环境源码及安装位置](configs/server/claude-runtime/README.md)：已部署脚本、systemd 单元与离线测试。
@@ -18,11 +19,11 @@
 
 | 对象 | 当前职责与路径 |
 |---|---|
-| DMIT | 主控与本机日常/AI 出口；本机 AI 分组验收时选择 DMIT-LA。同时承载 Magpie 主网关、new-api、CLIProxyAPI 与 CPA Manager Plus；隔离环境 B 留作账号预留 |
+| DMIT | 主控（2026-11-23 起为 PasarGuard 面板与本机节点，见 [Step 14](playbook/14-pasarguard-migration.md)）与本机日常/AI 出口；本机 AI 分组验收时选择 DMIT-LA。同时承载 Magpie 主网关、new-api、CLIProxyAPI 与 CPA Manager Plus；隔离环境 B 留作账号预留 |
 | RAK 代理线路 | 2026-10-27 起独立部署，不再接入 Marzban：主用 Hysteria2（UDP443，`hysteria-rak.service`），备用 VLESS+WebSocket 经 Cloudflare 转发（`xray-rak.service` 只监听回环，由 nginx 的 `rak-cdn` 站点反代）。原 Reality（TCP8443，marzban-node 容器）因 IP 的 TCP 被封锁已停用，容器暂留。见 [Step 10](playbook/10-independent-nodes.md) |
 | RAK Claude 与浏览器 | 2026-11-08 起两个订阅账号已回到 RAK，`magpie-claude.service` 与 `magpie-claude2.service` 在各自命名空间运行，经 Tailscale 的 13440 / 13439 供 DMIT 主网关调用。2026-11-12 用户确认磁盘故障已解决，两个子 Magpie 均已更新至 v0.1.3850，原生 Claude Code 保持 2.1.311；原用户、家目录、网络命名空间与住宅出口均保留。旧 Docker Magpie 与 new-api 不承载业务，Hysteria2、Xray 和 Nginx 继续运行 |
-| AWS | 本机 Grok 与备用节点；本次保持其分组策略 |
-| 管理链路 | 现有 SSH28827、SSH 本地转发、Marzban62050/62051 与 Tailscale；DMIT 管理入口是本机 `~/.ssh/config` 里的 `dmit` 别名（Tailscale 100.120.162.88） |
+| AWS | 本机 Grok 与备用节点；本次保持其分组策略。AWS 上仍是旧的 marzban-node，PasarGuard 面板不管理它，按 9 月的配置继续运行 |
+| 管理链路 | 现有 SSH28827、SSH 本地转发（DMIT 本机 62060/62061 到 AWS 的旧 marzban-node）、PasarGuard 本机节点 127.0.0.1:62070 与 Tailscale；DMIT 管理入口是本机 `~/.ssh/config` 里的 `dmit` 别名（Tailscale 100.120.162.88） |
 
 RAK 是共享业务节点。不要为 Claude 修改全机默认 DROP、限制整个 root 用户出站、移除普通 Xray 的正常出站或全局禁用 UDP。
 
