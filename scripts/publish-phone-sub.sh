@@ -6,6 +6,7 @@
 #   sub                 节点订阅：DMIT 上的定时器每 10 分钟从 Marzban 拉 DMIT-LA、DMIT-CDN，
 #                       再拼上本脚本上传的共享节点（DMIT-HY2、RAK-HY2、RAK-CDN）
 #   shadowrocket.conf   远程配置：DNS、策略组与分流规则，由 render-shadowrocket.sh 渲染
+#   shadowrocket-overseas.conf  海外版远程配置：其余网站与大流量直连，AI 仍走代理；人在境外时在手机上切到这份
 # 共享节点的凭据或规则有变化时重新运行本脚本；Marzban 节点（换密钥等）无需重跑。
 set -euo pipefail
 
@@ -39,7 +40,7 @@ enc_path="$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.arg
 bash "$root/scripts/render-shadowrocket.sh" "$work/shadowrocket.conf" >/dev/null
 rm -f "$work/shadowrocket-rak-nodes.txt"
 
-scp -q "$work/shared-links.txt" "$work/shadowrocket.conf" \
+scp -q "$work/shared-links.txt" "$work/shadowrocket.conf" "$work/shadowrocket-overseas.conf" \
   "$root/configs/server/phone-sub/dmit-phone-sub-render" \
   "$root/configs/server/phone-sub/dmit-phone-sub.service" \
   "$root/configs/server/phone-sub/dmit-phone-sub.timer" \
@@ -51,9 +52,10 @@ install -d -m 700 /etc/dmit-phone-sub
 install -d -m 755 /var/www/phone-sub
 install -m 600 /tmp/shared-links.txt /etc/dmit-phone-sub/shared-links.txt
 install -m 644 /tmp/shadowrocket.conf /var/www/phone-sub/shadowrocket.conf
+install -m 644 /tmp/shadowrocket-overseas.conf /var/www/phone-sub/shadowrocket-overseas.conf
 install -m 755 /tmp/dmit-phone-sub-render /usr/local/bin/dmit-phone-sub-render
 install -m 644 /tmp/dmit-phone-sub.service /tmp/dmit-phone-sub.timer /etc/systemd/system/
-rm -f /tmp/shared-links.txt /tmp/shadowrocket.conf /tmp/dmit-phone-sub-render /tmp/dmit-phone-sub.service /tmp/dmit-phone-sub.timer
+rm -f /tmp/shared-links.txt /tmp/shadowrocket.conf /tmp/shadowrocket-overseas.conf /tmp/dmit-phone-sub-render /tmp/dmit-phone-sub.service /tmp/dmit-phone-sub.timer
 
 # Marzban 用户的订阅地址改走本机回环，不依赖公网
 sub_path="$(docker exec marzban-marzban-1 python3 -c "
@@ -101,3 +103,4 @@ REMOTE
 
 echo "订阅链接：https://static.230254.xyz/${pub_path}/sub"
 echo "远程配置：https://static.230254.xyz/${pub_path}/shadowrocket.conf"
+echo "海外版远程配置：https://static.230254.xyz/${pub_path}/shadowrocket-overseas.conf"

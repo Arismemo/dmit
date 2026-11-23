@@ -39,6 +39,22 @@ done
 printf '%s\n' "$output" > "$target"
 echo "已生成 $target（$(grep -cE '^[A-Z-]+,' "$target") 条规则）"
 
+# 海外版：人在境外时用。其余网站和大流量改走默认直连的「海外出口」组，AI 与 Grok 规则不变；
+# DNS 改用境外公共 DNS，CDN 按本地位置返回就近的服务器。用一个新组名，避免沿用国内配置里记住的选择。
+overseas_target="${target%.conf}-overseas.conf"
+perl -pe '
+  s/^dns-server = .*/dns-server = https:\/\/1.1.1.1\/dns-query,https:\/\/8.8.8.8\/dns-query/;
+  s/^fallback-dns-server = .*/fallback-dns-server = system/;
+  s/^(Bulk-Traffic = select,.*)$/$1\n# 海外版：其余网站和大流量默认直连，个别网站打不开时临时切到 Proxy\n海外出口 = select,DIRECT,Proxy/;
+  s/^([A-Z0-9-]+,.*),Bulk-Traffic(,no-resolve)?$/$1,海外出口$2/;
+  s/^FINAL,Proxy$/FINAL,海外出口/;
+  s/^# Shadowrocket 手机端配置（脱敏模板）$/# Shadowrocket 手机端配置，海外版（由 render-shadowrocket.sh 从国内版生成）/;
+' <<<"$output" > "$overseas_target"
+grep -qx 'FINAL,海外出口' "$overseas_target" || { echo "海外版缺少兜底规则" >&2; exit 1; }
+grep -qx '海外出口 = select,DIRECT,Proxy' "$overseas_target" || { echo "海外版缺少海外出口组" >&2; exit 1; }
+! grep -qE ',Bulk-Traffic(,no-resolve)?$' "$overseas_target" || { echo "海外版仍有规则指向 Bulk-Traffic" >&2; exit 1; }
+echo "已生成 $overseas_target（海外版）"
+
 # RAK 独立线路不在 Marzban 订阅里，另外生成导入链接（含凭据，权限 0600，放在仓库外）
 secret() { sed -nE "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*[\"']?([^\"']*)[\"']?[[:space:]]*\$/\\1/p" "$secrets" | tail -n1; }
 rak_ip="$(secret RAK_SERVER_IP)"; hy2_pass="$(secret RAK_HY2_PASSWORD)"; hy2_pin="$(secret RAK_HY2_PIN_SHA256)"; hy2_sni="$(secret RAK_HY2_SNI)"

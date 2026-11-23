@@ -10,10 +10,18 @@
 // 3. [双协议容灾] 自动注入 Hysteria 2 UDP 节点，并聚合至 Auto / Proxy / AI 策略组
 // 4. [智能分流] 清除破坏规则分流的 IDE 强直连配置（按域名/IP动态分流）
 // 5. [内网穿透] 支持配置私网/公司内网 SSH 隧道高可用故障转移组 (SSH-AUTO)
+// 6. [所在地模式] 订阅名称含“海外”时切到海外模式：其余网站与大流量直连，AI 仍走代理，DNS 不再经代理
+//    用法：在 Clash Verge 里把同一个订阅链接再导入一份，名称写成“海外”，换地方时切换订阅即可
 
 // ⚠️ 本文件是【脱敏模板】，禁止直接粘贴/复制进 Clash Verge（占位符会覆盖真实配置）。
 // 请使用 `node scripts/render-client-script.js` 读取 secrets.env 渲染并安装。
 function main(config, profileName) {
+  // 人在境外时绝大多数网站可以直连，继续走美国节点只会绕路。模式由订阅名称决定，
+  // 这样切换订阅就能同时换掉分流和 DNS，策略组做不到后者。
+  const overseasMode = /海外/.test(String(profileName || ""));
+  // 海外模式专用的出口组。名称与国内模式的组不同，Clash 按组名记忆选择，不会把国内的选择带过来
+  const overseasGroupName = "海外出口";
+
   // =========================================================================
   // 模块 1: 内网企业 SSH 隧道与 Tailscale 穿透高可用组 (按需配置)
   // =========================================================================
@@ -242,6 +250,14 @@ function main(config, profileName) {
       fakeIpFilter.push("*.ts.net");
     }
     config.dns["fake-ip-filter"] = fakeIpFilter;
+    // 海外模式：DNS 直接查询境外公共 DNS，不再经美国节点转发，CDN 会按本地位置返回就近的服务器。
+    // 国内域名仍按 nameserver-policy 用国内 DNS 解析。
+    if (overseasMode) {
+      config.dns["respect-rules"] = false;
+      config.dns["default-nameserver"] = ["1.1.1.1", "8.8.8.8"];
+      config.dns.nameserver = ["https://1.1.1.1/dns-query", "https://8.8.8.8/dns-query"];
+      config.dns["proxy-server-nameserver"] = ["https://1.1.1.1/dns-query", "https://8.8.8.8/dns-query"];
+    }
   }
 
   const filteredExistingProxies = existingProxies.filter(
@@ -293,6 +309,11 @@ function main(config, profileName) {
     type: "select",
     proxies: [rakGroup.name, lineGroupName, "Proxy", "DIRECT"]
   };
+
+  // 海外模式下其余网站和大流量都交给这个组，默认直连；个别网站直连打不开时可临时切到线路选择
+  const overseasGroups = overseasMode
+    ? [{ name: overseasGroupName, type: "select", proxies: ["DIRECT", lineGroupName] }]
+    : [];
 
   const existingGroups = (Array.isArray(config["proxy-groups"]) ? config["proxy-groups"] : [])
     .filter(group => group && !lineGroupNames.has(group.name));
@@ -347,10 +368,11 @@ function main(config, profileName) {
     lineGroupNames.has(name) || groupNames.has(name)
   );
 
-  const mergedGroups = [bulkGroup].concat(
+  const mergedGroups = overseasGroups.concat(
+    [bulkGroup],
     lineGroups,
     homeGroups,
-    existingGroups.filter(g => g && g.name !== bulkGroupName && g.name !== homeGroupName)
+    existingGroups.filter(g => g && g.name !== bulkGroupName && g.name !== homeGroupName && g.name !== overseasGroupName)
   );
 
   // GitLab-Auto 只引用确定存在的目标（订阅没有 Proxy 组时仅保留 DIRECT）
@@ -541,19 +563,59 @@ function main(config, profileName) {
     "IP-CIDR,45.159.96.0/22," + bulkGroupName + ",no-resolve"
   ];
 
+  // 海外模式：AI 服务固定走线路选择（美国出口），账号所在地不随人移动；本机 Magpie 访问 api.anthropic.com 也靠这几条。
+  // 国内模式不需要这些规则，未命中的流量本来就走线路选择。
+  const aiRules = overseasMode
+    ? [
+      "DOMAIN-SUFFIX,anthropic.com",
+      "DOMAIN-SUFFIX,claude.ai",
+      "DOMAIN-SUFFIX,claude.com",
+      "DOMAIN-SUFFIX,claudeusercontent.com",
+      "DOMAIN-SUFFIX,openai.com",
+      "DOMAIN-SUFFIX,chatgpt.com",
+      "DOMAIN-SUFFIX,oaistatic.com",
+      "DOMAIN-SUFFIX,oaiusercontent.com",
+      "DOMAIN-SUFFIX,gemini.google.com",
+      "DOMAIN-SUFFIX,generativelanguage.googleapis.com",
+      "DOMAIN-SUFFIX,aistudio.google.com"
+    ].map(rule => rule + "," + lineGroupName)
+    : [];
+
+  // 海外模式：订阅自带的大流量规则和兜底规则改指向海外出口组
+  const targetOf = rule => {
+    const parts = rule.replace(/,no-resolve$/, "").split(",");
+    return parts[0] === "MATCH" ? parts[1] : parts[parts.length - 1];
+  };
+  const retarget = rule => {
+    if (!overseasMode) return rule;
+    if (rule.startsWith("MATCH,")) return "MATCH," + overseasGroupName;
+    if (targetOf(rule) !== bulkGroupName) return rule;
+    const noResolve = rule.endsWith(",no-resolve");
+    const body = noResolve ? rule.slice(0, -",no-resolve".length) : rule;
+    return body.slice(0, -bulkGroupName.length) + overseasGroupName + (noResolve ? ",no-resolve" : "");
+  };
+
   const existingRules = Array.isArray(config.rules) ? config.rules : [];
-  config.rules = managedRules.concat(
+  config.rules = Array.from(new Set(managedRules.concat(
+    aiRules,
     bulkRules,
     existingRules.filter(
       rule =>
         managedRules.indexOf(rule) === -1 &&
+        aiRules.indexOf(rule) === -1 &&
         bulkRules.indexOf(rule) === -1 &&
         // 清理 IDE 进程级直连限制，恢复由域名智能分流（内网直连，外部服务代理）
         !rule.startsWith("PROCESS-NAME,Code") &&
         // 清理历史残留的私有 GitLab 走 Proxy 错误规则（避免境内自建服务被强行代理）
         !rule.includes("gitlab.709970.xyz,Proxy")
     )
-  );
+  ).map(retarget)));
+
+  // 地理数据库每天自动更新，避免国内 IP 与域名列表过期
+  if (config["geo-auto-update"] === undefined) {
+    config["geo-auto-update"] = true;
+    config["geo-update-interval"] = 24;
+  }
 
   return config;
 }

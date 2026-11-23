@@ -3,10 +3,10 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 
-function transform(source, config) {
+function transform(source, config, profileName = "test") {
   const context = vm.createContext({});
   vm.runInContext(source, context);
-  return JSON.parse(JSON.stringify(context.main(structuredClone(config), "test")));
+  return JSON.parse(JSON.stringify(context.main(structuredClone(config), profileName)));
 }
 
 const sources = [__dirname + "/Script.js", ...process.argv.slice(2)];
@@ -131,5 +131,37 @@ for (const path of sources) {
     assert.deepEqual(gitlab.proxies, ["DIRECT", "Proxy"], "GitLab-Auto keeps Proxy fallback when Proxy group exists");
     assert.ok(output.rules.some(r => r.startsWith("AND,((DOMAIN,")), "GitLab SSH direct rule must exist");
   }
-  console.log("PASS:", path, "explicit AI nodes, alias/provider/chain rejection, fail closed, idempotency, non-AI regression, bare profile");
+  // 海外模式：订阅名称含“海外”时，其余网站与大流量改走默认直连的海外出口组，AI 仍走线路选择，DNS 不经代理
+  const overseasFixture = structuredClone(fixture);
+  overseasFixture.rules = ["DOMAIN-SUFFIX,youtube.com,Bulk-Traffic", "GEOIP,telegram,Bulk-Traffic,no-resolve", "GEOSITE,CN,DIRECT", "MATCH,线路选择"];
+  overseasFixture.dns = { enable: true, "respect-rules": true, nameserver: ["https://1.1.1.1/dns-query"], "default-nameserver": ["223.5.5.5"] };
+  const overseas = transform(source, overseasFixture, "liukun-海外");
+  const overseasGroups = Object.fromEntries(overseas["proxy-groups"].map(group => [group.name, group]));
+  assert.deepEqual(overseasGroups["海外出口"].proxies, ["DIRECT", "线路选择"], "overseas exit defaults to DIRECT");
+  assert.equal(overseas.rules[overseas.rules.length - 1], "MATCH,海外出口", "fallback goes to the overseas exit");
+  assert.equal(overseas.rules.filter(rule => rule.startsWith("MATCH,")).length, 1, "exactly one MATCH rule");
+  assert.ok(!overseas.rules.some(rule => /,Bulk-Traffic(,no-resolve)?$/.test(rule)), "no rule targets the domestic bulk group");
+  assert.ok(overseas.rules.includes("GEOIP,telegram,海外出口,no-resolve"), "no-resolve suffix kept when retargeting");
+  assert.ok(overseas.rules.includes("DOMAIN-SUFFIX,youtube.com,海外出口"));
+  for (const domain of ["anthropic.com", "claude.ai", "openai.com", "chatgpt.com"]) {
+    assert.ok(overseas.rules.includes(`DOMAIN-SUFFIX,${domain},线路选择`), `${domain} stays on the proxy line overseas`);
+  }
+  assert.ok(overseas.rules.includes("DOMAIN-SUFFIX,grok.com,Grok-xAI"), "Grok keeps its dedicated group");
+  assert.equal(overseas.dns["respect-rules"], false, "overseas DNS does not go through the proxy");
+  assert.deepEqual(overseas.dns["default-nameserver"], ["1.1.1.1", "8.8.8.8"]);
+  assert.deepEqual(transform(source, overseas, "liukun-海外"), overseas, "overseas transform must be idempotent");
+  const overseasKnown = new Set(["DIRECT", "REJECT", ...overseas.proxies.map(p => p.name), ...overseas["proxy-groups"].map(g => g.name)]);
+  for (const rule of overseas.rules) {
+    const parts = rule.replace(/,no-resolve$/, "").split(",");
+    const isLogic = /^(AND|OR|NOT),/.test(rule);
+    const target = isLogic ? parts[parts.length - 1] : parts[0] === "MATCH" ? parts[1] : parts[2];
+    assert.ok(overseasKnown.has(target), `overseas rule must reference existing target: ${rule}`);
+  }
+  // 国内模式不受影响：没有海外出口组，兜底仍走线路选择
+  const domestic = transform(source, overseasFixture, "liukun");
+  assert.ok(!domestic["proxy-groups"].some(group => group.name === "海外出口"), "domestic mode has no overseas exit");
+  assert.equal(domestic.rules[domestic.rules.length - 1], "MATCH,线路选择");
+  assert.equal(domestic.dns["respect-rules"], true);
+
+  console.log("PASS:", path, "explicit AI nodes, alias/provider/chain rejection, fail closed, idempotency, non-AI regression, bare profile, overseas mode");
 }
